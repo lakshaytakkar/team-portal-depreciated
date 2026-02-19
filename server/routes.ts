@@ -4002,30 +4002,6 @@ cs@suprans.in`;
     }
   });
 
-  // Seed recruitment data (superadmin only, one-time use)
-  app.post("/api/admin/seed-recruitment", requireAuth, requireRole("superadmin"), async (req, res, next) => {
-    try {
-      const { seedRecruitmentData } = await import("./seed-recruitment");
-      await seedRecruitmentData();
-      res.json({ message: "Recruitment data seeded successfully" });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Seed specific candidates (hired and offered stage candidates)
-  app.post("/api/admin/seed-specific-candidates", requireAuth, requireRole("superadmin"), async (req, res, next) => {
-    try {
-      const { seedSpecificCandidates } = await import("./seed-specific-candidates");
-      const result = await seedSpecificCandidates();
-      res.json({ 
-        message: "Specific candidates seeded successfully",
-        ...result 
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
 
   // ============== INTERVIEWS ==============
   
