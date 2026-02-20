@@ -345,7 +345,7 @@ export default function TravelDetailPage() {
           </div>
           
           <div className="text-white/80 mb-2">
-            Starting From <span className="text-2xl font-bold text-white">{formatPrice(pkg.price)}</span> /per person
+            Starting From <span className="text-2xl font-bold text-white">{formatPrice(pkg.price)}</span> (+5%GST + 5% TCS)
           </div>
           
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
@@ -592,7 +592,7 @@ export default function TravelDetailPage() {
                     <span className="text-3xl font-bold text-primary">
                       {formatPrice(pkg.price)}
                     </span>
-                    <span className="text-sm text-muted-foreground">/per person</span>
+                    <span className="text-sm text-muted-foreground">(+5%GST + 5% TCS)</span>
                   </div>
                 </div>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2">
@@ -734,7 +734,7 @@ export default function TravelDetailPage() {
             <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Package Price:</span>
-                <span className="font-semibold">{formatPrice(pkg?.price || 0)} / person</span>
+                <span className="font-semibold">{formatPrice(pkg?.price || 0)} (+5%GST + 5% TCS)</span>
               </div>
               <div className="flex justify-between items-center mt-2 pt-2 border-t border-green-200">
                 <span className="font-semibold text-green-700">Booking Amount (Pay Now):</span>

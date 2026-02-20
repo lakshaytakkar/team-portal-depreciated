@@ -184,7 +184,7 @@ function PackageCard({ pkg }: { pkg: TravelPackage }) {
               <span className="text-2xl font-bold text-[#F34147]">
                 {formatPrice(pkg.price)}
               </span>
-              <span className="text-xs text-gray-500 ml-1">/person</span>
+              <span className="text-xs text-gray-500 ml-1">(+5%GST + 5% TCS)</span>
             </div>
             <Link href={`/travel/${pkg.slug}`}>
               <Button className="bg-[#F34147] hover:bg-[#D93036] text-white" data-testid={`button-book-${pkg.id}`} disabled={seatsLeft === 0}>

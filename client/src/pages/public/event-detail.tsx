@@ -379,7 +379,7 @@ export default function PublicEventDetailPage() {
                         <p className="text-3xl font-bold text-[#F34147]">
                           ₹{event.ticketPrice?.toLocaleString('en-IN')}
                         </p>
-                        <p className="text-muted-foreground text-sm">per person</p>
+                        <p className="text-muted-foreground text-sm">(+5%GST + 5% TCS)</p>
                       </>
                     ) : (
                       <>
