@@ -1,767 +1,746 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus,
-  Search,
-  RefreshCw,
-  Copy,
-  ExternalLink,
-  MoreHorizontal,
-  Mail,
-  Smartphone,
-  CreditCard,
-  IndianRupee,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Link2,
-  Send,
-  Loader2,
-  ArrowUpDown,
-  Eye,
+  Plus, Search, RefreshCw, Copy, IndianRupee, Clock, CheckCircle2,
+  XCircle, Loader2, Eye, Download, Share2, MessageCircle, Mail,
+  QrCode, Building2, CreditCard, Upload, ImageIcon, Trash2, ExternalLink,
 } from "lucide-react";
 
-interface PaymentLink {
+const COMPANIES = [
+  {
+    name: "Startup Squad Pvt Ltd",
+    upi: "8059153883@pthdfc",
+    bank: {
+      accountNo: "9306566900",
+      ifsc: "HDFC0000930",
+      bankName: "HDFC Bank",
+      accountName: "Startup Squad Pvt Ltd",
+    },
+  },
+];
+
+interface PaymentRequest {
   id: string;
-  amount: number;
+  customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  amount: string;
   currency: string;
   description: string;
+  receivingCompany: string;
+  methods: string[];
+  razorpayLinkId?: string;
+  razorpayLinkUrl?: string;
+  razorpayLinkStatus?: string;
+  upiAddress?: string;
+  bankAccountNo?: string;
   status: string;
-  short_url: string;
-  created_at: number;
-  expire_by?: number;
-  customer?: {
-    name?: string;
-    email?: string;
-    contact?: string;
-  };
-  reference_id?: string;
-  notes?: Record<string, string>;
-  upi_link?: boolean;
-  payments?: {
-    payment_id: string;
-    amount: number;
-    status: string;
-    method: string;
-  }[];
+  paymentScreenshotUrl?: string;
+  paymentProofNote?: string;
+  referenceId?: string;
+  notes?: string;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+  paidAt?: string;
 }
 
-interface PaymentLinksResponse {
-  payment_links: PaymentLink[];
-  count: number;
+function generateUpiUrl(upiId: string, payeeName: string, amount: number, description: string) {
+  return `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(description)}`;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive"; icon: typeof CheckCircle2 }> = {
-  created: { label: "Created", variant: "secondary", icon: Clock },
-  partially_paid: { label: "Partially Paid", variant: "outline", icon: IndianRupee },
-  paid: { label: "Paid", variant: "default", icon: CheckCircle2 },
-  expired: { label: "Expired", variant: "destructive", icon: XCircle },
-  cancelled: { label: "Cancelled", variant: "destructive", icon: XCircle },
-};
+function UpiQrCode({ upiUrl, amount, companyName }: { upiUrl: string; amount: number; companyName: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [qrReady, setQrReady] = useState(false);
 
-function formatAmount(paise: number, currency = "INR"): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(paise / 100);
+  useEffect(() => {
+    let cancelled = false;
+    import("qrcode").then((QRCode) => {
+      if (cancelled || !canvasRef.current) return;
+      QRCode.toCanvas(canvasRef.current, upiUrl, {
+        width: 240,
+        margin: 2,
+        color: { dark: "#000000", light: "#ffffff" },
+      }, () => {
+        if (!cancelled) setQrReady(true);
+      });
+    });
+    return () => { cancelled = true; };
+  }, [upiUrl]);
+
+  const downloadQr = useCallback(() => {
+    if (!canvasRef.current) return;
+    const downloadCanvas = document.createElement("canvas");
+    const ctx = downloadCanvas.getContext("2d")!;
+    const qrSize = 240;
+    const padding = 30;
+    const headerHeight = 50;
+    const footerHeight = 40;
+    const totalHeight = padding + headerHeight + qrSize + footerHeight + padding;
+    const totalWidth = qrSize + padding * 2;
+    downloadCanvas.width = totalWidth;
+    downloadCanvas.height = totalHeight;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, totalWidth, totalHeight);
+    ctx.fillStyle = "#1a1a2e";
+    ctx.font = "bold 16px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(companyName, totalWidth / 2, padding + 20);
+    ctx.font = "12px Inter, sans-serif";
+    ctx.fillStyle = "#666";
+    ctx.fillText("Scan to pay via UPI", totalWidth / 2, padding + 38);
+    ctx.drawImage(canvasRef.current, padding, padding + headerHeight, qrSize, qrSize);
+    ctx.fillStyle = "#1a1a2e";
+    ctx.font = "bold 18px Inter, sans-serif";
+    ctx.fillText(`₹${amount.toLocaleString("en-IN")}`, totalWidth / 2, padding + headerHeight + qrSize + 28);
+    const link = document.createElement("a");
+    link.download = `upi-qr-${amount}.jpg`;
+    link.href = downloadCanvas.toDataURL("image/jpeg", 0.95);
+    link.click();
+  }, [amount, companyName]);
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="bg-white p-4 rounded-xl border-2 border-muted">
+        <canvas ref={canvasRef} />
+      </div>
+      {qrReady && (
+        <Button variant="outline" size="sm" onClick={downloadQr} data-testid="button-download-qr">
+          <Download className="h-4 w-4 mr-2" /> Download QR as JPG
+        </Button>
+      )}
+    </div>
+  );
 }
 
-function formatDate(timestamp: number): string {
-  return new Date(timestamp * 1000).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function CreatePaymentLinkDialog({ onSuccess }: { onSuccess: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [isUpi, setIsUpi] = useState(false);
+function BankDetailsCard({ company }: { company: typeof COMPANIES[0] }) {
   const { toast } = useToast();
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: `${label} copied!` });
+  };
 
-  const [formData, setFormData] = useState({
-    amount: "",
-    description: "",
-    customerName: "",
-    customerEmail: "",
-    customerPhone: "",
-    expireBy: "",
-    referenceId: "",
-    notifySms: false,
-    notifyEmail: false,
-  });
+  return (
+    <div className="bg-muted/50 rounded-xl p-5 space-y-3 border">
+      <div className="flex items-center gap-2 mb-3">
+        <Building2 className="h-5 w-5 text-blue-600" />
+        <span className="font-semibold text-sm">Bank Transfer Details</span>
+      </div>
+      {[
+        { label: "Account Name", value: company.bank.accountName },
+        { label: "Account Number", value: company.bank.accountNo },
+        { label: "IFSC Code", value: company.bank.ifsc },
+        { label: "Bank", value: company.bank.bankName },
+      ].map(({ label, value }) => (
+        <div key={label} className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">{label}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium font-mono">{value}</span>
+            <button onClick={() => copyToClipboard(value, label)} className="text-muted-foreground hover:text-foreground">
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CreatePaymentDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { toast } = useToast();
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [receivingCompany, setReceivingCompany] = useState("Startup Squad Pvt Ltd");
+  const [methods, setMethods] = useState<string[]>(["upi_qr", "bank_details", "razorpay_link"]);
+  const [referenceId, setReferenceId] = useState("");
+  const [notes, setNotes] = useState("");
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const res = await apiRequest("POST", "/api/payment-links", data);
+      const res = await apiRequest("POST", "/api/payment-requests", data);
       return res.json();
     },
-    onSuccess: (data: any) => {
-      toast({
-        title: "Payment Link Created",
-        description: "Link has been generated successfully.",
-      });
-      navigator.clipboard.writeText(data.short_url);
-      toast({
-        title: "Link Copied",
-        description: "Payment link copied to clipboard.",
-      });
-      setOpen(false);
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-requests"] });
+      toast({ title: "Payment request created!" });
+      onOpenChange(false);
       resetForm();
-      onSuccess();
+      setViewRequest(data);
+      setViewDialogOpen(true);
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
 
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewRequest, setViewRequest] = useState<PaymentRequest | null>(null);
+
   const resetForm = () => {
-    setFormData({
-      amount: "",
-      description: "",
-      customerName: "",
-      customerEmail: "",
-      customerPhone: "",
-      expireBy: "",
-      referenceId: "",
-      notifySms: false,
-      notifyEmail: false,
-    });
-    setIsUpi(false);
+    setCustomerName(""); setCustomerEmail(""); setCustomerPhone("");
+    setAmount(""); setDescription(""); setReferenceId(""); setNotes("");
+    setMethods(["upi_qr", "bank_details", "razorpay_link"]);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const amount = parseFloat(formData.amount);
-    if (isNaN(amount) || amount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid amount.", variant: "destructive" });
+  const toggleMethod = (method: string) => {
+    setMethods(prev => prev.includes(method) ? prev.filter(m => m !== method) : [...prev, method]);
+  };
+
+  const handleSubmit = () => {
+    if (!customerName || !amount || !description || methods.length === 0) {
+      toast({ title: "Please fill required fields and select at least one method", variant: "destructive" });
       return;
     }
     createMutation.mutate({
-      amount,
-      description: formData.description,
-      customerName: formData.customerName || undefined,
-      customerEmail: formData.customerEmail || undefined,
-      customerPhone: formData.customerPhone || undefined,
-      expireBy: formData.expireBy || undefined,
-      referenceId: formData.referenceId || undefined,
-      notifySms: formData.notifySms,
-      notifyEmail: formData.notifyEmail,
-      isUpi,
+      customerName, customerEmail, customerPhone,
+      amount: parseFloat(amount), description,
+      receivingCompany, methods, referenceId, notes,
     });
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-      <DialogTrigger asChild>
-        <Button className="bg-[#F34147] hover:bg-[#D93036] text-white" data-testid="button-create-payment-link">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Payment Link
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2" data-testid="text-dialog-title">
-            <Link2 className="h-5 w-5 text-[#F34147]" />
-            Create Payment Link
-          </DialogTitle>
-          <DialogDescription>
-            Generate a Razorpay payment link to share with your customer.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <Label className="text-sm font-medium">Link Type:</Label>
-            <Tabs value={isUpi ? "upi" : "standard"} onValueChange={(v) => setIsUpi(v === "upi")}>
-              <TabsList className="h-8">
-                <TabsTrigger value="standard" className="text-xs px-3 h-7" data-testid="tab-standard">
-                  <CreditCard className="h-3 w-3 mr-1" /> Standard
-                </TabsTrigger>
-                <TabsTrigger value="upi" className="text-xs px-3 h-7" data-testid="tab-upi">
-                  <Smartphone className="h-3 w-3 mr-1" /> UPI
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (INR) *</Label>
-              <div className="relative">
-                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  min="1"
-                  placeholder="0.00"
-                  className="pl-9"
-                  value={formData.amount}
-                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  required
-                  data-testid="input-amount"
-                />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Payment Request</DialogTitle>
+            <DialogDescription>Generate payment collection options for your customer</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label>Customer Name *</Label>
+                <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="Customer name" data-testid="input-customer-name" />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="referenceId">Reference ID</Label>
-              <Input
-                id="referenceId"
-                placeholder="INV-001"
-                value={formData.referenceId}
-                onChange={(e) => setFormData({ ...formData, referenceId: e.target.value })}
-                data-testid="input-reference-id"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description">Description / Purpose *</Label>
-            <Textarea
-              id="description"
-              placeholder="e.g., Dubai Tour - Booking Amount for Mr. Sharma"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={2}
-              required
-              data-testid="input-description"
-            />
-          </div>
-
-          <div className="space-y-3 border rounded-lg p-4">
-            <p className="text-sm font-medium text-muted-foreground">Customer Details (Optional)</p>
-            <div className="space-y-2">
-              <Label htmlFor="customerName">Name</Label>
-              <Input
-                id="customerName"
-                placeholder="Customer name"
-                value={formData.customerName}
-                onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                data-testid="input-customer-name"
-              />
+              <div>
+                <Label>Email</Label>
+                <Input value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} placeholder="email@example.com" data-testid="input-customer-email" />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} placeholder="+91 9876543210" data-testid="input-customer-phone" />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="customerEmail">Email</Label>
-                <Input
-                  id="customerEmail"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={formData.customerEmail}
-                  onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
-                  data-testid="input-customer-email"
-                />
+              <div>
+                <Label>Amount (₹) *</Label>
+                <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" data-testid="input-amount" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="customerPhone">Phone</Label>
-                <Input
-                  id="customerPhone"
-                  placeholder="+91 98765 43210"
-                  value={formData.customerPhone}
-                  onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
-                  data-testid="input-customer-phone"
-                />
+              <div>
+                <Label>Receiving Company</Label>
+                <Select value={receivingCompany} onValueChange={setReceivingCompany}>
+                  <SelectTrigger data-testid="select-company"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {COMPANIES.map(c => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="expireBy">Expiry Date (Optional)</Label>
-            <Input
-              id="expireBy"
-              type="datetime-local"
-              value={formData.expireBy}
-              onChange={(e) => setFormData({ ...formData, expireBy: e.target.value })}
-              data-testid="input-expire-by"
-            />
-          </div>
-
-          <div className="flex items-center gap-6 p-3 bg-muted/50 rounded-lg">
-            <p className="text-sm font-medium text-muted-foreground">Notify Customer:</p>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="notifySms"
-                checked={formData.notifySms}
-                onCheckedChange={(v) => setFormData({ ...formData, notifySms: v })}
-                data-testid="switch-notify-sms"
-              />
-              <Label htmlFor="notifySms" className="text-sm flex items-center gap-1">
-                <Smartphone className="h-3 w-3" /> SMS
-              </Label>
+            <div>
+              <Label>Description *</Label>
+              <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Payment for..." data-testid="input-description" />
             </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="notifyEmail"
-                checked={formData.notifyEmail}
-                onCheckedChange={(v) => setFormData({ ...formData, notifyEmail: v })}
-                data-testid="switch-notify-email"
-              />
-              <Label htmlFor="notifyEmail" className="text-sm flex items-center gap-1">
-                <Mail className="h-3 w-3" /> Email
-              </Label>
+            <div>
+              <Label className="mb-2 block">Payment Methods *</Label>
+              <div className="flex flex-col gap-2">
+                {[
+                  { id: "upi_qr", label: "UPI QR Code", icon: QrCode, color: "text-green-600" },
+                  { id: "bank_details", label: "Bank Deposit Details", icon: Building2, color: "text-blue-600" },
+                  { id: "razorpay_link", label: "Razorpay Payment Link", icon: CreditCard, color: "text-purple-600" },
+                ].map(({ id, label, icon: Icon, color }) => (
+                  <label key={id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${methods.includes(id) ? "bg-primary/5 border-primary/30" : "hover:bg-muted/50"}`}>
+                    <Checkbox checked={methods.includes(id)} onCheckedChange={() => toggleMethod(id)} data-testid={`checkbox-method-${id}`} />
+                    <Icon className={`h-4 w-4 ${color}`} />
+                    <span className="text-sm font-medium">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Reference ID (optional)</Label>
+              <Input value={referenceId} onChange={e => setReferenceId(e.target.value)} placeholder="INV-001" data-testid="input-reference-id" />
+            </div>
+            <div>
+              <Label>Internal Notes (optional)</Label>
+              <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes..." rows={2} data-testid="input-notes" />
             </div>
           </div>
-
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} data-testid="button-cancel">
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="bg-[#F34147] hover:bg-[#D93036] text-white"
-              disabled={createMutation.isPending}
-              data-testid="button-generate-link"
-            >
-              {createMutation.isPending ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
-              ) : (
-                <><Send className="h-4 w-4 mr-2" /> Generate Link</>
-              )}
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={createMutation.isPending} data-testid="button-create-payment">
+              {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+              Create & Generate
             </Button>
           </DialogFooter>
-        </form>
+        </DialogContent>
+      </Dialog>
+      {viewRequest && (
+        <ShareDialog open={viewDialogOpen} onOpenChange={setViewDialogOpen} request={viewRequest} />
+      )}
+    </>
+  );
+}
+
+function ShareDialog({ open, onOpenChange, request }: { open: boolean; onOpenChange: (v: boolean) => void; request: PaymentRequest }) {
+  const { toast } = useToast();
+  const company = COMPANIES.find(c => c.name === request.receivingCompany) || COMPANIES[0];
+  const amount = parseFloat(request.amount);
+  const upiUrl = generateUpiUrl(company.upi, company.name, amount, request.description);
+
+  const buildWhatsappMsg = () => {
+    let msg = `Hello ${request.customerName},\n\nPayment Request from *${company.name}*\n`;
+    msg += `Amount: *₹${amount.toLocaleString("en-IN")}*\nFor: ${request.description}\n`;
+    if (request.referenceId) msg += `Ref: ${request.referenceId}\n`;
+    msg += `\n--- Payment Options ---\n`;
+    if (request.methods.includes("upi_qr")) {
+      msg += `\n📱 *UPI Payment*\nUPI ID: ${company.upi}\n`;
+    }
+    if (request.methods.includes("bank_details")) {
+      msg += `\n🏦 *Bank Transfer*\nAccount: ${company.bank.accountNo}\nIFSC: ${company.bank.ifsc}\nBank: ${company.bank.bankName}\nName: ${company.bank.accountName}\n`;
+    }
+    if (request.methods.includes("razorpay_link") && request.razorpayLinkUrl) {
+      msg += `\n💳 *Pay Online*\n${request.razorpayLinkUrl}\n`;
+    }
+    msg += `\nPlease share payment confirmation after transfer. Thank you!`;
+    return msg;
+  };
+
+  const buildEmailBody = () => {
+    let body = `Dear ${request.customerName},\n\nPlease find the payment details below:\n\n`;
+    body += `Amount: INR ${amount.toLocaleString("en-IN")}\nDescription: ${request.description}\n`;
+    if (request.referenceId) body += `Reference: ${request.referenceId}\n`;
+    body += `\n--- Payment Options ---\n`;
+    if (request.methods.includes("upi_qr")) {
+      body += `\nUPI Payment\nUPI ID: ${company.upi}\n`;
+    }
+    if (request.methods.includes("bank_details")) {
+      body += `\nBank Transfer\nAccount Number: ${company.bank.accountNo}\nIFSC: ${company.bank.ifsc}\nBank: ${company.bank.bankName}\nAccount Name: ${company.bank.accountName}\n`;
+    }
+    if (request.methods.includes("razorpay_link") && request.razorpayLinkUrl) {
+      body += `\nPay Online: ${request.razorpayLinkUrl}\n`;
+    }
+    body += `\nKindly share the payment confirmation screenshot after making the transfer.\n\nRegards,\n${company.name}`;
+    return body;
+  };
+
+  const shareWhatsapp = () => {
+    const phone = request.customerPhone?.replace(/[^0-9]/g, "") || "";
+    const msg = encodeURIComponent(buildWhatsappMsg());
+    window.open(`https://wa.me/${phone.startsWith("91") || phone.length <= 10 ? (phone.length === 10 ? "91" + phone : phone) : phone}?text=${msg}`, "_blank");
+  };
+
+  const shareEmail = () => {
+    const subject = encodeURIComponent(`Payment Request - ₹${amount.toLocaleString("en-IN")} - ${request.description}`);
+    const body = encodeURIComponent(buildEmailBody());
+    window.open(`mailto:${request.customerEmail || ""}?subject=${subject}&body=${body}`, "_blank");
+  };
+
+  const copyAll = () => {
+    navigator.clipboard.writeText(buildWhatsappMsg().replace(/\*/g, ""));
+    toast({ title: "Payment details copied!" });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Share2 className="h-5 w-5" /> Share Payment Details
+          </DialogTitle>
+          <DialogDescription>
+            Payment request for {request.customerName} - ₹{amount.toLocaleString("en-IN")}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-5 py-2">
+          <div className="bg-primary/5 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Amount</p>
+              <p className="text-2xl font-bold">₹{amount.toLocaleString("en-IN")}</p>
+              <p className="text-sm text-muted-foreground">{request.description}</p>
+            </div>
+            <Badge variant={request.status === "paid" ? "default" : "secondary"} className={request.status === "paid" ? "bg-green-100 text-green-700" : ""}>
+              {request.status === "paid" ? "Paid" : "Pending"}
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {request.methods.includes("upi_qr") && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-green-700">
+                  <QrCode className="h-4 w-4" /> UPI QR Code
+                </div>
+                <UpiQrCode upiUrl={upiUrl} amount={amount} companyName={company.name} />
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">UPI: <span className="font-mono">{company.upi}</span></p>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {request.methods.includes("bank_details") && (
+                <BankDetailsCard company={company} />
+              )}
+              {request.methods.includes("razorpay_link") && request.razorpayLinkUrl && (
+                <div className="bg-purple-50 dark:bg-purple-950/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-purple-700 dark:text-purple-400">
+                    <CreditCard className="h-4 w-4" /> Razorpay Link
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input value={request.razorpayLinkUrl} readOnly className="text-xs font-mono" />
+                    <Button variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(request.razorpayLinkUrl!); toast({ title: "Link copied!" }); }} data-testid="button-copy-razorpay">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => window.open(request.razorpayLinkUrl, "_blank")} data-testid="button-open-razorpay">
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-2 border-t">
+            <Button onClick={shareWhatsapp} className="bg-[#25D366] hover:bg-[#20BD5A] text-white" data-testid="button-share-whatsapp">
+              <MessageCircle className="h-4 w-4 mr-2" /> Send via WhatsApp
+            </Button>
+            <Button onClick={shareEmail} variant="outline" data-testid="button-share-email">
+              <Mail className="h-4 w-4 mr-2" /> Send via Email
+            </Button>
+            <Button onClick={copyAll} variant="outline" data-testid="button-copy-all">
+              <Copy className="h-4 w-4 mr-2" /> Copy All Details
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-function LinkDetailDialog({ link }: { link: PaymentLink }) {
-  const [open, setOpen] = useState(false);
+function MarkAsPaidDialog({ open, onOpenChange, request }: { open: boolean; onOpenChange: (v: boolean) => void; request: PaymentRequest }) {
   const { toast } = useToast();
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [note, setNote] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const notifyMutation = useMutation({
-    mutationFn: async (medium: string) => {
-      const res = await apiRequest("POST", `/api/payment-links/${link.id}/notify`, { medium });
+  const markPaidMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", `/api/payment-requests/${request.id}/upload-screenshot`, data);
       return res.json();
     },
-    onSuccess: (_, medium) => {
-      toast({ title: "Notification Sent", description: `${medium === 'sms' ? 'SMS' : 'Email'} notification sent to customer.` });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-requests"] });
+      toast({ title: "Payment marked as paid!" });
+      onOpenChange(false);
+      setScreenshotUrl(""); setNote("");
     },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
 
-  const statusConf = STATUS_CONFIG[link.status] || STATUS_CONFIG.created;
-  const StatusIcon = statusConf.icon;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setScreenshotUrl(reader.result as string);
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setUploading(false);
+      toast({ title: "Upload failed", variant: "destructive" });
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" data-testid={`button-view-link-${link.id}`}>
-          <Eye className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2" data-testid="text-link-detail-title">
-            <Link2 className="h-5 w-5 text-[#F34147]" />
-            Payment Link Details
-          </DialogTitle>
+          <DialogTitle>Mark as Paid</DialogTitle>
+          <DialogDescription>
+            Upload payment proof screenshot for ₹{parseFloat(request.amount).toLocaleString("en-IN")} from {request.customerName}
+          </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-            <div>
-              <p className="text-2xl font-bold" data-testid="text-link-amount">{formatAmount(link.amount, link.currency)}</p>
-              <p className="text-sm text-muted-foreground">{link.description}</p>
-            </div>
-            <Badge variant={statusConf.variant} className="flex items-center gap-1" data-testid={`badge-status-${link.id}`}>
-              <StatusIcon className="h-3 w-3" />
-              {statusConf.label}
-            </Badge>
-          </div>
-
-          {link.customer && (link.customer.name || link.customer.email || link.customer.contact) && (
-            <div className="space-y-2 border rounded-lg p-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Customer</p>
-              {link.customer.name && <p className="text-sm font-medium" data-testid="text-customer-name">{link.customer.name}</p>}
-              {link.customer.email && <p className="text-sm text-muted-foreground">{link.customer.email}</p>}
-              {link.customer.contact && <p className="text-sm text-muted-foreground">{link.customer.contact}</p>}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="space-y-1">
-              <p className="text-muted-foreground text-xs">Created</p>
-              <p className="font-medium">{formatDate(link.created_at)}</p>
-            </div>
-            {link.expire_by && (
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs">Expires</p>
-                <p className="font-medium">{formatDate(link.expire_by)}</p>
+        <div className="space-y-4 py-2">
+          <div>
+            <Label>Payment Screenshot *</Label>
+            <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileUpload} className="hidden" />
+            {screenshotUrl ? (
+              <div className="mt-2 relative group">
+                <img src={screenshotUrl} alt="Payment proof" className="w-full max-h-48 object-contain rounded-lg border" />
+                <button onClick={() => { setScreenshotUrl(""); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Trash2 className="h-3 w-3" />
+                </button>
               </div>
-            )}
-            {link.reference_id && (
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs">Reference</p>
-                <p className="font-medium">{link.reference_id}</p>
-              </div>
-            )}
-            {link.notes?.created_by && (
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs">Created By</p>
-                <p className="font-medium">{link.notes.created_by}</p>
-              </div>
+            ) : (
+              <button onClick={() => fileInputRef.current?.click()} className="mt-2 w-full border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors" data-testid="button-upload-screenshot">
+                {uploading ? <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" /> : (
+                  <>
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Click to upload screenshot</p>
+                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</p>
+                  </>
+                )}
+              </button>
             )}
           </div>
-
-          <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <Input
-              value={link.short_url}
-              readOnly
-              className="text-sm bg-white dark:bg-background"
-              data-testid="input-link-url"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(link.short_url);
-                toast({ title: "Copied!", description: "Link copied to clipboard." });
-              }}
-              data-testid="button-copy-link"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(link.short_url, "_blank")}
-              data-testid="button-open-link"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
+          <div>
+            <Label>Note (optional)</Label>
+            <Textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Transaction ID, remarks..." rows={2} data-testid="input-payment-note" />
           </div>
-
-          {link.status === "created" && (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => notifyMutation.mutate("sms")}
-                disabled={notifyMutation.isPending}
-                className="flex-1"
-                data-testid="button-resend-sms"
-              >
-                <Smartphone className="h-4 w-4 mr-1" /> Send SMS
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => notifyMutation.mutate("email")}
-                disabled={notifyMutation.isPending}
-                className="flex-1"
-                data-testid="button-resend-email"
-              >
-                <Mail className="h-4 w-4 mr-1" /> Send Email
-              </Button>
-            </div>
-          )}
         </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={() => markPaidMutation.mutate({ screenshotUrl, note })} disabled={!screenshotUrl || markPaidMutation.isPending} data-testid="button-confirm-paid">
+            {markPaidMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+            Confirm Payment
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ViewScreenshotDialog({ open, onOpenChange, request }: { open: boolean; onOpenChange: (v: boolean) => void; request: PaymentRequest }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Payment Proof</DialogTitle>
+          <DialogDescription>
+            {request.customerName} - ₹{parseFloat(request.amount).toLocaleString("en-IN")}
+          </DialogDescription>
+        </DialogHeader>
+        {request.paymentScreenshotUrl && (
+          <img src={request.paymentScreenshotUrl} alt="Payment proof" className="w-full rounded-lg border" />
+        )}
+        {request.paymentProofNote && (
+          <p className="text-sm text-muted-foreground">{request.paymentProofNote}</p>
+        )}
+        {request.paidAt && (
+          <p className="text-xs text-muted-foreground">Paid on: {new Date(request.paidAt).toLocaleString("en-IN")}</p>
+        )}
       </DialogContent>
     </Dialog>
   );
 }
 
 export default function PaymentLinksPage() {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
-  const { toast } = useToast();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [shareRequest, setShareRequest] = useState<PaymentRequest | null>(null);
+  const [markPaidRequest, setMarkPaidRequest] = useState<PaymentRequest | null>(null);
+  const [viewScreenshot, setViewScreenshot] = useState<PaymentRequest | null>(null);
 
-  const { data, isLoading, refetch } = useQuery<PaymentLinksResponse>({
-    queryKey: ["/api/payment-links"],
+  const { data: requests = [], isLoading, refetch } = useQuery<PaymentRequest[]>({
+    queryKey: ["/api/payment-requests"],
   });
 
-  const links = data?.payment_links || [];
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/payment-requests/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-requests"] });
+      toast({ title: "Payment request deleted" });
+    },
+  });
 
-  const filteredLinks = links
-    .filter((link) => {
-      const matchesSearch =
-        !search ||
-        link.description?.toLowerCase().includes(search.toLowerCase()) ||
-        link.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        link.customer?.email?.toLowerCase().includes(search.toLowerCase()) ||
-        link.reference_id?.toLowerCase().includes(search.toLowerCase()) ||
-        link.short_url?.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === "all" || link.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => sortOrder === "newest" ? b.created_at - a.created_at : a.created_at - b.created_at);
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await apiRequest("PATCH", `/api/payment-requests/${id}`, { status });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-requests"] });
+    },
+  });
+
+  const filtered = requests.filter(r => {
+    const matchesSearch = !search || r.customerName.toLowerCase().includes(search.toLowerCase()) || r.description.toLowerCase().includes(search.toLowerCase()) || (r.referenceId || "").toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "all" || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const stats = {
-    total: links.length,
-    created: links.filter((l) => l.status === "created").length,
-    paid: links.filter((l) => l.status === "paid").length,
-    expired: links.filter((l) => l.status === "expired").length,
-    totalCollected: links
-      .filter((l) => l.status === "paid")
-      .reduce((sum, l) => sum + l.amount, 0),
+    total: requests.length,
+    pending: requests.filter(r => r.status === "pending").length,
+    paid: requests.filter(r => r.status === "paid").length,
+    totalAmount: requests.reduce((sum, r) => sum + parseFloat(r.amount || "0"), 0),
+    paidAmount: requests.filter(r => r.status === "paid").reduce((sum, r) => sum + parseFloat(r.amount || "0"), 0),
   };
 
-  const copyLink = (url: string) => {
-    navigator.clipboard.writeText(url);
-    toast({ title: "Copied!", description: "Payment link copied to clipboard." });
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case "paid": return <Badge className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400">Paid</Badge>;
+      case "cancelled": return <Badge variant="destructive">Cancelled</Badge>;
+      default: return <Badge variant="secondary">Pending</Badge>;
+    }
   };
+
+  const methodIcons = (methods: string[]) => (
+    <div className="flex gap-1">
+      {methods.includes("upi_qr") && <span title="UPI QR" className="inline-flex items-center justify-center h-6 w-6 rounded bg-green-100 dark:bg-green-950"><QrCode className="h-3.5 w-3.5 text-green-600" /></span>}
+      {methods.includes("bank_details") && <span title="Bank Details" className="inline-flex items-center justify-center h-6 w-6 rounded bg-blue-100 dark:bg-blue-950"><Building2 className="h-3.5 w-3.5 text-blue-600" /></span>}
+      {methods.includes("razorpay_link") && <span title="Razorpay Link" className="inline-flex items-center justify-center h-6 w-6 rounded bg-purple-100 dark:bg-purple-950"><CreditCard className="h-3.5 w-3.5 text-purple-600" /></span>}
+    </div>
+  );
 
   return (
-    <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
+    <div className="px-6 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">Payment Links</h1>
-          <p className="text-muted-foreground text-sm">Generate and manage Razorpay payment links for customers</p>
+          <h1 className="text-xl font-semibold tracking-tight" data-testid="text-page-title">Collect Payment</h1>
+          <p className="text-sm text-muted-foreground">Generate UPI QR, bank details, or Razorpay links and share with customers</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} data-testid="button-refresh">
-            <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={() => refetch()} data-testid="button-refresh">
+            <RefreshCw className="h-4 w-4" />
           </Button>
-          <CreatePaymentLinkDialog onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/payment-links"] });
-          }} />
+          <Button onClick={() => setCreateOpen(true)} data-testid="button-new-payment">
+            <Plus className="h-4 w-4 mr-2" /> New Payment Request
+          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card data-testid="card-stat-total">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Link2 className="h-5 w-5 text-blue-600" />
+        {[
+          { label: "Total Requests", value: stats.total, icon: IndianRupee, color: "text-foreground" },
+          { label: "Pending", value: stats.pending, icon: Clock, color: "text-yellow-600" },
+          { label: "Paid", value: stats.paid, icon: CheckCircle2, color: "text-green-600" },
+          { label: "Amount Collected", value: `₹${stats.paidAmount.toLocaleString("en-IN")}`, icon: IndianRupee, color: "text-green-600" },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <Card key={label} className="shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">{label}</p>
+                  <p className={`text-2xl font-bold mt-1 ${color}`} data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>{value}</p>
+                </div>
+                <Icon className={`h-5 w-5 ${color} opacity-50`} />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Total Links</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card data-testid="card-stat-pending">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                <Clock className="h-5 w-5 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.created}</p>
-                <p className="text-xs text-muted-foreground">Pending</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card data-testid="card-stat-paid">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.paid}</p>
-                <p className="text-xs text-muted-foreground">Paid</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card data-testid="card-stat-collected">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-[#F34147]/10 rounded-lg">
-                <IndianRupee className="h-5 w-5 text-[#F34147]" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{formatAmount(stats.totalCollected)}</p>
-                <p className="text-xs text-muted-foreground">Collected</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by customer, description, reference..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            data-testid="input-search"
-          />
+          <Input placeholder="Search by name, description, ref..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" data-testid="input-search" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[150px]" data-testid="select-status-filter">
-            <SelectValue placeholder="All Status" />
-          </SelectTrigger>
+          <SelectTrigger className="w-36" data-testid="select-status-filter"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="created">Pending</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="paid">Paid</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-          data-testid="button-sort"
-        >
-          <ArrowUpDown className="h-4 w-4 mr-1" />
-          {sortOrder === "newest" ? "Newest First" : "Oldest First"}
-        </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-[#F34147]" />
-            </div>
-          ) : filteredLinks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <Link2 className="h-12 w-12 mb-3 opacity-30" />
-              <p className="font-medium">No payment links found</p>
-              <p className="text-sm">Create your first payment link to get started.</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLinks.map((link) => {
-                  const statusConf = STATUS_CONFIG[link.status] || STATUS_CONFIG.created;
-                  const StatusIcon = statusConf.icon;
-                  return (
-                    <TableRow key={link.id} data-testid={`row-link-${link.id}`}>
-                      <TableCell>
-                        <div className="max-w-[200px]">
-                          <p className="font-medium text-sm truncate" data-testid={`text-desc-${link.id}`}>{link.description}</p>
-                          {link.reference_id && (
-                            <p className="text-xs text-muted-foreground">Ref: {link.reference_id}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <p className="font-medium">{link.customer?.name || "—"}</p>
-                          {link.customer?.contact && (
-                            <p className="text-xs text-muted-foreground">{link.customer.contact}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold text-sm" data-testid={`text-amount-${link.id}`}>
-                          {formatAmount(link.amount, link.currency)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={statusConf.variant} className="flex items-center gap-1 w-fit" data-testid={`badge-status-${link.id}`}>
-                          <StatusIcon className="h-3 w-3" />
-                          {statusConf.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {link.upi_link ? "UPI" : "Standard"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">{formatDate(link.created_at)}</span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <LinkDetailDialog link={link} />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyLink(link.short_url)}
-                            data-testid={`button-copy-${link.id}`}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" data-testid={`button-more-${link.id}`}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => window.open(link.short_url, "_blank")}>
-                                <ExternalLink className="h-4 w-4 mr-2" /> Open Link
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => copyLink(link.short_url)}>
-                                <Copy className="h-4 w-4 mr-2" /> Copy Link
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
+      <Card className="shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Customer</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Methods</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow><TableCell colSpan={7} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></TableCell></TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No payment requests found</TableCell></TableRow>
+            ) : filtered.map(req => (
+              <TableRow key={req.id} data-testid={`row-payment-${req.id}`}>
+                <TableCell>
+                  <div>
+                    <p className="font-medium text-sm">{req.customerName}</p>
+                    {req.customerPhone && <p className="text-xs text-muted-foreground">{req.customerPhone}</p>}
+                  </div>
+                </TableCell>
+                <TableCell className="font-semibold">₹{parseFloat(req.amount).toLocaleString("en-IN")}</TableCell>
+                <TableCell>
+                  <div>
+                    <p className="text-sm truncate max-w-[200px]">{req.description}</p>
+                    {req.referenceId && <p className="text-xs text-muted-foreground font-mono">{req.referenceId}</p>}
+                  </div>
+                </TableCell>
+                <TableCell>{methodIcons(req.methods || [])}</TableCell>
+                <TableCell>
+                  {req.status === "pending" ? (
+                    <button onClick={() => setMarkPaidRequest(req)} className="cursor-pointer" data-testid={`button-status-${req.id}`}>
+                      {statusBadge(req.status)}
+                    </button>
+                  ) : req.status === "paid" && req.paymentScreenshotUrl ? (
+                    <button onClick={() => setViewScreenshot(req)} className="cursor-pointer" data-testid={`button-view-proof-${req.id}`}>
+                      <Badge className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400 gap-1">
+                        <ImageIcon className="h-3 w-3" /> Paid
+                      </Badge>
+                    </button>
+                  ) : statusBadge(req.status)}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">{new Date(req.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="icon" onClick={() => setShareRequest(req)} title="Share/View" data-testid={`button-share-${req.id}`}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {req.status === "pending" && (
+                      <Button variant="ghost" size="icon" onClick={() => setMarkPaidRequest(req)} title="Mark as Paid" data-testid={`button-mark-paid-${req.id}`}>
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => { if (confirm("Delete this payment request?")) deleteMutation.mutate(req.id); }} title="Delete" data-testid={`button-delete-${req.id}`}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </Card>
+
+      <CreatePaymentDialog open={createOpen} onOpenChange={setCreateOpen} />
+      {shareRequest && <ShareDialog open={!!shareRequest} onOpenChange={v => !v && setShareRequest(null)} request={shareRequest} />}
+      {markPaidRequest && <MarkAsPaidDialog open={!!markPaidRequest} onOpenChange={v => !v && setMarkPaidRequest(null)} request={markPaidRequest} />}
+      {viewScreenshot && <ViewScreenshotDialog open={!!viewScreenshot} onOpenChange={v => !v && setViewScreenshot(null)} request={viewScreenshot} />}
     </div>
   );
 }

@@ -50,7 +50,8 @@ import {
   type LLCClient, type InsertLLCClient,
   type LLCClientDocument, type InsertLLCClientDocument,
   type LLCClientTimeline, type InsertLLCClientTimeline,
-  type WebsiteContent, type InsertWebsiteContent
+  type WebsiteContent, type InsertWebsiteContent,
+  type PaymentRequest, type InsertPaymentRequest
 } from "@shared/schema";
 
 function toSnakeCase(obj: Record<string, any>): Record<string, any> {
@@ -358,6 +359,13 @@ export interface IStorage {
   getWebsiteContent(): Promise<WebsiteContent[]>;
   getWebsiteContentBySection(section: string): Promise<WebsiteContent[]>;
   upsertWebsiteContent(section: string, key: string, value: any, updatedBy?: string): Promise<WebsiteContent>;
+
+  // Payment Requests
+  getPaymentRequests(): Promise<PaymentRequest[]>;
+  getPaymentRequest(id: string): Promise<PaymentRequest | undefined>;
+  createPaymentRequest(request: InsertPaymentRequest): Promise<PaymentRequest>;
+  updatePaymentRequest(id: string, updates: Partial<InsertPaymentRequest>): Promise<PaymentRequest | undefined>;
+  deletePaymentRequest(id: string): Promise<boolean>;
 }
 
 export class Storage implements IStorage {
@@ -1769,6 +1777,32 @@ export class Storage implements IStorage {
       { onConflict: 'section,key' }
     ).select().single();
     return toCamelCase<WebsiteContent>(data!);
+  }
+
+  // Payment Requests
+  async getPaymentRequests(): Promise<PaymentRequest[]> {
+    const { data } = await supabase.from('payment_requests').select('*').is('deleted_at', null).order('created_at', { ascending: false });
+    return toCamelCaseArray<PaymentRequest>(data ?? []);
+  }
+
+  async getPaymentRequest(id: string): Promise<PaymentRequest | undefined> {
+    const { data } = await supabase.from('payment_requests').select('*').eq('id', id).single();
+    return data ? toCamelCase<PaymentRequest>(data) : undefined;
+  }
+
+  async createPaymentRequest(request: InsertPaymentRequest): Promise<PaymentRequest> {
+    const { data } = await supabase.from('payment_requests').insert(toSnakeCase(request as any)).select().single();
+    return toCamelCase<PaymentRequest>(data!);
+  }
+
+  async updatePaymentRequest(id: string, updates: Partial<InsertPaymentRequest>): Promise<PaymentRequest | undefined> {
+    const { data } = await supabase.from('payment_requests').update({ ...toSnakeCase(updates as any), updated_at: new Date() }).eq('id', id).select().single();
+    return data ? toCamelCase<PaymentRequest>(data) : undefined;
+  }
+
+  async deletePaymentRequest(id: string): Promise<boolean> {
+    const { error } = await supabase.from('payment_requests').update({ deleted_at: new Date() }).eq('id', id);
+    return !error;
   }
 }
 

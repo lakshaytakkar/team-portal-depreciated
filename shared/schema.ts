@@ -1549,3 +1549,41 @@ export const insertWebsiteContentSchema = createInsertSchema(websiteContent).omi
 
 export type InsertWebsiteContent = z.infer<typeof insertWebsiteContentSchema>;
 export type WebsiteContent = typeof websiteContent.$inferSelect;
+
+// Payment Requests
+export const paymentRequests = pgTable("payment_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email"),
+  customerPhone: text("customer_phone"),
+  amount: numeric("amount").notNull(),
+  currency: text("currency").notNull().default("INR"),
+  description: text("description").notNull(),
+  receivingCompany: text("receiving_company").notNull().default("Startup Squad Pvt Ltd"),
+  methods: text("methods").array().notNull().default(sql`'{}'`),
+  razorpayLinkId: text("razorpay_link_id"),
+  razorpayLinkUrl: text("razorpay_link_url"),
+  razorpayLinkStatus: text("razorpay_link_status"),
+  upiAddress: text("upi_address"),
+  bankAccountNo: text("bank_account_no"),
+  status: text("status").notNull().default("pending"),
+  paymentScreenshotUrl: text("payment_screenshot_url"),
+  paymentProofNote: text("payment_proof_note"),
+  referenceId: text("reference_id"),
+  notes: text("notes"),
+  createdBy: varchar("created_by"),
+  createdByName: text("created_by_name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  paidAt: timestamp("paid_at"),
+  deletedAt: timestamp("deleted_at"),
+});
+
+export const insertPaymentRequestSchema = createInsertSchema(paymentRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPaymentRequest = z.infer<typeof insertPaymentRequestSchema>;
+export type PaymentRequest = typeof paymentRequests.$inferSelect;

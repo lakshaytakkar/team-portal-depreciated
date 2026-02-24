@@ -4457,128 +4457,164 @@ cs@suprans.in`;
     res.json(result);
   });
 
-  // ============== RAZORPAY PAYMENT LINKS ==============
+  // ============== PAYMENT REQUESTS (Collect Payment) ==============
 
-  app.get("/api/payment-links", requireAuth, async (req, res, next) => {
-    try {
-      const Razorpay = (await import('razorpay')).default;
-      const razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID!,
-        key_secret: process.env.RAZORPAY_KEY_SECRET!,
-      });
-
-      const links = await razorpay.paymentLink.fetchAll({
-        count: 100,
-      });
-
-      res.json(links);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.get("/api/payment-links/:id", requireAuth, async (req, res, next) => {
-    try {
-      const Razorpay = (await import('razorpay')).default;
-      const razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID!,
-        key_secret: process.env.RAZORPAY_KEY_SECRET!,
-      });
-
-      const link = await razorpay.paymentLink.fetch(req.params.id);
-      res.json(link);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  const createPaymentLinkSchema = z.object({
+  const createPaymentRequestSchema = z.object({
+    customerName: z.string().min(1, "Customer name is required"),
+    customerEmail: z.string().email().optional().or(z.literal("")),
+    customerPhone: z.string().optional(),
     amount: z.number().positive("Amount must be positive"),
     currency: z.string().default("INR"),
     description: z.string().min(1, "Description is required"),
-    customerName: z.string().optional(),
-    customerEmail: z.string().email().optional().or(z.literal("")),
-    customerPhone: z.string().optional(),
-    expireBy: z.string().optional(),
-    notifySms: z.boolean().default(false),
-    notifyEmail: z.boolean().default(false),
+    receivingCompany: z.string().default("Startup Squad Pvt Ltd"),
+    methods: z.array(z.enum(["upi_qr", "bank_details", "razorpay_link"])).min(1, "Select at least one method"),
     referenceId: z.string().optional(),
-    isUpi: z.boolean().default(false),
+    notes: z.string().optional(),
   });
 
-  app.post("/api/payment-links", requireAuth, requireRole("superadmin"), async (req, res, next) => {
+  app.get("/api/payment-requests", requireAuth, async (req, res, next) => {
     try {
-      const parsed = createPaymentLinkSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: fromError(parsed.error).toString() });
-      }
-      const { amount, currency, description, customerName, customerEmail, customerPhone, expireBy, notifySms, notifyEmail, referenceId, isUpi } = parsed.data;
-
-      const Razorpay = (await import('razorpay')).default;
-      const razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID!,
-        key_secret: process.env.RAZORPAY_KEY_SECRET!,
-      });
-
-      const linkPayload: any = {
-        amount: Math.round(amount * 100),
-        currency,
-        description,
-        notify: {
-          sms: notifySms,
-          email: notifyEmail,
-        },
-        notes: {
-          created_by: (req.user as User).name,
-          created_by_email: (req.user as User).email,
-        },
-      };
-
-      if (customerName || customerEmail || customerPhone) {
-        linkPayload.customer = {};
-        if (customerName) linkPayload.customer.name = customerName;
-        if (customerEmail) linkPayload.customer.email = customerEmail;
-        if (customerPhone) linkPayload.customer.contact = customerPhone;
-      }
-
-      if (expireBy) {
-        linkPayload.expire_by = Math.floor(new Date(expireBy).getTime() / 1000);
-      }
-
-      if (referenceId) {
-        linkPayload.reference_id = referenceId;
-      }
-
-      if (isUpi) {
-        linkPayload.upi_link = true;
-      }
-
-      const link = await razorpay.paymentLink.create(linkPayload);
-      res.json(link);
+      const requests = await storage.getPaymentRequests();
+      res.json(requests);
     } catch (error) {
       next(error);
     }
   });
 
-  const notifySchema = z.object({
-    medium: z.enum(["sms", "email"]),
+  app.get("/api/payment-requests/:id", requireAuth, async (req, res, next) => {
+    try {
+      const request = await storage.getPaymentRequest(req.params.id);
+      if (!request) return res.status(404).json({ message: "Payment request not found" });
+      res.json(request);
+    } catch (error) {
+      next(error);
+    }
   });
 
-  app.post("/api/payment-links/:id/notify", requireAuth, requireRole("superadmin"), async (req, res, next) => {
+  app.post("/api/payment-requests", requireAuth, async (req, res, next) => {
     try {
-      const parsed = notifySchema.safeParse(req.body);
+      const parsed = createPaymentRequestSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res.status(400).json({ message: "Medium must be 'sms' or 'email'" });
+        return res.status(400).json({ message: fromError(parsed.error).toString() });
+      }
+      const data = parsed.data;
+      const user = req.user as User;
+
+      const requestData: any = {
+        customerName: data.customerName,
+        customerEmail: data.customerEmail || null,
+        customerPhone: data.customerPhone || null,
+        amount: String(data.amount),
+        currency: data.currency,
+        description: data.description,
+        receivingCompany: data.receivingCompany,
+        methods: data.methods,
+        referenceId: data.referenceId || null,
+        notes: data.notes || null,
+        createdBy: user.id,
+        createdByName: user.name,
+        status: "pending",
+      };
+
+      if (data.receivingCompany === "Startup Squad Pvt Ltd") {
+        requestData.upiAddress = "8059153883@pthdfc";
+        requestData.bankAccountNo = "9306566900";
       }
 
-      const Razorpay = (await import('razorpay')).default;
-      const razorpay = new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID!,
-        key_secret: process.env.RAZORPAY_KEY_SECRET!,
-      });
+      if (data.methods.includes("razorpay_link")) {
+        try {
+          const Razorpay = (await import('razorpay')).default;
+          const razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID!,
+            key_secret: process.env.RAZORPAY_KEY_SECRET!,
+          });
 
-      const result = await razorpay.paymentLink.notifyBy(req.params.id, parsed.data.medium);
+          const linkPayload: any = {
+            amount: Math.round(data.amount * 100),
+            currency: data.currency || "INR",
+            description: data.description,
+            notify: { sms: false, email: false },
+            notes: {
+              created_by: user.name,
+              created_by_email: user.email,
+            },
+          };
+
+          if (data.customerName || data.customerEmail || data.customerPhone) {
+            linkPayload.customer = {};
+            if (data.customerName) linkPayload.customer.name = data.customerName;
+            if (data.customerEmail) linkPayload.customer.email = data.customerEmail;
+            if (data.customerPhone) linkPayload.customer.contact = data.customerPhone;
+          }
+
+          if (data.referenceId) linkPayload.reference_id = data.referenceId;
+
+          const link = await razorpay.paymentLink.create(linkPayload);
+          requestData.razorpayLinkId = link.id;
+          requestData.razorpayLinkUrl = link.short_url;
+          requestData.razorpayLinkStatus = link.status;
+        } catch (rzpError: any) {
+          console.error("Razorpay link creation failed:", rzpError.message);
+        }
+      }
+
+      const result = await storage.createPaymentRequest(requestData);
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const updatePaymentStatusSchema = z.object({
+    status: z.enum(["pending", "paid", "cancelled"]),
+  });
+
+  app.patch("/api/payment-requests/:id", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = updatePaymentStatusSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Only status updates are allowed (pending, paid, cancelled)" });
+      }
+      const updates: any = { status: parsed.data.status };
+      if (parsed.data.status === "paid") updates.paidAt = new Date();
+      const result = await storage.updatePaymentRequest(req.params.id, updates);
+      if (!result) return res.status(404).json({ message: "Payment request not found" });
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const uploadScreenshotSchema = z.object({
+    screenshotUrl: z.string().min(1, "Screenshot URL is required"),
+    note: z.string().optional(),
+  });
+
+  app.post("/api/payment-requests/:id/upload-screenshot", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = uploadScreenshotSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: fromError(parsed.error).toString() });
+      }
+
+      const result = await storage.updatePaymentRequest(req.params.id, {
+        paymentScreenshotUrl: parsed.data.screenshotUrl,
+        paymentProofNote: parsed.data.note || null,
+        status: "paid",
+        paidAt: new Date() as any,
+      });
+      if (!result) return res.status(404).json({ message: "Payment request not found" });
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/payment-requests/:id", requireAuth, async (req, res, next) => {
+    try {
+      const success = await storage.deletePaymentRequest(req.params.id);
+      if (!success) return res.status(404).json({ message: "Payment request not found" });
+      res.json({ message: "Deleted" });
     } catch (error) {
       next(error);
     }
