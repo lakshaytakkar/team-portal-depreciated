@@ -1854,8 +1854,9 @@ export class Storage implements IStorage {
   }
 
   async createBookingType(bt: InsertBookingType): Promise<BookingType> {
-    const { data } = await supabase.from('booking_types').insert(toSnakeCase(bt as any)).select().single();
-    return toCamelCase<BookingType>(data!);
+    const { data, error } = await supabase.from('booking_types').insert(toSnakeCase(bt as any)).select().single();
+    if (error) throw new Error(`Failed to create booking type: ${error.message}`);
+    return toCamelCase<BookingType>(data);
   }
 
   async updateBookingType(id: string, updates: Partial<InsertBookingType>): Promise<BookingType | undefined> {
