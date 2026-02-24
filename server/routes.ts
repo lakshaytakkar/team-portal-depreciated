@@ -4630,5 +4630,364 @@ cs@suprans.in`;
     }
   });
 
+  // ============== SCHEDULING & BOOKING SYSTEM ==============
+
+  // --- Booking Types ---
+  const createBookingTypeSchema = z.object({
+    title: z.string().min(1),
+    slug: z.string().min(1),
+    description: z.string().optional(),
+    duration: z.number().int().positive().default(30),
+    color: z.string().optional(),
+    price: z.number().int().min(0).default(0),
+    currency: z.string().default("INR"),
+    location: z.string().optional(),
+    bufferBefore: z.number().int().min(0).default(0),
+    bufferAfter: z.number().int().min(0).default(10),
+    maxBookingsPerDay: z.number().int().positive().optional(),
+    requiresApproval: z.boolean().default(false),
+    isActive: z.boolean().default(true),
+  });
+
+  app.get("/api/booking-types", requireAuth, async (req, res, next) => {
+    try {
+      const userId = req.query.userId as string | undefined;
+      const types = await storage.getBookingTypes(userId);
+      res.json(types);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/booking-types/:id", requireAuth, async (req, res, next) => {
+    try {
+      const bt = await storage.getBookingType(req.params.id);
+      if (!bt) return res.status(404).json({ message: "Booking type not found" });
+      res.json(bt);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/booking-types", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = createBookingTypeSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).toString() });
+      const user = req.user as User;
+      const result = await storage.createBookingType({ ...parsed.data, userId: user.id });
+      res.json(result);
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/booking-types/:id", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = createBookingTypeSchema.partial().safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).toString() });
+      const user = req.user as User;
+      const existing = await storage.getBookingType(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Booking type not found" });
+      if (existing.userId !== user.id && user.role !== "superadmin") {
+        return res.status(403).json({ message: "Not authorized to update this booking type" });
+      }
+      const result = await storage.updateBookingType(req.params.id, parsed.data);
+      res.json(result);
+    } catch (error) { next(error); }
+  });
+
+  app.delete("/api/booking-types/:id", requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user as User;
+      const existing = await storage.getBookingType(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Booking type not found" });
+      if (existing.userId !== user.id && user.role !== "superadmin") {
+        return res.status(403).json({ message: "Not authorized to delete this booking type" });
+      }
+      const success = await storage.deleteBookingType(req.params.id);
+      res.json({ message: "Deleted" });
+    } catch (error) { next(error); }
+  });
+
+  // --- Availability ---
+  app.get("/api/availability/schedules", requireAuth, async (req, res, next) => {
+    try {
+      const userId = (req.query.userId as string) || (req.user as User).id;
+      const schedules = await storage.getAvailabilitySchedules(userId);
+      res.json(schedules);
+    } catch (error) { next(error); }
+  });
+
+  const setAvailabilitySchema = z.object({
+    schedules: z.array(z.object({
+      dayOfWeek: z.number().int().min(0).max(6),
+      startTime: z.string(),
+      endTime: z.string(),
+      isActive: z.boolean().default(true),
+    })),
+  });
+
+  app.put("/api/availability/schedules", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = setAvailabilitySchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).toString() });
+      const userId = (req.user as User).id;
+      const result = await storage.setAvailabilitySchedules(userId, parsed.data.schedules.map(s => ({ ...s, userId })));
+      res.json(result);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/availability/overrides", requireAuth, async (req, res, next) => {
+    try {
+      const userId = (req.query.userId as string) || (req.user as User).id;
+      const overrides = await storage.getAvailabilityOverrides(userId, req.query.from as string, req.query.to as string);
+      res.json(overrides);
+    } catch (error) { next(error); }
+  });
+
+  const createOverrideSchema = z.object({
+    date: z.string(),
+    isAvailable: z.boolean().default(false),
+    startTime: z.string().optional(),
+    endTime: z.string().optional(),
+    reason: z.string().optional(),
+  });
+
+  app.post("/api/availability/overrides", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = createOverrideSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).toString() });
+      const userId = (req.user as User).id;
+      const result = await storage.createAvailabilityOverride({ ...parsed.data, userId });
+      res.json(result);
+    } catch (error) { next(error); }
+  });
+
+  app.delete("/api/availability/overrides/:id", requireAuth, async (req, res, next) => {
+    try {
+      const success = await storage.deleteAvailabilityOverride(req.params.id);
+      if (!success) return res.status(404).json({ message: "Override not found" });
+      res.json({ message: "Deleted" });
+    } catch (error) { next(error); }
+  });
+
+  // --- Bookings (authenticated) ---
+  app.get("/api/bookings", requireAuth, async (req, res, next) => {
+    try {
+      const options: any = {};
+      if (req.query.hostUserId) options.hostUserId = req.query.hostUserId;
+      if (req.query.status) options.status = req.query.status;
+      if (req.query.from) options.from = req.query.from;
+      if (req.query.to) options.to = req.query.to;
+      const bookings = await storage.getBookings(options);
+      res.json(bookings);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/bookings/:id", requireAuth, async (req, res, next) => {
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) return res.status(404).json({ message: "Booking not found" });
+      res.json(booking);
+    } catch (error) { next(error); }
+  });
+
+  const updateBookingSchema = z.object({
+    status: z.enum(["confirmed", "completed", "cancelled", "no_show", "rescheduled"]).optional(),
+    internalNotes: z.string().optional(),
+    cancellationReason: z.string().optional(),
+    meetingLink: z.string().optional(),
+  });
+
+  app.patch("/api/bookings/:id", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = updateBookingSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).toString() });
+      const user = req.user as User;
+      const existing = await storage.getBooking(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Booking not found" });
+      if (existing.hostUserId !== user.id && user.role !== "superadmin") {
+        return res.status(403).json({ message: "Not authorized to update this booking" });
+      }
+      const updates: any = { ...parsed.data };
+      if (parsed.data.status === "completed") updates.completedAt = new Date();
+      const result = await storage.updateBooking(req.params.id, updates);
+      res.json(result);
+    } catch (error) { next(error); }
+  });
+
+  // --- Public Booking Endpoints (no auth) ---
+  app.get("/api/public/booking-types/:slug", async (req, res, next) => {
+    try {
+      const bt = await storage.getBookingTypeBySlug(req.params.slug);
+      if (!bt) return res.status(404).json({ message: "Booking type not found" });
+      const host = await storage.getUser(bt.userId);
+      res.json({
+        ...bt,
+        hostName: host?.name || "Team Member",
+        hostAvatar: host?.avatar || null,
+        hostEmail: host?.email || null,
+      });
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/public/availability/:slug/:date", async (req, res, next) => {
+    try {
+      const { slug, date } = req.params;
+      const bt = await storage.getBookingTypeBySlug(slug);
+      if (!bt) return res.status(404).json({ message: "Booking type not found" });
+
+      const dayOfWeek = new Date(date + "T12:00:00Z").getUTCDay();
+      const schedules = await storage.getAvailabilitySchedules(bt.userId);
+      const daySchedule = schedules.filter(s => s.dayOfWeek === dayOfWeek && s.isActive);
+
+      const overrides = await storage.getAvailabilityOverrides(bt.userId, date, date);
+      const override = overrides[0];
+
+      if (override && !override.isAvailable) {
+        return res.json({ slots: [], blocked: true, reason: override.reason });
+      }
+
+      let timeRanges: { start: string; end: string }[] = [];
+      if (override && override.isAvailable && override.startTime && override.endTime) {
+        timeRanges = [{ start: override.startTime, end: override.endTime }];
+      } else {
+        timeRanges = daySchedule.map(s => ({ start: s.startTime, end: s.endTime }));
+      }
+
+      if (timeRanges.length === 0) {
+        return res.json({ slots: [], blocked: false });
+      }
+
+      const existingBookings = await storage.getBookingsForSlotCheck(bt.userId, date);
+      const duration = bt.duration;
+      const bufferBefore = bt.bufferBefore || 0;
+      const bufferAfter = bt.bufferAfter || 0;
+      const slots: string[] = [];
+
+      for (const range of timeRanges) {
+        const [startH, startM] = range.start.split(":").map(Number);
+        const [endH, endM] = range.end.split(":").map(Number);
+        let currentMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+
+        while (currentMinutes + duration <= endMinutes) {
+          const slotStart = `${String(Math.floor(currentMinutes / 60)).padStart(2, "0")}:${String(currentMinutes % 60).padStart(2, "0")}`;
+          const slotEndMin = currentMinutes + duration;
+          const slotEnd = `${String(Math.floor(slotEndMin / 60)).padStart(2, "0")}:${String(slotEndMin % 60).padStart(2, "0")}`;
+
+          const slotStartDt = new Date(`${date}T${slotStart}:00+05:30`);
+          const slotEndDt = new Date(`${date}T${slotEnd}:00+05:30`);
+          const bufferStartDt = new Date(slotStartDt.getTime() - bufferBefore * 60000);
+          const bufferEndDt = new Date(slotEndDt.getTime() + bufferAfter * 60000);
+
+          const hasConflict = existingBookings.some(b => {
+            const bStart = new Date(b.startTime);
+            const bEnd = new Date(b.endTime);
+            return bufferStartDt < bEnd && bufferEndDt > bStart;
+          });
+
+          if (!hasConflict && slotStartDt > new Date()) {
+            slots.push(slotStart);
+          }
+
+          currentMinutes += duration + bufferAfter;
+        }
+      }
+
+      if (bt.maxBookingsPerDay) {
+        const todayCount = existingBookings.length;
+        if (todayCount >= bt.maxBookingsPerDay) {
+          return res.json({ slots: [], blocked: true, reason: "Max bookings reached for this day" });
+        }
+      }
+
+      res.json({ slots, blocked: false });
+    } catch (error) { next(error); }
+  });
+
+  const publicCreateBookingSchema = z.object({
+    customerName: z.string().min(1),
+    customerEmail: z.string().email(),
+    customerPhone: z.string().optional(),
+    date: z.string(),
+    time: z.string(),
+    customerNotes: z.string().optional(),
+  });
+
+  app.post("/api/public/book/:slug", async (req, res, next) => {
+    try {
+      const parsed = publicCreateBookingSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).toString() });
+      const { slug } = req.params;
+      const { customerName, customerEmail, customerPhone, date, time, customerNotes } = parsed.data;
+
+      const bt = await storage.getBookingTypeBySlug(slug);
+      if (!bt) return res.status(404).json({ message: "Booking type not found" });
+
+      const startTime = new Date(`${date}T${time}:00+05:30`);
+      const endTime = new Date(startTime.getTime() + bt.duration * 60000);
+
+      if (startTime <= new Date()) {
+        return res.status(400).json({ message: "Cannot book a time in the past" });
+      }
+
+      const crypto = await import("crypto");
+      const cancelToken = crypto.randomBytes(32).toString("hex");
+
+      const booking = await storage.createBooking({
+        bookingTypeId: bt.id,
+        hostUserId: bt.userId,
+        customerName,
+        customerEmail,
+        customerPhone: customerPhone || null,
+        startTime,
+        endTime,
+        status: bt.requiresApproval ? "pending" : "confirmed",
+        customerNotes: customerNotes || null,
+        cancelToken,
+        meetingLink: null,
+        internalNotes: null,
+        cancellationReason: null,
+        rescheduledFromId: null,
+        paymentRequestId: null,
+        completedAt: null,
+      });
+
+      const host = await storage.getUser(bt.userId);
+
+      res.json({
+        ...booking,
+        bookingType: bt,
+        hostName: host?.name || "Team Member",
+      });
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/public/booking/:id", async (req, res, next) => {
+    try {
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) return res.status(404).json({ message: "Booking not found" });
+      const bt = await storage.getBookingType(booking.bookingTypeId);
+      const host = await storage.getUser(booking.hostUserId);
+      res.json({
+        ...booking,
+        bookingType: bt,
+        hostName: host?.name || "Team Member",
+        hostAvatar: host?.avatar || null,
+      });
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/public/booking/:id/cancel", async (req, res, next) => {
+    try {
+      const { cancelToken, reason } = req.body;
+      const booking = await storage.getBooking(req.params.id);
+      if (!booking) return res.status(404).json({ message: "Booking not found" });
+      if (booking.cancelToken !== cancelToken) return res.status(403).json({ message: "Invalid cancel token" });
+      if (booking.status === "cancelled") return res.status(400).json({ message: "Already cancelled" });
+
+      const result = await storage.updateBooking(req.params.id, {
+        status: "cancelled",
+        cancellationReason: reason || "Cancelled by customer",
+      });
+      res.json(result);
+    } catch (error) { next(error); }
+  });
+
   return httpServer;
 }

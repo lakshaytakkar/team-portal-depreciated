@@ -99,6 +99,14 @@ export const teams: Team[] = [
         ]
       },
       {
+        label: "Scheduling",
+        items: [
+          { href: "/team/bookings", icon: Calendar, label: "My Bookings" },
+          { href: "/team/bookings/availability", icon: CalendarCheck, label: "My Availability" },
+          { href: "/team/bookings/types", icon: CalendarDays, label: "Booking Types" },
+        ]
+      },
+      {
         label: "Resources",
         items: [
           { href: "/team/resources/templates", icon: FileText, label: "Templates" },
@@ -128,6 +136,15 @@ export const teams: Team[] = [
           { href: "/team/pipeline", icon: KanbanSquare, label: "Booking Pipeline" },
           { href: "/team/admin/assignments", icon: UserCheck, label: "Assignments" },
           { href: "/team/payment-links", icon: Link2, label: "Payment Links" },
+        ]
+      },
+      {
+        label: "Scheduling",
+        items: [
+          { href: "/team/bookings", icon: Calendar, label: "My Bookings" },
+          { href: "/team/bookings/availability", icon: CalendarCheck, label: "My Availability" },
+          { href: "/team/bookings/types", icon: CalendarDays, label: "Booking Types" },
+          { href: "/team/admin/bookings", icon: Users, label: "All Team Bookings" },
         ]
       },
       {
@@ -1112,6 +1129,14 @@ export const teams: Team[] = [
         ]
       },
       {
+        label: "Scheduling",
+        items: [
+          { href: "/team/bookings", icon: Calendar, label: "My Bookings" },
+          { href: "/team/bookings/availability", icon: CalendarCheck, label: "My Availability" },
+          { href: "/team/bookings/types", icon: CalendarDays, label: "Booking Types" },
+        ]
+      },
+      {
         label: "Resources",
         items: [
           { href: "/team/resources/templates", icon: FileText, label: "Templates" },
@@ -1141,6 +1166,15 @@ export const teams: Team[] = [
           { href: "/team/pipeline", icon: KanbanSquare, label: "Sales Pipeline" },
           { href: "/team/admin/assignments", icon: UserCheck, label: "Assignments" },
           { href: "/team/payment-links", icon: Link2, label: "Payment Links" },
+        ]
+      },
+      {
+        label: "Scheduling",
+        items: [
+          { href: "/team/bookings", icon: Calendar, label: "My Bookings" },
+          { href: "/team/bookings/availability", icon: CalendarCheck, label: "My Availability" },
+          { href: "/team/bookings/types", icon: CalendarDays, label: "Booking Types" },
+          { href: "/team/admin/bookings", icon: Users, label: "All Team Bookings" },
         ]
       },
       {

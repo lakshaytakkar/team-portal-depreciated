@@ -8,6 +8,7 @@ A comprehensive team portal and CRM system for Suprans Business Consulting. The 
 - **Faire Wholesale**: Wholesale order management, product catalog, suppliers, and store management
 - **LLC Clients**: LLC formation tracking, document management, bank applications, and client timeline
 - **Public Website**: Company information, services, travel packages, and contact forms
+- **Scheduling System**: In-house booking/scheduling (like Calendly) with booking types, availability, public booking pages, and team analytics
 
 ## User Credentials
 All users have password: **Suprans@123**
@@ -74,6 +75,7 @@ shared/
 - HR: hr_employees, candidates, job_openings, interviews, attendance, leave_requests
 - Faire: faire_stores, faire_suppliers, faire_products, faire_product_variants, faire_orders, faire_order_items, faire_shipments
 - LLC: llc_banks, llc_document_types, llc_clients, llc_client_documents, llc_client_timeline
+- Scheduling: booking_types, availability_schedules, availability_overrides, bookings, booking_reminders
 
 ## Routes
 - `/` - Public homepage
@@ -92,9 +94,24 @@ shared/
 - `/team/faire/products` - Faire product catalog
 - `/team/faire/stores` - Faire store management
 - `/team/faire/suppliers` - Faire supplier management
+- `/team/bookings` - My bookings
+- `/team/bookings/types` - Booking types management
+- `/team/bookings/availability` - Availability settings
+- `/team/admin/bookings` - All team bookings (manager view)
+- `/book/:slug` - Public booking page
 - `/team/admin/*` - Admin pages (superadmin only)
 
 ## API Endpoints
+### Scheduling & Bookings
+- `GET/POST /api/booking-types` - List/create booking types
+- `GET/PATCH/DELETE /api/booking-types/:id` - Get/update/delete booking type
+- `GET/PUT /api/availability` - Get/set availability schedule
+- `GET/POST/DELETE /api/availability/overrides` - Manage date overrides
+- `GET/POST /api/bookings` - List/create bookings
+- `PATCH /api/bookings/:id/status` - Update booking status
+- `GET /api/public/booking/:slug` - Public booking type info
+- `GET /api/public/booking/:slug/slots` - Available time slots
+- `POST /api/public/booking/:slug/book` - Create public booking
 ### Faire Wholesale
 - `GET/POST /api/faire/stores` - List/create stores
 - `GET/PATCH/DELETE /api/faire/stores/:id` - Get/update/delete store
@@ -159,7 +176,17 @@ shared/
   - Redesigned header (h-20, search, notifications, theme toggle)
   - All pages converted from hardcoded hex colors to semantic tokens
   - Consistent typography and spacing patterns
-- Database tables expanded to 46+ tables
+- February 24, 2026: Added Scheduling & Booking System
+  - 5 new tables: booking_types, availability_schedules, availability_overrides, bookings, booking_reminders
+  - Booking Types: Create meeting types with custom duration, slug, price, buffer time, approval settings
+  - Availability: Weekly schedule management with day-specific hours and date override support
+  - Public Booking: `/book/:slug` page for customers to pick date/time and book meetings
+  - My Bookings: View upcoming/past bookings with status management (confirm/complete/cancel/no-show)
+  - All Team Bookings: Manager view with per-rep analytics and team-wide booking stats
+  - WhatsApp sharing and .ics calendar download for bookings
+  - API: Full CRUD for booking types, availability, bookings with slot calculation
+  - Sidebar nav added to Travel-Sales and Sales teams
+- Database tables expanded to 51+ tables
 - API routes with Zod validation and CRUD operations
 
 ## Development

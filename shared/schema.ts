@@ -1587,3 +1587,120 @@ export const insertPaymentRequestSchema = createInsertSchema(paymentRequests).om
 
 export type InsertPaymentRequest = z.infer<typeof insertPaymentRequestSchema>;
 export type PaymentRequest = typeof paymentRequests.$inferSelect;
+
+// ========== SCHEDULING & BOOKING SYSTEM ==========
+
+export const bookingTypes = pgTable("booking_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  duration: integer("duration").notNull().default(30),
+  color: text("color").default("#3B82F6"),
+  price: integer("price").default(0),
+  currency: text("currency").default("INR"),
+  location: text("location").default("Google Meet"),
+  bufferBefore: integer("buffer_before").default(0),
+  bufferAfter: integer("buffer_after").default(10),
+  maxBookingsPerDay: integer("max_bookings_per_day"),
+  requiresApproval: boolean("requires_approval").default(false),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertBookingTypeSchema = createInsertSchema(bookingTypes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertBookingType = z.infer<typeof insertBookingTypeSchema>;
+export type BookingType = typeof bookingTypes.$inferSelect;
+
+export const availabilitySchedules = pgTable("availability_schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  dayOfWeek: integer("day_of_week").notNull(),
+  startTime: text("start_time").notNull(),
+  endTime: text("end_time").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAvailabilityScheduleSchema = createInsertSchema(availabilitySchedules).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAvailabilitySchedule = z.infer<typeof insertAvailabilityScheduleSchema>;
+export type AvailabilitySchedule = typeof availabilitySchedules.$inferSelect;
+
+export const availabilityOverrides = pgTable("availability_overrides", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  date: text("date").notNull(),
+  isAvailable: boolean("is_available").default(false).notNull(),
+  startTime: text("start_time"),
+  endTime: text("end_time"),
+  reason: text("reason"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAvailabilityOverrideSchema = createInsertSchema(availabilityOverrides).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAvailabilityOverride = z.infer<typeof insertAvailabilityOverrideSchema>;
+export type AvailabilityOverride = typeof availabilityOverrides.$inferSelect;
+
+export const bookings = pgTable("bookings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookingTypeId: varchar("booking_type_id").notNull().references(() => bookingTypes.id),
+  hostUserId: varchar("host_user_id").notNull().references(() => users.id),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  customerPhone: text("customer_phone"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  status: text("status").notNull().default("confirmed"),
+  meetingLink: text("meeting_link"),
+  customerNotes: text("customer_notes"),
+  internalNotes: text("internal_notes"),
+  cancellationReason: text("cancellation_reason"),
+  rescheduledFromId: varchar("rescheduled_from_id"),
+  paymentRequestId: varchar("payment_request_id"),
+  cancelToken: text("cancel_token"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const insertBookingSchema = createInsertSchema(bookings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type Booking = typeof bookings.$inferSelect;
+
+export const bookingReminders = pgTable("booking_reminders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bookingId: varchar("booking_id").notNull().references(() => bookings.id, { onDelete: 'cascade' }),
+  type: text("type").notNull(),
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  sentAt: timestamp("sent_at"),
+  status: text("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertBookingReminderSchema = createInsertSchema(bookingReminders).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertBookingReminder = z.infer<typeof insertBookingReminderSchema>;
+export type BookingReminder = typeof bookingReminders.$inferSelect;

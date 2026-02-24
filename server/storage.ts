@@ -51,7 +51,12 @@ import {
   type LLCClientDocument, type InsertLLCClientDocument,
   type LLCClientTimeline, type InsertLLCClientTimeline,
   type WebsiteContent, type InsertWebsiteContent,
-  type PaymentRequest, type InsertPaymentRequest
+  type PaymentRequest, type InsertPaymentRequest,
+  type BookingType, type InsertBookingType,
+  type AvailabilitySchedule, type InsertAvailabilitySchedule,
+  type AvailabilityOverride, type InsertAvailabilityOverride,
+  type Booking, type InsertBooking,
+  type BookingReminder, type InsertBookingReminder
 } from "@shared/schema";
 
 function toSnakeCase(obj: Record<string, any>): Record<string, any> {
@@ -366,6 +371,31 @@ export interface IStorage {
   createPaymentRequest(request: InsertPaymentRequest): Promise<PaymentRequest>;
   updatePaymentRequest(id: string, updates: Partial<InsertPaymentRequest>): Promise<PaymentRequest | undefined>;
   deletePaymentRequest(id: string): Promise<boolean>;
+
+  // Booking Types
+  getBookingTypes(userId?: string): Promise<BookingType[]>;
+  getBookingType(id: string): Promise<BookingType | undefined>;
+  getBookingTypeBySlug(slug: string): Promise<BookingType | undefined>;
+  createBookingType(bt: InsertBookingType): Promise<BookingType>;
+  updateBookingType(id: string, updates: Partial<InsertBookingType>): Promise<BookingType | undefined>;
+  deleteBookingType(id: string): Promise<boolean>;
+
+  // Availability Schedules
+  getAvailabilitySchedules(userId: string): Promise<AvailabilitySchedule[]>;
+  setAvailabilitySchedules(userId: string, schedules: InsertAvailabilitySchedule[]): Promise<AvailabilitySchedule[]>;
+
+  // Availability Overrides
+  getAvailabilityOverrides(userId: string, fromDate?: string, toDate?: string): Promise<AvailabilityOverride[]>;
+  createAvailabilityOverride(override: InsertAvailabilityOverride): Promise<AvailabilityOverride>;
+  deleteAvailabilityOverride(id: string): Promise<boolean>;
+
+  // Bookings
+  getBookings(options?: { hostUserId?: string; status?: string; from?: string; to?: string }): Promise<Booking[]>;
+  getBooking(id: string): Promise<Booking | undefined>;
+  getBookingByCancelToken(token: string): Promise<Booking | undefined>;
+  createBooking(booking: InsertBooking): Promise<Booking>;
+  updateBooking(id: string, updates: Partial<InsertBooking>): Promise<Booking | undefined>;
+  getBookingsForSlotCheck(hostUserId: string, date: string): Promise<Booking[]>;
 }
 
 export class Storage implements IStorage {
@@ -1803,6 +1833,114 @@ export class Storage implements IStorage {
   async deletePaymentRequest(id: string): Promise<boolean> {
     const { error } = await supabase.from('payment_requests').update({ deleted_at: new Date() }).eq('id', id);
     return !error;
+  }
+
+  // Booking Types
+  async getBookingTypes(userId?: string): Promise<BookingType[]> {
+    let query = supabase.from('booking_types').select('*').order('created_at', { ascending: false });
+    if (userId) query = query.eq('user_id', userId);
+    const { data } = await query;
+    return toCamelCaseArray<BookingType>(data ?? []);
+  }
+
+  async getBookingType(id: string): Promise<BookingType | undefined> {
+    const { data } = await supabase.from('booking_types').select('*').eq('id', id).single();
+    return data ? toCamelCase<BookingType>(data) : undefined;
+  }
+
+  async getBookingTypeBySlug(slug: string): Promise<BookingType | undefined> {
+    const { data } = await supabase.from('booking_types').select('*').eq('slug', slug).eq('is_active', true).single();
+    return data ? toCamelCase<BookingType>(data) : undefined;
+  }
+
+  async createBookingType(bt: InsertBookingType): Promise<BookingType> {
+    const { data } = await supabase.from('booking_types').insert(toSnakeCase(bt as any)).select().single();
+    return toCamelCase<BookingType>(data!);
+  }
+
+  async updateBookingType(id: string, updates: Partial<InsertBookingType>): Promise<BookingType | undefined> {
+    const { data } = await supabase.from('booking_types').update({ ...toSnakeCase(updates as any), updated_at: new Date() }).eq('id', id).select().single();
+    return data ? toCamelCase<BookingType>(data) : undefined;
+  }
+
+  async deleteBookingType(id: string): Promise<boolean> {
+    const { error } = await supabase.from('booking_types').delete().eq('id', id);
+    return !error;
+  }
+
+  // Availability Schedules
+  async getAvailabilitySchedules(userId: string): Promise<AvailabilitySchedule[]> {
+    const { data } = await supabase.from('availability_schedules').select('*').eq('user_id', userId).eq('is_active', true).order('day_of_week');
+    return toCamelCaseArray<AvailabilitySchedule>(data ?? []);
+  }
+
+  async setAvailabilitySchedules(userId: string, schedules: InsertAvailabilitySchedule[]): Promise<AvailabilitySchedule[]> {
+    await supabase.from('availability_schedules').delete().eq('user_id', userId);
+    if (schedules.length === 0) return [];
+    const rows = schedules.map(s => toSnakeCase({ ...s, userId } as any));
+    const { data } = await supabase.from('availability_schedules').insert(rows).select();
+    return toCamelCaseArray<AvailabilitySchedule>(data ?? []);
+  }
+
+  // Availability Overrides
+  async getAvailabilityOverrides(userId: string, fromDate?: string, toDate?: string): Promise<AvailabilityOverride[]> {
+    let query = supabase.from('availability_overrides').select('*').eq('user_id', userId).order('date');
+    if (fromDate) query = query.gte('date', fromDate);
+    if (toDate) query = query.lte('date', toDate);
+    const { data } = await query;
+    return toCamelCaseArray<AvailabilityOverride>(data ?? []);
+  }
+
+  async createAvailabilityOverride(override: InsertAvailabilityOverride): Promise<AvailabilityOverride> {
+    const { data } = await supabase.from('availability_overrides').insert(toSnakeCase(override as any)).select().single();
+    return toCamelCase<AvailabilityOverride>(data!);
+  }
+
+  async deleteAvailabilityOverride(id: string): Promise<boolean> {
+    const { error } = await supabase.from('availability_overrides').delete().eq('id', id);
+    return !error;
+  }
+
+  // Bookings
+  async getBookings(options?: { hostUserId?: string; status?: string; from?: string; to?: string }): Promise<Booking[]> {
+    let query = supabase.from('bookings').select('*').order('start_time', { ascending: false });
+    if (options?.hostUserId) query = query.eq('host_user_id', options.hostUserId);
+    if (options?.status) query = query.eq('status', options.status);
+    if (options?.from) query = query.gte('start_time', options.from);
+    if (options?.to) query = query.lte('start_time', options.to);
+    const { data } = await query;
+    return toCamelCaseArray<Booking>(data ?? []);
+  }
+
+  async getBooking(id: string): Promise<Booking | undefined> {
+    const { data } = await supabase.from('bookings').select('*').eq('id', id).single();
+    return data ? toCamelCase<Booking>(data) : undefined;
+  }
+
+  async getBookingByCancelToken(token: string): Promise<Booking | undefined> {
+    const { data } = await supabase.from('bookings').select('*').eq('cancel_token', token).single();
+    return data ? toCamelCase<Booking>(data) : undefined;
+  }
+
+  async createBooking(booking: InsertBooking): Promise<Booking> {
+    const { data } = await supabase.from('bookings').insert(toSnakeCase(booking as any)).select().single();
+    return toCamelCase<Booking>(data!);
+  }
+
+  async updateBooking(id: string, updates: Partial<InsertBooking>): Promise<Booking | undefined> {
+    const { data } = await supabase.from('bookings').update({ ...toSnakeCase(updates as any), updated_at: new Date() }).eq('id', id).select().single();
+    return data ? toCamelCase<Booking>(data) : undefined;
+  }
+
+  async getBookingsForSlotCheck(hostUserId: string, date: string): Promise<Booking[]> {
+    const dayStart = `${date}T00:00:00.000Z`;
+    const dayEnd = `${date}T23:59:59.999Z`;
+    const { data } = await supabase.from('bookings').select('*')
+      .eq('host_user_id', hostUserId)
+      .gte('start_time', dayStart)
+      .lte('start_time', dayEnd)
+      .not('status', 'eq', 'cancelled');
+    return toCamelCaseArray<Booking>(data ?? []);
   }
 }
 

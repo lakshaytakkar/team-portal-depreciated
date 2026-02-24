@@ -53,6 +53,10 @@ import FaireProductsPage from "@/pages/faire/products";
 import FaireStoresPage from "@/pages/faire/stores";
 import FaireSuppliersPage from "@/pages/faire/suppliers";
 import PaymentLinksPage from "@/pages/payment-links";
+import BookingTypesPage from "@/pages/bookings/booking-types";
+import AvailabilityPage from "@/pages/bookings/availability";
+import MyBookingsPage from "@/pages/bookings/my-bookings";
+import AllBookingsPage from "@/pages/bookings/all-bookings";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
@@ -68,6 +72,7 @@ import TravelPage from "@/pages/public/travel";
 import TravelDetailPage from "@/pages/public/travel-detail";
 import PublicEventsPage from "@/pages/public/events";
 import PublicEventDetailPage from "@/pages/public/event-detail";
+import PublicBookingPage from "@/pages/bookings/public-booking";
 
 function TeamPortalRouter() {
   const { currentUser, setCurrentUser } = useStore();
@@ -170,6 +175,12 @@ function TeamPortalRouter() {
         {/* Payment Links */}
         <Route path="/team/payment-links" component={PaymentLinksPage} />
 
+        {/* Scheduling & Bookings */}
+        <Route path="/team/bookings" component={MyBookingsPage} />
+        <Route path="/team/bookings/types" component={BookingTypesPage} />
+        <Route path="/team/bookings/availability" component={AvailabilityPage} />
+        <Route path="/team/admin/bookings" component={AllBookingsPage} />
+
         {/* Faire Wholesale Management */}
         <Route path="/team/faire/orders" component={FaireOrdersPage} />
         <Route path="/team/faire/products" component={FaireProductsPage} />
@@ -191,6 +202,16 @@ function Router() {
   // Team portal routes (protected)
   if (location.startsWith('/team')) {
     return <TeamPortalRouter />;
+  }
+
+  // Public booking page (standalone, no header/footer)
+  if (location.startsWith('/book/')) {
+    return (
+      <Switch>
+        <Route path="/book/:slug" component={PublicBookingPage} />
+        <Route component={NotFound} />
+      </Switch>
+    );
   }
 
   // Public routes
