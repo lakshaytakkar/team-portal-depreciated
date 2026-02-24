@@ -101,6 +101,7 @@ export const teams: Team[] = [
       {
         label: "Scheduling",
         items: [
+          { href: "/team/calendar", icon: CalendarDays, label: "Calendar" },
           { href: "/team/bookings", icon: Calendar, label: "My Bookings" },
           { href: "/team/bookings/availability", icon: CalendarCheck, label: "My Availability" },
           { href: "/team/bookings/types", icon: CalendarDays, label: "Booking Types" },
@@ -141,6 +142,7 @@ export const teams: Team[] = [
       {
         label: "Scheduling",
         items: [
+          { href: "/team/calendar", icon: CalendarDays, label: "Calendar" },
           { href: "/team/bookings", icon: Calendar, label: "My Bookings" },
           { href: "/team/bookings/availability", icon: CalendarCheck, label: "My Availability" },
           { href: "/team/bookings/types", icon: CalendarDays, label: "Booking Types" },
@@ -1131,6 +1133,7 @@ export const teams: Team[] = [
       {
         label: "Scheduling",
         items: [
+          { href: "/team/calendar", icon: CalendarDays, label: "Calendar" },
           { href: "/team/bookings", icon: Calendar, label: "My Bookings" },
           { href: "/team/bookings/availability", icon: CalendarCheck, label: "My Availability" },
           { href: "/team/bookings/types", icon: CalendarDays, label: "Booking Types" },
@@ -1171,6 +1174,7 @@ export const teams: Team[] = [
       {
         label: "Scheduling",
         items: [
+          { href: "/team/calendar", icon: CalendarDays, label: "Calendar" },
           { href: "/team/bookings", icon: Calendar, label: "My Bookings" },
           { href: "/team/bookings/availability", icon: CalendarCheck, label: "My Availability" },
           { href: "/team/bookings/types", icon: CalendarDays, label: "Booking Types" },

@@ -57,6 +57,7 @@ import BookingTypesPage from "@/pages/bookings/booking-types";
 import AvailabilityPage from "@/pages/bookings/availability";
 import MyBookingsPage from "@/pages/bookings/my-bookings";
 import AllBookingsPage from "@/pages/bookings/all-bookings";
+import CalendarPage from "@/pages/bookings/calendar";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
@@ -176,6 +177,7 @@ function TeamPortalRouter() {
         <Route path="/team/payment-links" component={PaymentLinksPage} />
 
         {/* Scheduling & Bookings */}
+        <Route path="/team/calendar" component={CalendarPage} />
         <Route path="/team/bookings" component={MyBookingsPage} />
         <Route path="/team/bookings/types" component={BookingTypesPage} />
         <Route path="/team/bookings/availability" component={AvailabilityPage} />
