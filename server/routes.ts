@@ -21,6 +21,7 @@ import {
   type User
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
+import { z } from "zod";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -4454,6 +4455,133 @@ cs@suprans.in`;
     }
     const result = await storage.upsertWebsiteContent(section, key, value, (req.user as any).id);
     res.json(result);
+  });
+
+  // ============== RAZORPAY PAYMENT LINKS ==============
+
+  app.get("/api/payment-links", requireAuth, async (req, res, next) => {
+    try {
+      const Razorpay = (await import('razorpay')).default;
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID!,
+        key_secret: process.env.RAZORPAY_KEY_SECRET!,
+      });
+
+      const links = await razorpay.paymentLink.fetchAll({
+        count: 100,
+      });
+
+      res.json(links);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/payment-links/:id", requireAuth, async (req, res, next) => {
+    try {
+      const Razorpay = (await import('razorpay')).default;
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID!,
+        key_secret: process.env.RAZORPAY_KEY_SECRET!,
+      });
+
+      const link = await razorpay.paymentLink.fetch(req.params.id);
+      res.json(link);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const createPaymentLinkSchema = z.object({
+    amount: z.number().positive("Amount must be positive"),
+    currency: z.string().default("INR"),
+    description: z.string().min(1, "Description is required"),
+    customerName: z.string().optional(),
+    customerEmail: z.string().email().optional().or(z.literal("")),
+    customerPhone: z.string().optional(),
+    expireBy: z.string().optional(),
+    notifySms: z.boolean().default(false),
+    notifyEmail: z.boolean().default(false),
+    referenceId: z.string().optional(),
+    isUpi: z.boolean().default(false),
+  });
+
+  app.post("/api/payment-links", requireAuth, requireRole("superadmin"), async (req, res, next) => {
+    try {
+      const parsed = createPaymentLinkSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: fromError(parsed.error).toString() });
+      }
+      const { amount, currency, description, customerName, customerEmail, customerPhone, expireBy, notifySms, notifyEmail, referenceId, isUpi } = parsed.data;
+
+      const Razorpay = (await import('razorpay')).default;
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID!,
+        key_secret: process.env.RAZORPAY_KEY_SECRET!,
+      });
+
+      const linkPayload: any = {
+        amount: Math.round(amount * 100),
+        currency,
+        description,
+        notify: {
+          sms: notifySms,
+          email: notifyEmail,
+        },
+        notes: {
+          created_by: (req.user as User).name,
+          created_by_email: (req.user as User).email,
+        },
+      };
+
+      if (customerName || customerEmail || customerPhone) {
+        linkPayload.customer = {};
+        if (customerName) linkPayload.customer.name = customerName;
+        if (customerEmail) linkPayload.customer.email = customerEmail;
+        if (customerPhone) linkPayload.customer.contact = customerPhone;
+      }
+
+      if (expireBy) {
+        linkPayload.expire_by = Math.floor(new Date(expireBy).getTime() / 1000);
+      }
+
+      if (referenceId) {
+        linkPayload.reference_id = referenceId;
+      }
+
+      if (isUpi) {
+        linkPayload.upi_link = true;
+      }
+
+      const link = await razorpay.paymentLink.create(linkPayload);
+      res.json(link);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const notifySchema = z.object({
+    medium: z.enum(["sms", "email"]),
+  });
+
+  app.post("/api/payment-links/:id/notify", requireAuth, requireRole("superadmin"), async (req, res, next) => {
+    try {
+      const parsed = notifySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Medium must be 'sms' or 'email'" });
+      }
+
+      const Razorpay = (await import('razorpay')).default;
+      const razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID!,
+        key_secret: process.env.RAZORPAY_KEY_SECRET!,
+      });
+
+      const result = await razorpay.paymentLink.notifyBy(req.params.id, parsed.data.medium);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
   });
 
   app.post("/api/admin/seed-website-content", requireAuth, requireRole("superadmin"), async (req, res, next) => {

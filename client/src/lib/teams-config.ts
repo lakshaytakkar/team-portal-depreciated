@@ -42,6 +42,7 @@ import {
   PiggyBank,
   UserCheck,
   GraduationCap as Training,
+  Link2,
   type LucideIcon
 } from "lucide-react";
 
@@ -126,6 +127,7 @@ export const teams: Team[] = [
           { href: "/team/admin/leads", icon: Users, label: "All Tour Inquiries" },
           { href: "/team/pipeline", icon: KanbanSquare, label: "Booking Pipeline" },
           { href: "/team/admin/assignments", icon: UserCheck, label: "Assignments" },
+          { href: "/team/payment-links", icon: Link2, label: "Payment Links" },
         ]
       },
       {
@@ -233,6 +235,7 @@ export const teams: Team[] = [
         label: "My Work",
         items: [
           { href: "/team/accounts/my-invoices", icon: Receipt, label: "My Invoices" },
+          { href: "/team/payment-links", icon: Link2, label: "Payment Links" },
           { href: "/team/tasks", icon: CheckSquare, label: "My Tasks" },
         ]
       },
@@ -257,6 +260,7 @@ export const teams: Team[] = [
         items: [
           { href: "/team/accounts/invoices", icon: Receipt, label: "All Invoices" },
           { href: "/team/accounts/payments", icon: CreditCard, label: "Payments Received" },
+          { href: "/team/payment-links", icon: Link2, label: "Payment Links" },
           { href: "/team/accounts/vendor-payments", icon: DollarSign, label: "Vendor Payments" },
         ]
       },
@@ -1136,6 +1140,7 @@ export const teams: Team[] = [
           { href: "/team/admin/leads", icon: Users, label: "All Leads" },
           { href: "/team/pipeline", icon: KanbanSquare, label: "Sales Pipeline" },
           { href: "/team/admin/assignments", icon: UserCheck, label: "Assignments" },
+          { href: "/team/payment-links", icon: Link2, label: "Payment Links" },
         ]
       },
       {

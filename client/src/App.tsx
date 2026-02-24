@@ -52,6 +52,7 @@ import FaireOrdersPage from "@/pages/faire/orders";
 import FaireProductsPage from "@/pages/faire/products";
 import FaireStoresPage from "@/pages/faire/stores";
 import FaireSuppliersPage from "@/pages/faire/suppliers";
+import PaymentLinksPage from "@/pages/payment-links";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { useEffect, useState } from "react";
@@ -165,6 +166,9 @@ function TeamPortalRouter() {
         <Route path="/team/admin/services" component={ManageServices} />
         <Route path="/team/admin/training" component={ManageTraining} />
         <Route path="/team/admin/website" component={WebsiteManager} />
+
+        {/* Payment Links */}
+        <Route path="/team/payment-links" component={PaymentLinksPage} />
 
         {/* Faire Wholesale Management */}
         <Route path="/team/faire/orders" component={FaireOrdersPage} />
