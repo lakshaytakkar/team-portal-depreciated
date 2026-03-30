@@ -320,8 +320,9 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
         return updated;
       });
 
-      queryClient.invalidateQueries({ queryKey: ["/api/ai/conversations", convId, "messages"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/ai/conversations"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/ai/conversations", convId, "messages"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/ai/conversations"] });
+      setStreamMessages([]);
     } catch (e: any) {
       setStreamMessages((prev) => {
         const updated = [...prev];
