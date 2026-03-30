@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { Wrench, ChevronDown, ChevronUp } from "lucide-react";
 
-export function ToolCallDisplay({ toolName, args, result }: { toolName: string; args: any; result?: any }) {
+interface ToolCallDisplayProps {
+  toolName?: string;
+  args?: Record<string, unknown>;
+  result?: unknown;
+}
+
+export function ToolCallDisplay({ toolName, args, result }: ToolCallDisplayProps) {
   const [expanded, setExpanded] = useState(false);
+  const displayName = toolName || "Unknown tool";
 
   const toolLabels: Record<string, string> = {
     getSchema: "Inspecting database schema",
-    run_sql_query: "Running SQL query",
-    analyticsQuery: "Running analytics query",
+    queryTable: "Querying CRM data",
     proposeMutation: "Proposing change",
     createRecord: "Creating record",
     updateRecord: "Updating record",
@@ -19,11 +25,11 @@ export function ToolCallDisplay({ toolName, args, result }: { toolName: string; 
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-muted/80 transition-colors"
-        data-testid={`tool-call-${toolName}`}
+        data-testid={`tool-call-${displayName}`}
       >
         <Wrench className="h-3.5 w-3.5 text-primary shrink-0" />
         <span className="text-muted-foreground font-medium flex-1">
-          {toolLabels[toolName] || toolName}
+          {toolLabels[displayName] || displayName}
         </span>
         {expanded ? (
           <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />

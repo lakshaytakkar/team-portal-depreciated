@@ -374,7 +374,7 @@ function getMutationTools(userId: string, userRole: string) {
       description: "Create a new record. Requires a confirmation token from proposeMutation.",
       parameters: z.object({
         table: z.enum(["leads", "tasks", "activities"]).describe("Table to insert into"),
-        data: z.record(z.any()).describe("Record data as key-value pairs"),
+        data: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).describe("Record data as key-value pairs"),
         confirmationToken: z.string().describe("Token from proposeMutation"),
       }),
       execute: async ({ table, data, confirmationToken }) => {
@@ -391,8 +391,8 @@ function getMutationTools(userId: string, userRole: string) {
           const { data: result, error } = await supabase.from(table).insert(data).select().single();
           if (error) return { error: error.message };
           return { success: true, record: result };
-        } catch (e: any) {
-          return { error: e.message };
+        } catch (e: unknown) {
+          return { error: e instanceof Error ? e.message : String(e) };
         }
       },
     }),
@@ -402,7 +402,7 @@ function getMutationTools(userId: string, userRole: string) {
       parameters: z.object({
         table: z.enum(["leads", "tasks", "activities"]).describe("Table to update"),
         id: z.string().describe("Record ID"),
-        data: z.record(z.any()).describe("Fields to update"),
+        data: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])).describe("Fields to update"),
         confirmationToken: z.string().describe("Token from proposeMutation"),
       }),
       execute: async ({ table, id, data, confirmationToken }) => {
@@ -419,8 +419,8 @@ function getMutationTools(userId: string, userRole: string) {
           const { data: result, error } = await supabase.from(table).update(data).eq("id", id).select().single();
           if (error) return { error: error.message };
           return { success: true, record: result };
-        } catch (e: any) {
-          return { error: e.message };
+        } catch (e: unknown) {
+          return { error: e instanceof Error ? e.message : String(e) };
         }
       },
     }),
@@ -446,8 +446,8 @@ function getMutationTools(userId: string, userRole: string) {
           const { error } = await supabase.from(table).delete().eq("id", id);
           if (error) return { error: error.message };
           return { success: true, message: `Record ${id} deleted from ${table}` };
-        } catch (e: any) {
-          return { error: e.message };
+        } catch (e: unknown) {
+          return { error: e instanceof Error ? e.message : String(e) };
         }
       },
     }),
@@ -465,8 +465,8 @@ aiRouter.get("/conversations", async (req: Request, res: Response) => {
 
     if (error) return res.status(500).json({ error: error.message });
     res.json(data || []);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 
@@ -482,8 +482,8 @@ aiRouter.post("/conversations", async (req: Request, res: Response) => {
 
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 
@@ -507,7 +507,7 @@ aiRouter.get("/conversations/search", async (req: Request, res: Response) => {
       .ilike("content", `%${q}%`)
       .limit(50);
 
-    const convIds = new Set((convs || []).map((c: any) => c.id));
+    const convIds = new Set((convs || []).map((c: { id: string }) => c.id));
     if (msgHits) {
       for (const m of msgHits) {
         if (!convIds.has(m.conversation_id)) {
@@ -524,8 +524,8 @@ aiRouter.get("/conversations/search", async (req: Request, res: Response) => {
       .order("updated_at", { ascending: false });
 
     res.json(results || []);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 
@@ -546,8 +546,8 @@ aiRouter.get("/conversations/:id/messages", async (req: Request, res: Response) 
 
     if (error) return res.status(500).json({ error: error.message });
     res.json(data || []);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 
@@ -571,8 +571,8 @@ aiRouter.patch("/conversations/:id", async (req: Request, res: Response) => {
 
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 
@@ -589,8 +589,8 @@ aiRouter.delete("/conversations/:id", async (req: Request, res: Response) => {
     const { error } = await supabase.from("ai_conversations").delete().eq("id", id).eq("user_id", user.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 
@@ -627,8 +627,8 @@ aiRouter.post("/upload", upload.single("file"), async (req: Request, res: Respon
       fileSize: file.size,
       fileContent,
     });
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 
@@ -654,14 +654,15 @@ aiRouter.get("/attachments/:filename", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "File not found" });
     }
 
-    const convId = (attachment as any).ai_messages?.conversation_id;
+    const attachmentWithMsg = attachment as { ai_messages?: { conversation_id: string } };
+    const convId = attachmentWithMsg.ai_messages?.conversation_id;
     if (!convId || !(await verifyConversationOwnership(convId, user.id))) {
       return res.status(404).json({ error: "File not found" });
     }
 
     res.sendFile(filePath);
-  } catch (e: any) {
-    res.status(500).json({ error: e.message });
+  } catch (e: unknown) {
+    res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
 });
 
@@ -800,10 +801,10 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
     }
 
     res.end();
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("AI chat error:", e);
     if (!res.headersSent) {
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
     } else {
       res.end();
     }
