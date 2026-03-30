@@ -469,6 +469,37 @@ aiRouter.post("/upload", upload.single("file"), async (req: Request, res: Respon
   }
 });
 
+aiRouter.get("/attachments/:filename", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as User;
+    const { filename } = req.params;
+
+    const safeName = path.basename(filename);
+    const filePath = path.join(uploadsDir, safeName);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    const { data: attachment } = await supabase
+      .from("ai_attachments")
+      .select("*, ai_messages!inner(conversation_id)")
+      .eq("file_url", `/uploads/ai-attachments/${safeName}`)
+      .single();
+
+    if (attachment) {
+      const convId = (attachment as any).ai_messages?.conversation_id;
+      if (convId && !(await verifyConversationOwnership(convId, user.id))) {
+        return res.status(404).json({ error: "File not found" });
+      }
+    }
+
+    res.sendFile(filePath);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 aiRouter.post("/chat", async (req: Request, res: Response) => {
   try {
     const user = req.user as User;

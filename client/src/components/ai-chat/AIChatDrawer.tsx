@@ -21,18 +21,17 @@ import {
   Bot,
   User,
   ChevronLeft,
-  Wrench,
-  ChevronDown,
-  ChevronUp,
   Zap,
   Search,
   Paperclip,
   FileText,
-  Image as ImageIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
+import { ToolCallDisplay } from "@/components/ai-elements/ToolCallDisplay";
+import { MessageContent } from "@/components/ai-elements/MessageContent";
+import { StreamingShimmer } from "@/components/ai-elements/StreamingShimmer";
 
 interface AiConversation {
   id: string;
@@ -58,132 +57,6 @@ interface StreamMessage {
   isStreaming?: boolean;
   toolInvocations?: any[];
   reasoning?: string;
-}
-
-function ToolCallDisplay({ toolName, args, result }: { toolName: string; args: any; result?: any }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const toolLabels: Record<string, string> = {
-    getSchema: "Inspecting database schema",
-    run_sql_query: "Running SQL query",
-    analyticsQuery: "Running analytics query",
-    createRecord: "Creating record",
-    updateRecord: "Updating record",
-    deleteRecord: "Deleting record",
-  };
-
-  return (
-    <div className="my-2 rounded-lg border bg-muted/50 text-sm overflow-hidden">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-muted/80 transition-colors"
-        data-testid={`tool-call-${toolName}`}
-      >
-        <Wrench className="h-3.5 w-3.5 text-primary shrink-0" />
-        <span className="text-muted-foreground font-medium flex-1">
-          {toolLabels[toolName] || toolName}
-        </span>
-        {expanded ? (
-          <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-        )}
-      </button>
-      {expanded && (
-        <div className="px-3 pb-2 space-y-1">
-          {args && (
-            <pre className="text-xs text-muted-foreground bg-background rounded p-2 overflow-x-auto whitespace-pre-wrap break-all">
-              {typeof args === "string" ? args : JSON.stringify(args, null, 2)}
-            </pre>
-          )}
-          {result && (
-            <pre className="text-xs text-green-600 dark:text-green-400 bg-background rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
-              {typeof result === "string" ? result : JSON.stringify(result, null, 2)}
-            </pre>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MessageContent({ content }: { content: string }) {
-  const parts = content.split(/(```[\s\S]*?```)/g);
-
-  return (
-    <div className="prose prose-sm dark:prose-invert max-w-none break-words">
-      {parts.map((part, i) => {
-        if (part.startsWith("```")) {
-          const match = part.match(/```(\w*)\n?([\s\S]*?)```/);
-          const lang = match?.[1] || "";
-          const code = match?.[2] || part.slice(3, -3);
-          return (
-            <pre key={i} className="bg-muted rounded-lg p-3 text-xs overflow-x-auto my-2">
-              {lang && (
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{lang}</div>
-              )}
-              <code>{code.trim()}</code>
-            </pre>
-          );
-        }
-        const lines = part.split("\n");
-        return (
-          <span key={i}>
-            {lines.map((line, j) => {
-              const tableMatch = line.match(/^\|(.+)\|$/);
-              if (tableMatch) {
-                if (line.match(/^\|[\s-:|]+\|$/)) return null;
-                const cells = tableMatch[1].split("|").map((c) => c.trim());
-                return (
-                  <div key={j} className="flex gap-2 text-xs py-0.5 font-mono">
-                    {cells.map((cell, k) => (
-                      <span key={k} className="flex-1 min-w-0 truncate">{cell}</span>
-                    ))}
-                  </div>
-                );
-              }
-              if (line.startsWith("### ")) return <h3 key={j} className="text-sm font-semibold mt-2 mb-1">{line.slice(4)}</h3>;
-              if (line.startsWith("## ")) return <h2 key={j} className="text-sm font-bold mt-2 mb-1">{line.slice(3)}</h2>;
-              if (line.startsWith("# ")) return <h1 key={j} className="text-base font-bold mt-2 mb-1">{line.slice(2)}</h1>;
-              if (line.startsWith("- ")) return <li key={j} className="ml-3 text-sm">{formatInlineText(line.slice(2))}</li>;
-              if (line.match(/^\d+\.\s/)) return <li key={j} className="ml-3 text-sm list-decimal">{formatInlineText(line.replace(/^\d+\.\s/, ""))}</li>;
-              if (line.trim() === "") return <br key={j} />;
-              return <p key={j} className="text-sm my-0.5 leading-relaxed">{formatInlineText(line)}</p>;
-            })}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-function formatInlineText(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|₹[\d,]+)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) return <strong key={i}>{part.slice(2, -2)}</strong>;
-    if (part.startsWith("*") && part.endsWith("*")) return <em key={i}>{part.slice(1, -1)}</em>;
-    if (part.startsWith("`") && part.endsWith("`")) return <code key={i} className="bg-muted px-1 py-0.5 rounded text-xs">{part.slice(1, -1)}</code>;
-    return part;
-  });
-}
-
-function ShimmerLine({ width = "100%" }: { width?: string }) {
-  return (
-    <div
-      className="h-3 rounded bg-gradient-to-r from-muted via-muted-foreground/10 to-muted animate-pulse"
-      style={{ width }}
-    />
-  );
-}
-
-function StreamingShimmer() {
-  return (
-    <div className="space-y-2 py-1">
-      <ShimmerLine width="90%" />
-      <ShimmerLine width="75%" />
-      <ShimmerLine width="60%" />
-    </div>
-  );
 }
 
 const SUGGESTIONS = [

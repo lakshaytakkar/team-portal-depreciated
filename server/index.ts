@@ -95,7 +95,6 @@ import path from "path";
 
 (async () => {
   app.use("/api/ai", aiRouter);
-  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
