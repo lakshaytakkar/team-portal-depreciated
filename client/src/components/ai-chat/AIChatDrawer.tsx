@@ -192,19 +192,28 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
     setStreamMessages((prev) => [...prev, userMsg, assistantMsg]);
 
     try {
+      let messageToSend = text;
       if (attachment && convId) {
         const formData = new FormData();
         formData.append("file", attachment.file);
         formData.append("conversationId", convId);
         try {
-          await fetch("/api/ai/upload", { method: "POST", body: formData });
+          const uploadRes = await fetch("/api/ai/upload", { method: "POST", body: formData });
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            if (uploadData.fileContent) {
+              messageToSend = `${text}\n\n--- Attached file: ${uploadData.fileName} ---\n${uploadData.fileContent}\n--- End of file ---`;
+            } else {
+              messageToSend = `${text}\n[Attached file: ${uploadData.fileName} (${uploadData.fileType}, ${Math.round((uploadData.fileSize || 0) / 1024)}KB)]`;
+            }
+          }
         } catch {}
       }
 
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: convId, message: text + attachmentNote }),
+        body: JSON.stringify({ conversationId: convId, message: messageToSend }),
       });
 
       if (!res.ok) throw new Error("Chat request failed");

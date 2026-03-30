@@ -91,7 +91,6 @@ app.use((req, res, next) => {
 });
 
 import { aiRouter } from "./ai-chat";
-import path from "path";
 
 (async () => {
   app.use("/api/ai", aiRouter);

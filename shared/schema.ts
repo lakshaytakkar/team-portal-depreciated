@@ -1762,4 +1762,4 @@ export const insertAiAttachmentSchema = createInsertSchema(aiAttachments).omit({
 export type InsertAiAttachment = z.infer<typeof insertAiAttachmentSchema>;
 export type AiAttachment = typeof aiAttachments.$inferSelect;
 
-export { conversations, messages } from "./models/chat";
+

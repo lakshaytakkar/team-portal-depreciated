@@ -431,7 +431,7 @@ aiRouter.post("/upload", upload.single("file"), async (req: Request, res: Respon
   try {
     const user = req.user as User;
     const file = req.file;
-    const { messageId, conversationId } = req.body;
+    const { conversationId } = req.body;
 
     if (!file) return res.status(400).json({ error: "No file uploaded" });
     if (!conversationId) return res.status(400).json({ error: "conversationId is required" });
@@ -440,29 +440,23 @@ aiRouter.post("/upload", upload.single("file"), async (req: Request, res: Respon
       return res.status(404).json({ error: "Conversation not found" });
     }
 
-    const fileUrl = `/uploads/ai-attachments/${file.filename}`;
-
-    if (messageId) {
-      const { data, error } = await supabase
-        .from("ai_attachments")
-        .insert({
-          message_id: messageId,
-          file_name: file.originalname,
-          file_type: file.mimetype,
-          file_url: fileUrl,
-          file_size: file.size,
-        })
-        .select()
-        .single();
-      if (error) return res.status(500).json({ error: error.message });
-      return res.json(data);
+    const storedFilename = file.filename;
+    let fileContent: string | null = null;
+    const textTypes = [".csv", ".txt", ".json"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (textTypes.includes(ext)) {
+      try {
+        const raw = fs.readFileSync(path.join(uploadsDir, storedFilename), "utf-8");
+        fileContent = raw.slice(0, 50000);
+      } catch {}
     }
 
     res.json({
+      storedFilename,
       fileName: file.originalname,
       fileType: file.mimetype,
-      fileUrl,
       fileSize: file.size,
+      fileContent,
     });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
@@ -484,14 +478,16 @@ aiRouter.get("/attachments/:filename", async (req: Request, res: Response) => {
     const { data: attachment } = await supabase
       .from("ai_attachments")
       .select("*, ai_messages!inner(conversation_id)")
-      .eq("file_url", `/uploads/ai-attachments/${safeName}`)
+      .eq("file_url", `/api/ai/attachments/${safeName}`)
       .single();
 
-    if (attachment) {
-      const convId = (attachment as any).ai_messages?.conversation_id;
-      if (convId && !(await verifyConversationOwnership(convId, user.id))) {
-        return res.status(404).json({ error: "File not found" });
-      }
+    if (!attachment) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    const convId = (attachment as any).ai_messages?.conversation_id;
+    if (!convId || !(await verifyConversationOwnership(convId, user.id))) {
+      return res.status(404).json({ error: "File not found" });
     }
 
     res.sendFile(filePath);
