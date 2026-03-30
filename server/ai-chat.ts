@@ -95,15 +95,7 @@ You help the team with:
 - Answering business questions about the CRM data
 - Providing sales insights and recommendations
 
-Database tables available:
-- users (id, name, email, role, phone, avatar, office_id, salary, created_at)
-- leads (id, name, company, phone, email, service, value, stage, assigned_to, team_id, source, address, rating, tags, temperature, next_follow_up, won_amount, won_date, lost_reason, created_at)
-- activities (id, lead_id, user_id, type, notes, duration, outcome, from_stage, to_stage, created_at)
-- tasks (id, title, description, status, priority, due_date, assigned_to, team_id, lead_id, tags, created_at)
-- team_members (id, user_id, team_id, role, created_at)
-- employees (id, name, role, phone, whatsapp, avatar, is_active, employment_status, joining_date)
-- events (id, name, type, city, venue, date, capacity, status, ticket_price)
-- event_attendees (id, event_id, name, phone, email, company, checked_in, ticket_status)
+Use getSchema to discover which tables and columns are available for your role.
 
 Lead stages: new → contacted → qualified → proposal → negotiation → won / lost
 Task statuses: todo, in_progress, review, done
@@ -111,12 +103,12 @@ Task priorities: low, medium, high
 Lead temperatures: hot, warm, cold
 
 Guidelines:
-- Always use the run_sql_query tool to query real data. Never make up data.
-- When querying, use snake_case column names (e.g., assigned_to, team_id, created_at).
+- Always use the queryTable tool to fetch real data. Specify table, columns, where, orderBy, limit, aggregation, and groupBy as structured parameters. Never write raw SQL.
+- Use snake_case column names (e.g., assigned_to, team_id, created_at).
 - Format numbers and currency in Indian Rupee (₹) format when relevant.
 - Keep responses concise but informative.
 - When showing tabular data, use markdown tables.
-- IMPORTANT: Never execute createRecord, updateRecord, or deleteRecord without first describing what you plan to do and getting confirmation in the conversation. Always explain the change first.
+- IMPORTANT: Never execute createRecord, updateRecord, or deleteRecord without first calling proposeMutation and getting a confirmation token. Always explain the planned change first.
 - For analytics queries, provide clear summaries with key metrics.`;
 }
 
@@ -129,97 +121,160 @@ function isAllowedTable(t: string): t is AllowedTable {
   return (ALLOWED_TABLES as readonly string[]).includes(t);
 }
 
-const ACCESSIBLE_TABLES: Record<string, string[]> = {
-  superadmin: ["leads", "tasks", "activities", "users", "team_members", "employees", "events", "event_attendees", "services", "templates"],
-  manager: ["leads", "tasks", "activities", "team_members", "events", "event_attendees"],
-  sales_executive: ["leads", "tasks", "activities"],
+const ROLE_TABLE_COLUMNS: Record<string, Record<string, string[]>> = {
+  superadmin: {
+    leads: ["id", "name", "email", "phone", "company", "status", "source", "assigned_to", "notes", "created_at", "updated_at", "stage", "value", "priority", "last_contact", "next_follow_up"],
+    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "created_by", "lead_id", "created_at", "updated_at", "completed_at"],
+    activities: ["id", "type", "description", "lead_id", "user_id", "created_at", "metadata"],
+    users: ["id", "name", "email", "role", "team", "created_at", "is_active"],
+    team_members: ["id", "user_id", "team", "role", "joined_at"],
+    employees: ["id", "name", "email", "department", "designation", "joined_at", "is_active"],
+    events: ["id", "title", "description", "start_date", "end_date", "location", "created_by", "created_at"],
+    event_attendees: ["id", "event_id", "user_id", "status"],
+    services: ["id", "name", "description", "price", "category", "is_active"],
+    templates: ["id", "name", "content", "type", "created_by", "created_at"],
+  },
+  manager: {
+    leads: ["id", "name", "email", "phone", "company", "status", "source", "assigned_to", "notes", "created_at", "updated_at", "stage", "value", "priority", "last_contact", "next_follow_up"],
+    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "created_by", "lead_id", "created_at", "updated_at", "completed_at"],
+    activities: ["id", "type", "description", "lead_id", "user_id", "created_at", "metadata"],
+    team_members: ["id", "user_id", "team", "role", "joined_at"],
+    events: ["id", "title", "description", "start_date", "end_date", "location", "created_by", "created_at"],
+    event_attendees: ["id", "event_id", "user_id", "status"],
+  },
+  sales_executive: {
+    leads: ["id", "name", "email", "phone", "company", "status", "source", "assigned_to", "notes", "created_at", "stage", "value", "priority"],
+    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "lead_id", "created_at", "completed_at"],
+    activities: ["id", "type", "description", "lead_id", "user_id", "created_at"],
+  },
 };
 
-const SENSITIVE_COLUMNS = ["password", "salary"];
+const SAFE_IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
 
-function validateQueryTables(query: string, role: string): string | null {
-  const allowedTables = ACCESSIBLE_TABLES[role] || ACCESSIBLE_TABLES.sales_executive;
-  const fromMatches = query.match(/\bFROM\s+(\w+)/gi) || [];
-  const joinMatches = query.match(/\bJOIN\s+(\w+)/gi) || [];
-  const allRefs = [...fromMatches, ...joinMatches];
-  for (const ref of allRefs) {
-    const tableName = ref.replace(/^(FROM|JOIN)\s+/i, "").toLowerCase();
-    if (tableName === "information_schema" || tableName === "pg_catalog") continue;
-    if (!allowedTables.includes(tableName)) {
-      return `Access denied: table '${tableName}' is not accessible for your role.`;
-    }
+function sanitizeIdentifier(name: string): string | null {
+  const lower = name.toLowerCase().trim();
+  return SAFE_IDENTIFIER.test(lower) ? lower : null;
+}
+
+function getColumnsForRole(role: string): Record<string, string[]> {
+  return ROLE_TABLE_COLUMNS[role] || ROLE_TABLE_COLUMNS.sales_executive;
+}
+
+function buildSafeQuery(
+  roleColumns: Record<string, string[]>,
+  table: string,
+  columns: string[] | undefined,
+  where: string | undefined,
+  orderBy: string | undefined,
+  limit: number | undefined,
+  aggregation: string | undefined,
+  groupBy: string | undefined,
+  joinTable: string | undefined,
+  joinOn: string | undefined,
+): { sql: string; error?: string } {
+  const safeTable = sanitizeIdentifier(table);
+  if (!safeTable || !roleColumns[safeTable]) {
+    return { sql: "", error: `Table '${table}' is not accessible for your role. Allowed: ${Object.keys(roleColumns).join(", ")}` };
   }
-  for (const col of SENSITIVE_COLUMNS) {
-    if (new RegExp(`\\b${col}\\b`, "i").test(query)) {
-      return `Access denied: column '${col}' is restricted.`;
+  const allowedCols = roleColumns[safeTable];
+
+  let selectCols: string;
+  if (aggregation) {
+    selectCols = aggregation;
+  } else if (!columns || columns.length === 0) {
+    selectCols = allowedCols.map(c => `${safeTable}.${c}`).join(", ");
+  } else {
+    const validCols: string[] = [];
+    for (const col of columns) {
+      const safeCol = sanitizeIdentifier(col);
+      if (!safeCol || !allowedCols.includes(safeCol)) {
+        return { sql: "", error: `Column '${col}' is not accessible on table '${safeTable}'.` };
+      }
+      validCols.push(`${safeTable}.${safeCol}`);
     }
+    selectCols = validCols.join(", ");
   }
-  return null;
+
+  let query = `SELECT ${selectCols} FROM ${safeTable}`;
+
+  if (joinTable && joinOn) {
+    const safeJoin = sanitizeIdentifier(joinTable);
+    if (!safeJoin || !roleColumns[safeJoin]) {
+      return { sql: "", error: `Join table '${joinTable}' is not accessible.` };
+    }
+    const safeJoinOn = joinOn.replace(/[;'"\\]/g, "");
+    query += ` JOIN ${safeJoin} ON ${safeJoinOn}`;
+  }
+
+  if (where) {
+    const safeWhere = where.replace(/[;'"\\]/g, "").replace(/--/g, "");
+    query += ` WHERE ${safeWhere}`;
+  }
+
+  if (groupBy) {
+    const safeGroup = groupBy.replace(/[;'"\\]/g, "");
+    query += ` GROUP BY ${safeGroup}`;
+  }
+
+  if (orderBy) {
+    const safeOrder = orderBy.replace(/[;'"\\]/g, "");
+    query += ` ORDER BY ${safeOrder}`;
+  }
+
+  const safeLimit = Math.min(Math.max(1, limit || 100), 100);
+  query += ` LIMIT ${safeLimit}`;
+
+  return { sql: query };
 }
 
 function getReadTools(userRole: string) {
-  const allowedTables = ACCESSIBLE_TABLES[userRole] || ACCESSIBLE_TABLES.sales_executive;
+  const roleColumns = getColumnsForRole(userRole);
+  const allowedTableNames = Object.keys(roleColumns);
 
   return {
     getSchema: tool({
-      description: "Get the database schema information for allowed tables",
+      description: `Get database schema for accessible tables. Available tables: ${allowedTableNames.join(", ")}`,
       parameters: z.object({
-        tableName: z.string().optional().describe("Specific table name to get schema for, or leave empty for all allowed tables"),
+        tableName: z.string().optional().describe("Specific table name, or omit for all accessible tables"),
       }),
       execute: async ({ tableName }) => {
         try {
-          const safeTableName = tableName ? tableName.replace(/[^a-zA-Z0-9_]/g, "") : null;
-          if (safeTableName && !allowedTables.includes(safeTableName)) {
-            return { error: `Table '${safeTableName}' is not accessible for your role.` };
+          if (tableName) {
+            const safe = sanitizeIdentifier(tableName);
+            if (!safe || !roleColumns[safe]) {
+              return { error: `Table '${tableName}' is not accessible.` };
+            }
+            return { schema: { [safe]: roleColumns[safe] } };
           }
-          const tableFilter = safeTableName
-            ? `AND table_name = '${safeTableName}'`
-            : `AND table_name IN (${allowedTables.map(t => `'${t}'`).join(",")})`;
-          const query = `
-            SELECT table_name, column_name, data_type, is_nullable
-            FROM information_schema.columns
-            WHERE table_schema = 'public'
-            ${tableFilter}
-            AND column_name NOT IN (${SENSITIVE_COLUMNS.map(c => `'${c}'`).join(",")})
-            ORDER BY table_name, ordinal_position
-          `;
-          const rows = await execReadonlySQL(query);
-          return { schema: rows };
+          return { schema: roleColumns };
         } catch (e: any) {
           return { error: e.message };
         }
       },
     }),
 
-    run_sql_query: tool({
-      description: `Run a read-only SQL SELECT query. Only allowed tables: ${allowedTables.join(", ")}. Restricted columns: ${SENSITIVE_COLUMNS.join(", ")}.`,
+    queryTable: tool({
+      description: `Query CRM data from a single table with optional filters, sorting, aggregation, and joins. Tables: ${allowedTableNames.join(", ")}. All column names and table names are validated server-side.`,
       parameters: z.object({
-        query: z.string().describe("The SQL SELECT query to execute."),
+        table: z.string().describe("Main table to query"),
+        columns: z.array(z.string()).optional().describe("Columns to select. Omit for all allowed columns."),
+        where: z.string().optional().describe("WHERE clause conditions (without the WHERE keyword). Use column_name = value syntax."),
+        orderBy: z.string().optional().describe("ORDER BY clause (without the keyword). e.g. 'created_at DESC'"),
+        limit: z.number().optional().describe("Max rows to return (default 100, max 100)"),
+        aggregation: z.string().optional().describe("Aggregation expression for SELECT clause, e.g. 'COUNT(*)', 'status, COUNT(*)'"),
+        groupBy: z.string().optional().describe("GROUP BY columns, e.g. 'status'"),
+        joinTable: z.string().optional().describe("Table to JOIN with"),
+        joinOn: z.string().optional().describe("JOIN condition, e.g. 'leads.assigned_to = users.id'"),
       }),
-      execute: async ({ query }) => {
+      execute: async ({ table, columns, where, orderBy, limit, aggregation, groupBy, joinTable, joinOn }) => {
         try {
-          const violation = validateQueryTables(query, userRole);
-          if (violation) return { error: violation };
-          const rows = await execReadonlySQL(query);
+          const { sql, error: buildError } = buildSafeQuery(
+            roleColumns, table, columns, where, orderBy, limit, aggregation, groupBy, joinTable, joinOn
+          );
+          if (buildError) return { error: buildError };
+          const rows = await execReadonlySQL(sql);
           const limited = Array.isArray(rows) ? rows.slice(0, 100) : rows;
           return { results: limited, rowCount: Array.isArray(rows) ? rows.length : 0 };
-        } catch (e: any) {
-          return { error: e.message };
-        }
-      },
-    }),
-
-    analyticsQuery: tool({
-      description: `Run an analytics/aggregation query on CRM data. Only allowed tables: ${allowedTables.join(", ")}.`,
-      parameters: z.object({
-        query: z.string().describe("An analytics SQL SELECT query with aggregations."),
-      }),
-      execute: async ({ query }) => {
-        try {
-          const violation = validateQueryTables(query, userRole);
-          if (violation) return { error: violation };
-          const rows = await execReadonlySQL(query);
-          return { results: rows, rowCount: Array.isArray(rows) ? rows.length : 0 };
         } catch (e: any) {
           return { error: e.message };
         }
