@@ -313,9 +313,18 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Lead not found" });
       }
       
-      // Sales exec can only update their own leads
-      if (user.role !== 'superadmin' && existingLead.assignedTo !== user.id) {
-        return res.status(403).json({ message: "Forbidden" });
+      // Check authorization: superadmin can always update; assignee can update their own lead;
+      // team managers can update any lead within their managed team
+      if (user.role !== 'superadmin') {
+        const isAssignee = existingLead.assignedTo === user.id;
+        let isTeamManager = false;
+        if (existingLead.teamId) {
+          const userTeams = await storage.getUserTeams(user.id);
+          isTeamManager = userTeams.some(t => t.teamId === existingLead.teamId && t.role === 'manager');
+        }
+        if (!isAssignee && !isTeamManager) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
       }
       
       const lead = await storage.updateLead(req.params.id, req.body);
@@ -336,8 +345,24 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/leads/:id", requireAuth, requireRole("superadmin"), async (req, res, next) => {
+  app.delete("/api/leads/:id", requireAuth, async (req, res, next) => {
     try {
+      const user = req.user as User;
+      const existingLead = await storage.getLead(req.params.id);
+      if (!existingLead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      // Allow superadmin and team managers to delete leads in their managed teams
+      if (user.role !== 'superadmin') {
+        let isTeamManager = false;
+        if (existingLead.teamId) {
+          const userTeams = await storage.getUserTeams(user.id);
+          isTeamManager = userTeams.some(t => t.teamId === existingLead.teamId && t.role === 'manager');
+        }
+        if (!isTeamManager) {
+          return res.status(403).json({ message: "Forbidden: only managers can delete leads" });
+        }
+      }
       const deleted = await storage.deleteLead(req.params.id);
       if (!deleted) {
         return res.status(404).json({ message: "Lead not found" });

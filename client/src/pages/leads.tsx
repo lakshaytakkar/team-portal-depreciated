@@ -384,7 +384,8 @@ export default function Leads() {
                   />
                 </TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Lead Name</TableHead>
-                <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Company</TableHead>
+                <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Phone</TableHead>
+                <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Source</TableHead>
                 {isManager && <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Assignee</TableHead>}
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Value</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Stage</TableHead>
@@ -395,7 +396,7 @@ export default function Leads() {
             <TableBody>
               {filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
                     No leads found.
                   </TableCell>
                 </TableRow>
@@ -420,7 +421,14 @@ export default function Leads() {
                         </Link>
                       </TableCell>
                       <TableCell>
-                        <span className="text-foreground text-[14px]">{lead.company}</span>
+                        <span className="text-foreground text-[14px] text-sm">{lead.phone || <span className="text-muted-foreground italic text-xs">—</span>}</span>
+                      </TableCell>
+                      <TableCell>
+                        {lead.source ? (
+                          <Badge variant="outline" className="text-xs font-normal">{lead.source}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs italic">—</span>
+                        )}
                       </TableCell>
                       {isManager && (
                         <TableCell>

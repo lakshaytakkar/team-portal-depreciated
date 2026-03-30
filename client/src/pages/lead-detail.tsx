@@ -506,7 +506,7 @@ export default function LeadDetail() {
             <Tabs defaultValue="activity" className="w-full flex flex-col h-full">
               <div className="flex items-center justify-between mb-4 shrink-0">
                 <TabsList className="bg-card border p-1 h-[44px] rounded-[10px]">
-                    <TabsTrigger value="activity" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Timeline</TabsTrigger>
+                    <TabsTrigger value="activity" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Activity</TabsTrigger>
                     <TabsTrigger value="tasks" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">
                       Tasks {leadTasks.length > 0 && <span className="ml-1 bg-primary/20 text-primary rounded-full px-1.5 py-0 text-[10px] font-semibold">{leadTasks.length}</span>}
                     </TabsTrigger>
