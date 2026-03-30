@@ -127,65 +127,104 @@ function isAllowedTable(t: string): t is AllowedTable {
   return (ALLOWED_TABLES as readonly string[]).includes(t);
 }
 
-const aiTools = {
-  getSchema: tool({
-    description: "Get the database schema information including table names and column details",
-    parameters: z.object({
-      tableName: z.string().optional().describe("Specific table name to get schema for, or leave empty for all tables"),
-    }),
-    execute: async ({ tableName }) => {
-      try {
-        const safeTableName = tableName ? tableName.replace(/[^a-zA-Z0-9_]/g, "") : null;
-        let query = `
-          SELECT table_name, column_name, data_type, is_nullable
-          FROM information_schema.columns
-          WHERE table_schema = 'public'
-        `;
-        if (safeTableName) {
-          query += ` AND table_name = '${safeTableName}'`;
-        }
-        query += ` ORDER BY table_name, ordinal_position`;
-
-        const rows = await execReadonlySQL(query);
-        return { schema: rows };
-      } catch (e: any) {
-        return { error: e.message };
-      }
-    },
-  }),
-
-  run_sql_query: tool({
-    description: "Run a read-only SQL SELECT query against the Suprans CRM database. Only SELECT statements allowed. Use snake_case column names.",
-    parameters: z.object({
-      query: z.string().describe("The SQL SELECT query to execute. Must start with SELECT."),
-    }),
-    execute: async ({ query }) => {
-      try {
-        const rows = await execReadonlySQL(query);
-        const limited = Array.isArray(rows) ? rows.slice(0, 100) : rows;
-        return { results: limited, rowCount: Array.isArray(rows) ? rows.length : 0 };
-      } catch (e: any) {
-        return { error: e.message };
-      }
-    },
-  }),
-
-  analyticsQuery: tool({
-    description: "Run an analytics/aggregation SELECT query on CRM data. Returns summarized data for dashboards and reports.",
-    parameters: z.object({
-      query: z.string().describe("An analytics SQL SELECT query with aggregations like COUNT, SUM, AVG, GROUP BY."),
-    }),
-    execute: async ({ query }) => {
-      try {
-        const rows = await execReadonlySQL(query);
-        return { results: rows, rowCount: Array.isArray(rows) ? rows.length : 0 };
-      } catch (e: any) {
-        return { error: e.message };
-      }
-    },
-  }),
-
+const ACCESSIBLE_TABLES: Record<string, string[]> = {
+  superadmin: ["leads", "tasks", "activities", "users", "team_members", "employees", "events", "event_attendees", "services", "templates"],
+  manager: ["leads", "tasks", "activities", "team_members", "events", "event_attendees"],
+  sales_executive: ["leads", "tasks", "activities"],
 };
+
+const SENSITIVE_COLUMNS = ["password", "salary"];
+
+function validateQueryTables(query: string, role: string): string | null {
+  const allowedTables = ACCESSIBLE_TABLES[role] || ACCESSIBLE_TABLES.sales_executive;
+  const fromMatches = query.match(/\bFROM\s+(\w+)/gi) || [];
+  const joinMatches = query.match(/\bJOIN\s+(\w+)/gi) || [];
+  const allRefs = [...fromMatches, ...joinMatches];
+  for (const ref of allRefs) {
+    const tableName = ref.replace(/^(FROM|JOIN)\s+/i, "").toLowerCase();
+    if (tableName === "information_schema" || tableName === "pg_catalog") continue;
+    if (!allowedTables.includes(tableName)) {
+      return `Access denied: table '${tableName}' is not accessible for your role.`;
+    }
+  }
+  for (const col of SENSITIVE_COLUMNS) {
+    if (new RegExp(`\\b${col}\\b`, "i").test(query)) {
+      return `Access denied: column '${col}' is restricted.`;
+    }
+  }
+  return null;
+}
+
+function getReadTools(userRole: string) {
+  const allowedTables = ACCESSIBLE_TABLES[userRole] || ACCESSIBLE_TABLES.sales_executive;
+
+  return {
+    getSchema: tool({
+      description: "Get the database schema information for allowed tables",
+      parameters: z.object({
+        tableName: z.string().optional().describe("Specific table name to get schema for, or leave empty for all allowed tables"),
+      }),
+      execute: async ({ tableName }) => {
+        try {
+          const safeTableName = tableName ? tableName.replace(/[^a-zA-Z0-9_]/g, "") : null;
+          if (safeTableName && !allowedTables.includes(safeTableName)) {
+            return { error: `Table '${safeTableName}' is not accessible for your role.` };
+          }
+          const tableFilter = safeTableName
+            ? `AND table_name = '${safeTableName}'`
+            : `AND table_name IN (${allowedTables.map(t => `'${t}'`).join(",")})`;
+          const query = `
+            SELECT table_name, column_name, data_type, is_nullable
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            ${tableFilter}
+            AND column_name NOT IN (${SENSITIVE_COLUMNS.map(c => `'${c}'`).join(",")})
+            ORDER BY table_name, ordinal_position
+          `;
+          const rows = await execReadonlySQL(query);
+          return { schema: rows };
+        } catch (e: any) {
+          return { error: e.message };
+        }
+      },
+    }),
+
+    run_sql_query: tool({
+      description: `Run a read-only SQL SELECT query. Only allowed tables: ${allowedTables.join(", ")}. Restricted columns: ${SENSITIVE_COLUMNS.join(", ")}.`,
+      parameters: z.object({
+        query: z.string().describe("The SQL SELECT query to execute."),
+      }),
+      execute: async ({ query }) => {
+        try {
+          const violation = validateQueryTables(query, userRole);
+          if (violation) return { error: violation };
+          const rows = await execReadonlySQL(query);
+          const limited = Array.isArray(rows) ? rows.slice(0, 100) : rows;
+          return { results: limited, rowCount: Array.isArray(rows) ? rows.length : 0 };
+        } catch (e: any) {
+          return { error: e.message };
+        }
+      },
+    }),
+
+    analyticsQuery: tool({
+      description: `Run an analytics/aggregation query on CRM data. Only allowed tables: ${allowedTables.join(", ")}.`,
+      parameters: z.object({
+        query: z.string().describe("An analytics SQL SELECT query with aggregations."),
+      }),
+      execute: async ({ query }) => {
+        try {
+          const violation = validateQueryTables(query, userRole);
+          if (violation) return { error: violation };
+          const rows = await execReadonlySQL(query);
+          return { results: rows, rowCount: Array.isArray(rows) ? rows.length : 0 };
+        } catch (e: any) {
+          return { error: e.message };
+        }
+      },
+    }),
+  };
+}
 
 function getMutationTools(userId: string, userRole: string) {
   const canMutate = ["superadmin", "manager"].includes(userRole);
@@ -499,7 +538,7 @@ aiRouter.get("/attachments/:filename", async (req: Request, res: Response) => {
 aiRouter.post("/chat", async (req: Request, res: Response) => {
   try {
     const user = req.user as User;
-    const { conversationId, message } = req.body;
+    const { conversationId, message, attachment } = req.body;
 
     if (!conversationId || !message) {
       return res.status(400).json({ error: "conversationId and message are required" });
@@ -509,11 +548,21 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Conversation not found" });
     }
 
-    await supabase.from("ai_messages").insert({
+    const { data: userMsg } = await supabase.from("ai_messages").insert({
       conversation_id: conversationId,
       role: "user",
       content: message,
-    });
+    }).select("id").single();
+
+    if (attachment && userMsg) {
+      await supabase.from("ai_attachments").insert({
+        message_id: userMsg.id,
+        file_name: attachment.fileName,
+        file_type: attachment.fileType,
+        file_url: `/api/ai/attachments/${attachment.storedFilename}`,
+        file_size: attachment.fileSize,
+      });
+    }
 
     const { data: history } = await supabase
       .from("ai_messages")
@@ -535,7 +584,7 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
       model: openai("gpt-4o"),
       system: getSystemPrompt(user.name),
       messages: chatMessages,
-      tools: { ...aiTools, ...getMutationTools(user.id, user.role) },
+      tools: { ...getReadTools(user.role), ...getMutationTools(user.id, user.role) },
       maxSteps: 8,
       onError: (error) => {
         console.error("AI stream error:", error);
