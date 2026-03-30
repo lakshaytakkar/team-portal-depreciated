@@ -59,8 +59,7 @@ async function execReadonlySQL(query: string): Promise<any[]> {
 
   const client = await pgPool.connect();
   try {
-    await client.query("SET TRANSACTION READ ONLY");
-    await client.query("BEGIN");
+    await client.query("BEGIN READ ONLY");
     const result = await client.query(trimmed);
     await client.query("COMMIT");
     return result.rows;
@@ -119,7 +118,7 @@ Guidelines:
 - For analytics queries, provide clear summaries with key metrics.`;
 }
 
-const pendingMutations = new Map<string, { action: string; table: string; description: string; createdAt: number }>();
+const pendingMutations = new Map<string, { action: string; table: string; description: string; userId: string; createdAt: number }>();
 
 const ALLOWED_TABLES = ["leads", "tasks", "activities"] as const;
 type AllowedTable = typeof ALLOWED_TABLES[number];
@@ -186,94 +185,107 @@ const aiTools = {
     },
   }),
 
-  createRecord: tool({
-    description: "Create a new record in the database. Only supports leads, tasks, and activities tables. You MUST first call proposeMutation to describe and get a confirmation token, then pass that token here.",
-    parameters: z.object({
-      table: z.enum(["leads", "tasks", "activities"]).describe("Table to insert into"),
-      data: z.record(z.any()).describe("Record data as key-value pairs using snake_case column names"),
-      confirmationToken: z.string().describe("Token from proposeMutation tool confirming this action"),
-    }),
-    execute: async ({ table, data, confirmationToken }) => {
-      try {
-        if (!isAllowedTable(table)) return { error: "Table not allowed" };
-        if (!pendingMutations.has(confirmationToken)) {
-          return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
-        }
-        pendingMutations.delete(confirmationToken);
-        const { data: result, error } = await supabase.from(table).insert(data).select().single();
-        if (error) return { error: error.message };
-        return { success: true, record: result };
-      } catch (e: any) {
-        return { error: e.message };
-      }
-    },
-  }),
-
-  updateRecord: tool({
-    description: "Update an existing record in the database by ID. Only supports leads, tasks, and activities. You MUST first call proposeMutation to get a confirmation token.",
-    parameters: z.object({
-      table: z.enum(["leads", "tasks", "activities"]).describe("Table to update"),
-      id: z.string().describe("ID of the record to update"),
-      data: z.record(z.any()).describe("Fields to update as key-value pairs using snake_case column names"),
-      confirmationToken: z.string().describe("Token from proposeMutation tool confirming this action"),
-    }),
-    execute: async ({ table, id, data, confirmationToken }) => {
-      try {
-        if (!isAllowedTable(table)) return { error: "Table not allowed" };
-        if (!pendingMutations.has(confirmationToken)) {
-          return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
-        }
-        pendingMutations.delete(confirmationToken);
-        const { data: result, error } = await supabase.from(table).update(data).eq("id", id).select().single();
-        if (error) return { error: error.message };
-        return { success: true, record: result };
-      } catch (e: any) {
-        return { error: e.message };
-      }
-    },
-  }),
-
-  deleteRecord: tool({
-    description: "Delete a record from the database by ID. Only supports leads, tasks, and activities. You MUST first call proposeMutation to get a confirmation token.",
-    parameters: z.object({
-      table: z.enum(["leads", "tasks", "activities"]).describe("Table to delete from"),
-      id: z.string().describe("ID of the record to delete"),
-      confirmationToken: z.string().describe("Token from proposeMutation tool confirming this action"),
-    }),
-    execute: async ({ table, id, confirmationToken }) => {
-      try {
-        if (!isAllowedTable(table)) return { error: "Table not allowed" };
-        if (!pendingMutations.has(confirmationToken)) {
-          return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
-        }
-        pendingMutations.delete(confirmationToken);
-        const { error } = await supabase.from(table).delete().eq("id", id);
-        if (error) return { error: error.message };
-        return { success: true, message: `Record ${id} deleted from ${table}` };
-      } catch (e: any) {
-        return { error: e.message };
-      }
-    },
-  }),
-
-  proposeMutation: tool({
-    description: "Propose a database mutation (create/update/delete) and get a confirmation token. Always call this BEFORE createRecord, updateRecord, or deleteRecord to describe the intended change. The token is returned immediately — you should present the description to the user and then proceed with the mutation using the token.",
-    parameters: z.object({
-      action: z.enum(["create", "update", "delete"]).describe("The type of mutation"),
-      table: z.enum(["leads", "tasks", "activities"]).describe("Target table"),
-      description: z.string().describe("Human-readable description of what will be changed"),
-    }),
-    execute: async ({ action, table, description }) => {
-      const token = `mut_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-      pendingMutations.set(token, { action, table, description, createdAt: Date.now() });
-      setTimeout(() => pendingMutations.delete(token), 5 * 60 * 1000);
-      return {
-        confirmationToken: token,
-        message: `Mutation proposed: ${action} on ${table}. Description: ${description}. Use this token to execute the mutation.`,
-      };
-    },
-  }),
 };
+
+function getMutationTools(userId: string, userRole: string) {
+  const canMutate = ["superadmin", "manager"].includes(userRole);
+
+  return {
+    proposeMutation: tool({
+      description: "Propose a database mutation (create/update/delete) and get a confirmation token. Always call this BEFORE createRecord, updateRecord, or deleteRecord.",
+      parameters: z.object({
+        action: z.enum(["create", "update", "delete"]).describe("The type of mutation"),
+        table: z.enum(["leads", "tasks", "activities"]).describe("Target table"),
+        description: z.string().describe("Human-readable description of what will be changed"),
+      }),
+      execute: async ({ action, table, description }) => {
+        if (!canMutate) {
+          return { error: "You do not have permission to modify records. Contact a manager or admin." };
+        }
+        const token = `mut_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+        pendingMutations.set(token, { action, table, description, userId, createdAt: Date.now() });
+        setTimeout(() => pendingMutations.delete(token), 5 * 60 * 1000);
+        return {
+          confirmationToken: token,
+          message: `Mutation proposed: ${action} on ${table}. Description: ${description}. Use this token to execute.`,
+        };
+      },
+    }),
+
+    createRecord: tool({
+      description: "Create a new record. Requires a confirmation token from proposeMutation.",
+      parameters: z.object({
+        table: z.enum(["leads", "tasks", "activities"]).describe("Table to insert into"),
+        data: z.record(z.any()).describe("Record data as key-value pairs"),
+        confirmationToken: z.string().describe("Token from proposeMutation"),
+      }),
+      execute: async ({ table, data, confirmationToken }) => {
+        try {
+          if (!isAllowedTable(table)) return { error: "Table not allowed" };
+          const pending = pendingMutations.get(confirmationToken);
+          if (!pending || pending.userId !== userId) {
+            return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
+          }
+          pendingMutations.delete(confirmationToken);
+          const { data: result, error } = await supabase.from(table).insert(data).select().single();
+          if (error) return { error: error.message };
+          return { success: true, record: result };
+        } catch (e: any) {
+          return { error: e.message };
+        }
+      },
+    }),
+
+    updateRecord: tool({
+      description: "Update a record by ID. Requires a confirmation token from proposeMutation.",
+      parameters: z.object({
+        table: z.enum(["leads", "tasks", "activities"]).describe("Table to update"),
+        id: z.string().describe("Record ID"),
+        data: z.record(z.any()).describe("Fields to update"),
+        confirmationToken: z.string().describe("Token from proposeMutation"),
+      }),
+      execute: async ({ table, id, data, confirmationToken }) => {
+        try {
+          if (!isAllowedTable(table)) return { error: "Table not allowed" };
+          const pending = pendingMutations.get(confirmationToken);
+          if (!pending || pending.userId !== userId) {
+            return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
+          }
+          pendingMutations.delete(confirmationToken);
+          const { data: result, error } = await supabase.from(table).update(data).eq("id", id).select().single();
+          if (error) return { error: error.message };
+          return { success: true, record: result };
+        } catch (e: any) {
+          return { error: e.message };
+        }
+      },
+    }),
+
+    deleteRecord: tool({
+      description: "Delete a record by ID. Requires a confirmation token from proposeMutation.",
+      parameters: z.object({
+        table: z.enum(["leads", "tasks", "activities"]).describe("Table to delete from"),
+        id: z.string().describe("Record ID"),
+        confirmationToken: z.string().describe("Token from proposeMutation"),
+      }),
+      execute: async ({ table, id, confirmationToken }) => {
+        try {
+          if (!isAllowedTable(table)) return { error: "Table not allowed" };
+          const pending = pendingMutations.get(confirmationToken);
+          if (!pending || pending.userId !== userId) {
+            return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
+          }
+          pendingMutations.delete(confirmationToken);
+          const { error } = await supabase.from(table).delete().eq("id", id);
+          if (error) return { error: error.message };
+          return { success: true, message: `Record ${id} deleted from ${table}` };
+        } catch (e: any) {
+          return { error: e.message };
+        }
+      },
+    }),
+  };
+}
 
 aiRouter.get("/conversations", async (req: Request, res: Response) => {
   try {
@@ -496,7 +508,7 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
       model: openai("gpt-4o"),
       system: getSystemPrompt(user.name),
       messages: chatMessages,
-      tools: aiTools,
+      tools: { ...aiTools, ...getMutationTools(user.id, user.role) },
       maxSteps: 8,
       onError: (error) => {
         console.error("AI stream error:", error);

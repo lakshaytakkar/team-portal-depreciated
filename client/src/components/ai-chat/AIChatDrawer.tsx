@@ -25,7 +25,12 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
+  Search,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 
@@ -197,8 +202,11 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
   const [showConversations, setShowConversations] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pendingAttachment, setPendingAttachment] = useState<{ file: File; preview?: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: conversations = [] } = useQuery<AiConversation[]>({
     queryKey: ["/api/ai/conversations"],
@@ -215,6 +223,31 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
     },
     enabled: !!activeConversationId && open,
   });
+
+  const { data: searchResults } = useQuery<AiConversation[]>({
+    queryKey: ["/api/ai/conversations/search", searchQuery],
+    queryFn: async () => {
+      if (!searchQuery.trim()) return [];
+      const res = await fetch(`/api/ai/conversations/search?q=${encodeURIComponent(searchQuery)}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!searchQuery.trim() && showConversations,
+  });
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const isImage = file.type.startsWith("image/");
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setPendingAttachment({ file, preview: ev.target?.result as string });
+      reader.readAsDataURL(file);
+    } else {
+      setPendingAttachment({ file });
+    }
+    e.target.value = "";
+  };
 
   const createConversation = useMutation({
     mutationFn: async () => {
@@ -275,18 +308,30 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
       queryClient.invalidateQueries({ queryKey: ["/api/ai/conversations"] });
     }
 
+    const attachment = pendingAttachment;
     setInputValue("");
+    setPendingAttachment(null);
     setIsStreaming(true);
 
-    const userMsg: StreamMessage = { role: "user", content: text };
+    const attachmentNote = attachment ? `\n[Attached file: ${attachment.file.name}]` : "";
+    const userMsg: StreamMessage = { role: "user", content: text + attachmentNote };
     const assistantMsg: StreamMessage = { role: "assistant", content: "", isStreaming: true, toolInvocations: [] };
     setStreamMessages((prev) => [...prev, userMsg, assistantMsg]);
 
     try {
+      if (attachment && convId) {
+        const formData = new FormData();
+        formData.append("file", attachment.file);
+        formData.append("conversationId", convId);
+        try {
+          await fetch("/api/ai/upload", { method: "POST", body: formData });
+        } catch {}
+      }
+
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ conversationId: convId, message: text }),
+        body: JSON.stringify({ conversationId: convId, message: text + attachmentNote }),
       });
 
       if (!res.ok) throw new Error("Chat request failed");
@@ -480,12 +525,22 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
         {showConversations ? (
           <ScrollArea className="flex-1">
             <div className="p-3 space-y-1">
-              {conversations.length === 0 && (
+              <div className="relative mb-2">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-sm"
+                  data-testid="input-search-conversations"
+                />
+              </div>
+              {(searchQuery.trim() ? searchResults || [] : conversations).length === 0 && (
                 <div className="text-center py-8 text-muted-foreground text-sm">
-                  No conversations yet
+                  {searchQuery.trim() ? "No matching conversations" : "No conversations yet"}
                 </div>
               )}
-              {conversations.map((conv) => (
+              {(searchQuery.trim() ? searchResults || [] : conversations).map((conv) => (
                 <div
                   key={conv.id}
                   className={cn(
@@ -660,7 +715,44 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
             </ScrollArea>
 
             <div className="border-t p-3 shrink-0">
+              {pendingAttachment && (
+                <div className="flex items-center gap-2 mb-2 px-2 py-1.5 bg-muted rounded-lg text-sm">
+                  {pendingAttachment.preview ? (
+                    <img src={pendingAttachment.preview} alt="" className="h-8 w-8 rounded object-cover" />
+                  ) : (
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                  )}
+                  <span className="flex-1 truncate text-xs">{pendingAttachment.file.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5"
+                    onClick={() => setPendingAttachment(null)}
+                    data-testid="button-remove-attachment"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
               <div className="flex items-end gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".csv,.txt,.json,.png,.jpg,.jpeg,.pdf"
+                  onChange={handleFileSelect}
+                  data-testid="input-file-upload"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isStreaming}
+                  data-testid="button-attach-file"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
                 <textarea
                   ref={inputRef}
                   value={inputValue}
