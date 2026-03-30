@@ -405,6 +405,12 @@ export async function registerRoutes(
       const user = req.user as User;
       const teamId = req.query.teamId as string | undefined;
       const effectiveRole = req.query.effectiveRole as string | undefined;
+      const leadId = req.query.leadId as string | undefined;
+
+      if (leadId) {
+        const tasks = await storage.getTasks({ leadId });
+        return res.json(tasks);
+      }
 
       if (user.role === 'superadmin') {
         if (effectiveRole === 'executive' && teamId) {

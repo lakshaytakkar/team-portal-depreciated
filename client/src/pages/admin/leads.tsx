@@ -38,7 +38,8 @@ import {
   ChevronRight,
   Users,
   Briefcase,
-  Target
+  Target,
+  MessageSquare
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,24 +51,32 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
+import type { Lead, User } from "@shared/schema";
 import { AddLeadDialog } from "@/components/dialogs/AddLeadDialog";
 import { EditLeadDialog } from "@/components/dialogs/EditLeadDialog";
+import { LogActivityDialog } from "@/components/dialogs/LogActivityDialog";
+
+const SOURCES = ["Website", "Referral", "Google Ads", "LinkedIn", "Cold Call", "Social Media", "Partner", "Other"];
 
 export default function AdminLeads() {
-  const { currentUser } = useStore();
+  const { currentUser, currentTeamId, simulatedRole } = useStore();
 
-  const { data: leads = [] } = useQuery<any[]>({
-    queryKey: ['/api/leads'],
+  const { data: leads = [] } = useQuery<Lead[]>({
+    queryKey: ['/api/leads', currentTeamId, simulatedRole],
     queryFn: async () => {
-      const res = await fetch('/api/leads', { credentials: 'include' });
+      const effectiveRole = useStore.getState().getEffectiveRole();
+      const params = new URLSearchParams();
+      if (currentTeamId) params.set('teamId', currentTeamId);
+      if (effectiveRole === 'executive' && currentUser?.id) params.set('assignedTo', currentUser.id);
+      const res = await fetch(`/api/leads?${params}`, { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
     enabled: !!currentUser,
   });
 
-  const { data: users = [] } = useQuery<any[]>({
-    queryKey: ['/api/users'],
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ['/api/users', currentTeamId],
     queryFn: async () => {
       const res = await fetch('/api/users', { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
@@ -77,7 +86,7 @@ export default function AdminLeads() {
   });
 
   const updateLeadMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Lead> }) => {
       const res = await apiRequest('PATCH', `/api/leads/${id}`, data);
       return res.json();
     },
@@ -95,21 +104,29 @@ export default function AdminLeads() {
     },
   });
 
-  const updateLead = (id: string, data: any) => updateLeadMutation.mutate({ id, data });
+  const updateLead = (id: string, data: Partial<Lead>) => updateLeadMutation.mutate({ id, data });
   const deleteLead = (id: string) => deleteLeadMutation.mutate(id);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [assigneeFilter, setAssigneeFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
 
   const filteredLeads = leads
-    .filter(lead => {
-      const matchesSearch = 
-        lead.name.toLowerCase().includes(search.toLowerCase()) ||
-        lead.company.toLowerCase().includes(search.toLowerCase());
+    .filter((lead: Lead) => {
+      const q = search.toLowerCase();
+      const matchesSearch = !q ||
+        lead.name.toLowerCase().includes(q) ||
+        (lead.company || '').toLowerCase().includes(q) ||
+        (lead.email || '').toLowerCase().includes(q) ||
+        (lead.phone || '').toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || lead.stage === statusFilter;
       const matchesAssignee = assigneeFilter === "all" || lead.assignedTo === assigneeFilter;
-      return matchesSearch && matchesStatus && matchesAssignee;
+      const matchesSource = sourceFilter === "all" || lead.source === sourceFilter;
+      return matchesSearch && matchesStatus && matchesAssignee && matchesSource;
     });
+
+  const totalPipelineValue = leads.reduce((sum: number, l: Lead) => sum + (l.value || 0), 0);
+  const avgDealSize = leads.length > 0 ? Math.round(totalPipelineValue / leads.length) : 0;
 
   const getStageBadgeStyles = (stageId: string) => {
     const stage = stages.find(s => s.id === stageId);
@@ -185,7 +202,7 @@ export default function AdminLeads() {
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <span className="text-2xl font-semibold text-foreground">₹45.2k</span>
+            <span className="text-2xl font-semibold text-foreground">₹{avgDealSize >= 1000 ? `${(avgDealSize/1000).toFixed(1)}k` : avgDealSize}</span>
             <div className="flex items-center gap-2">
               <div className="bg-[#FFF0F3] px-1.5 py-0.5 rounded-full flex items-center justify-center">
                 <span className="text-xs font-medium text-[#DF1C41]">-1.2%</span>
@@ -245,7 +262,7 @@ export default function AdminLeads() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px] h-[38px] bg-card border text-muted-foreground">
+              <SelectTrigger className="w-[140px] h-[38px] bg-card border text-muted-foreground">
                 <SelectValue placeholder="Stage" />
               </SelectTrigger>
               <SelectContent>
@@ -258,9 +275,17 @@ export default function AdminLeads() {
               </SelectContent>
             </Select>
 
-            <Button variant="outline" className="h-[38px] px-3 border text-muted-foreground hover:text-foreground flex gap-2">
-              <Filter className="h-4 w-4" />
-            </Button>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[140px] h-[38px] bg-card border text-muted-foreground">
+                <SelectValue placeholder="Source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources</SelectItem>
+                {SOURCES.map(src => (
+                  <SelectItem key={src} value={src}>{src}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -335,6 +360,7 @@ export default function AdminLeads() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
                           <EditLeadDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><Edit className="mr-2 h-4 w-4" /> Edit Details</DropdownMenuItem>} />
+                          <LogActivityDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><MessageSquare className="mr-2 h-4 w-4" /> Log Activity</DropdownMenuItem>} />
                           <DropdownMenuSeparator />
                           <DropdownMenuLabel>Reassign To</DropdownMenuLabel>
                           {users.filter(u => u.id !== lead.assignedTo).map(u => (

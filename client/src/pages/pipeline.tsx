@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useStore } from "@/lib/store";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { Lead, Activity } from "@shared/schema";
 import { 
   DndContext, 
   closestCorners, 
@@ -15,7 +17,6 @@ import {
   DragOverEvent
 } from "@dnd-kit/core";
 import { 
-  arrayMove, 
   SortableContext, 
   sortableKeyboardCoordinates, 
   verticalListSortingStrategy,
@@ -23,14 +24,13 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { stages } from "@/lib/mock-data";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
-import { GripVertical, DollarSign, Phone, Mail, Calendar, Clock, FileText, Loader2 } from "lucide-react";
+import { DollarSign, Phone, Mail, Calendar, Clock, FileText, Loader2 } from "lucide-react";
 
 // Kanban Column Component
-function KanbanColumn({ id, title, leads, color, activities }: { id: string, title: string, leads: any[], color: string, activities: any[] }) {
+function KanbanColumn({ id, title, leads, color, activities }: { id: string, title: string, leads: Lead[], color: string, activities: Activity[] }) {
   const { setNodeRef } = useSortable({ id });
 
   return (
@@ -64,7 +64,7 @@ function KanbanColumn({ id, title, leads, color, activities }: { id: string, tit
 }
 
 // Draggable Card Component
-function SortableLeadCard({ lead, lastActivity }: { lead: any, lastActivity?: any }) {
+function SortableLeadCard({ lead, lastActivity }: { lead: Lead, lastActivity?: Activity }) {
   const {
     attributes,
     listeners,
@@ -87,66 +87,73 @@ function SortableLeadCard({ lead, lastActivity }: { lead: any, lastActivity?: an
   );
 }
 
-// Actual Card UI
-function LeadCard({ lead, lastActivity }: { lead: any, lastActivity?: any }) {
+// Actual Card UI — click navigates to lead detail, drag moves the card
+function LeadCard({ lead, lastActivity }: { lead: Lead, lastActivity?: Activity }) {
   return (
-    <Card className="cursor-grab active:cursor-grabbing hover-elevate transition-all border-l-4 border-l-primary/20 hover:border-l-primary">
-      <CardContent className="p-3 space-y-2">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <h4 className="text-sm font-semibold leading-tight">{lead.name}</h4>
-            <p className="text-xs text-muted-foreground line-clamp-1">{lead.company}</p>
+    <Link href={`/leads/${lead.id}`}>
+      <Card className="cursor-pointer hover-elevate transition-all border-l-4 border-l-primary/20 hover:border-l-primary" data-testid={`card-pipeline-${lead.id}`}>
+        <CardContent className="p-3 space-y-2">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1 flex-1 min-w-0">
+              <h4 className="text-sm font-semibold leading-tight truncate">{lead.name}</h4>
+              <p className="text-xs text-muted-foreground line-clamp-1">{lead.company}</p>
+            </div>
           </div>
-          {/* <GripVertical className="h-4 w-4 text-muted-foreground/30" /> */}
-        </div>
-        
-        {lastActivity && (
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/50 p-1.5 rounded">
-            {lastActivity.type === 'call' && <Phone className="h-3 w-3" />}
-            {lastActivity.type === 'email' && <Mail className="h-3 w-3" />}
-            {lastActivity.type === 'meeting' && <Calendar className="h-3 w-3" />}
-            {lastActivity.type === 'stage_change' && <Clock className="h-3 w-3" />}
-            {lastActivity.type === 'note' && <FileText className="h-3 w-3" />}
-            <span className="truncate max-w-[150px]">
-              {lastActivity.type === 'note' ? 'Note added' : formatDistanceToNow(new Date(lastActivity.createdAt), { addSuffix: true })}
-            </span>
-          </div>
-        )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-          <div className="flex items-center text-xs font-medium text-foreground/80">
-            <DollarSign className="h-3 w-3 mr-0.5 text-muted-foreground" />
-            {(lead.value / 1000).toFixed(0)}k
-          </div>
-          {!lastActivity && (
-            <span className="text-[10px] text-muted-foreground">
-              Created {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true })}
-            </span>
+          {lead.phone && (
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Phone className="h-3 w-3" />
+              <span>{lead.phone}</span>
+            </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+          
+          {lastActivity && (
+            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/50 p-1.5 rounded">
+              {lastActivity.type === 'call' && <Phone className="h-3 w-3" />}
+              {lastActivity.type === 'email' && <Mail className="h-3 w-3" />}
+              {lastActivity.type === 'meeting' && <Calendar className="h-3 w-3" />}
+              {lastActivity.type === 'stage_change' && <Clock className="h-3 w-3" />}
+              {lastActivity.type === 'note' && <FileText className="h-3 w-3" />}
+              <span className="truncate max-w-[150px]">
+                {lastActivity.type === 'note' ? 'Note added' : formatDistanceToNow(new Date(lastActivity.createdAt), { addSuffix: true })}
+              </span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <div className="flex items-center text-xs font-medium text-foreground/80">
+              <DollarSign className="h-3 w-3 mr-0.5 text-muted-foreground" />
+              ₹{(lead.value / 1000).toFixed(0)}k
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              {formatDistanceToNow(new Date(lead.createdAt.toString()), { addSuffix: true })}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
 export default function Pipeline() {
   const { currentUser, currentTeamId, simulatedRole } = useStore();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeLead, setActiveLead] = useState<any | null>(null);
+  const [activeLead, setActiveLead] = useState<Lead | null>(null);
   
   const effectiveRole = useStore.getState().getEffectiveRole();
 
-  const { data: leads = [], isLoading: leadsLoading } = useQuery<any[]>({
-    queryKey: ['/api/leads', currentTeamId, effectiveRole],
+  const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
+    queryKey: ['/api/leads', currentTeamId, effectiveRole, simulatedRole],
     queryFn: async () => {
-      const res = await fetch(`/api/leads?teamId=${currentTeamId}&effectiveRole=${effectiveRole}`, { credentials: 'include' });
+      const role = useStore.getState().getEffectiveRole();
+      const res = await fetch(`/api/leads?teamId=${currentTeamId}&effectiveRole=${role}`, { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
     enabled: !!currentUser,
   });
 
-  const { data: activities = [] } = useQuery<any[]>({
+  const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities'],
     queryFn: async () => {
       const res = await fetch('/api/activities', { credentials: 'include' });
@@ -173,7 +180,7 @@ export default function Pipeline() {
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
-    setActiveLead(event.active.data.current?.lead as any);
+    setActiveLead(event.active.data.current?.lead as Lead);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {

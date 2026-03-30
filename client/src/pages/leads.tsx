@@ -58,6 +58,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import type { Lead, Activity, User } from "@shared/schema";
 import { AddLeadDialog } from "@/components/dialogs/AddLeadDialog";
 import { LogActivityDialog } from "@/components/dialogs/LogActivityDialog";
 import { EditLeadDialog } from "@/components/dialogs/EditLeadDialog";
@@ -65,26 +66,30 @@ import { GenerateQuoteDialog } from "@/components/dialogs/GenerateQuoteDialog";
 import { SendEmailDialog } from "@/components/dialogs/SendEmailDialog";
 import { SendWhatsAppDialog } from "@/components/dialogs/SendWhatsAppDialog";
 
+const SOURCES = ["Website", "Referral", "Google Ads", "LinkedIn", "Cold Call", "Social Media", "Partner", "Other"];
+
 export default function Leads() {
   const { currentUser, currentTeamId, simulatedRole } = useStore();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   
-  const isAdmin = currentUser?.role === 'superadmin';
   const effectiveRole = useStore.getState().getEffectiveRole();
+  const isManager = effectiveRole === 'manager';
 
-  const { data: leads = [], isLoading: leadsLoading } = useQuery<any[]>({
-    queryKey: ['/api/leads', currentTeamId, effectiveRole],
+  const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
+    queryKey: ['/api/leads', currentTeamId, effectiveRole, simulatedRole],
     queryFn: async () => {
-      const res = await fetch(`/api/leads?teamId=${currentTeamId}&effectiveRole=${effectiveRole}`, { credentials: 'include' });
+      const role = useStore.getState().getEffectiveRole();
+      const res = await fetch(`/api/leads?teamId=${currentTeamId}&effectiveRole=${role}`, { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
     enabled: !!currentUser,
   });
 
-  const { data: activities = [] } = useQuery<any[]>({
+  const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities'],
     queryFn: async () => {
       const res = await fetch('/api/activities', { credentials: 'include' });
@@ -94,8 +99,8 @@ export default function Leads() {
     enabled: !!currentUser,
   });
 
-  const { data: users = [] } = useQuery<any[]>({
-    queryKey: ['/api/users'],
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ['/api/users', currentTeamId],
     queryFn: async () => {
       const res = await fetch('/api/users', { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
@@ -105,7 +110,7 @@ export default function Leads() {
   });
 
   const updateLeadMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Lead> }) => {
       const res = await apiRequest('PATCH', `/api/leads/${id}`, updates);
       return res.json();
     },
@@ -132,12 +137,16 @@ export default function Leads() {
   }
 
   const filteredLeads = leads
-    .filter(lead => {
-      const matchesSearch = 
-        lead.name.toLowerCase().includes(search.toLowerCase()) ||
-        lead.company.toLowerCase().includes(search.toLowerCase());
+    .filter((lead: Lead) => {
+      const q = search.toLowerCase();
+      const matchesSearch = !search ||
+        lead.name.toLowerCase().includes(q) ||
+        (lead.company || '').toLowerCase().includes(q) ||
+        (lead.phone || '').includes(q) ||
+        (lead.email || '').toLowerCase().includes(q);
       const matchesStatus = statusFilter === "all" || lead.stage === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesSource = sourceFilter === "all" || lead.source === sourceFilter;
+      return matchesSearch && matchesStatus && matchesSource;
     });
 
   const toggleSelectAll = () => {
@@ -211,62 +220,68 @@ export default function Leads() {
       </div>
 
       {/* Stats Cards */}
-      <div className="flex gap-5 w-full overflow-x-auto pb-1">
-        <div className="flex-1 min-w-[240px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Total Leads</span>
-            <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
-              <Users className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-2xl font-semibold text-foreground">
-              {leads.length}
-            </span>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#effefa] dark:bg-[#40c4aa]/10 px-1.5 py-0.5 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-[#40c4aa] dark:text-[#40c4aa]">+12%</span>
+      {(() => {
+        const activeDeals = leads.filter((l: Lead) => !['won', 'lost'].includes(l.stage)).length;
+        const wonLeads = leads.filter((l: Lead) => l.stage === 'won').length;
+        const winRate = leads.length > 0 ? ((wonLeads / leads.length) * 100).toFixed(0) : '0';
+        return (
+          <div className="flex gap-5 w-full overflow-x-auto pb-1">
+            <div className="flex-1 min-w-[200px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-total">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Total Leads</span>
+                <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
+                  <Users className="w-4 h-4 text-primary" />
+                </div>
               </div>
-              <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">from last month</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-2xl font-semibold text-foreground">{leads.length}</span>
+                <span className="text-sm text-muted-foreground">{activeDeals} active</span>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="flex-1 min-w-[240px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Active Deals</span>
-            <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
-              <Briefcase className="w-4 h-4 text-primary" />
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-2xl font-semibold text-foreground">
-              {leads.filter(l => ['negotiation', 'proposal'].includes(l.stage)).length}
-            </span>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#effefa] dark:bg-[#40c4aa]/10 px-1.5 py-0.5 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-[#40c4aa] dark:text-[#40c4aa]">+5%</span>
+            <div className="flex-1 min-w-[200px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-active">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Active Deals</span>
+                <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
+                  <Briefcase className="w-4 h-4 text-primary" />
+                </div>
               </div>
-              <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">from last month</span>
+              <div className="flex flex-col gap-1">
+                <span className="text-2xl font-semibold text-foreground">{activeDeals}</span>
+                <span className="text-sm text-muted-foreground">in pipeline</span>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="flex-1 min-w-[240px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Conversion Rate</span>
-            <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
-              <Target className="w-4 h-4 text-primary" />
+            <div className="flex-1 min-w-[200px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-winrate">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Win Rate</span>
+                <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
+                  <Target className="w-4 h-4 text-primary" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-2xl font-semibold text-foreground">{winRate}%</span>
+                <span className="text-sm text-muted-foreground">{wonLeads} won of {leads.length}</span>
+              </div>
             </div>
           </div>
-          <div className="flex flex-col gap-2">
-            <span className="text-2xl font-semibold text-foreground">24%</span>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#fff0f3] dark:bg-[#df1c41]/10 px-1.5 py-0.5 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-[#df1c41] dark:text-[#df1c41]">-2%</span>
-              </div>
-              <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">from last month</span>
-            </div>
+        );
+      })()}
+
+      {/* Filters Row: Stage + Source */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Source Filter */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Source:</span>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <button onClick={() => setSourceFilter("all")} className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium transition-colors border ${sourceFilter === "all" ? "bg-foreground text-background border-foreground" : "bg-card text-muted-foreground border hover-elevate"}`}>
+              All
+            </button>
+            {SOURCES.map(s => (
+              <button key={s} onClick={() => setSourceFilter(s)} className={`whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium transition-colors border ${sourceFilter === s ? "bg-foreground text-background border-foreground" : "bg-card text-muted-foreground border hover-elevate"}`}>
+                {s}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -368,7 +383,7 @@ export default function Leads() {
                 </TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Lead Name</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Company</TableHead>
-                {isAdmin && <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Assignee</TableHead>}
+                {isManager && <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Assignee</TableHead>}
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Value</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Stage</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Last Activity</TableHead>
@@ -405,7 +420,7 @@ export default function Leads() {
                       <TableCell>
                         <span className="text-foreground text-[14px]">{lead.company}</span>
                       </TableCell>
-                      {isAdmin && (
+                      {isManager && (
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -424,7 +439,7 @@ export default function Leads() {
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-[200px]">
-                              {users.filter(u => u.role === 'sales_executive').map(user => (
+                              {users.filter((u: User) => u.role !== 'superadmin').map(user => (
                                 <DropdownMenuItem 
                                   key={user.id}
                                   onClick={() => updateLeadMutation.mutate({ id: lead.id, updates: { assignedTo: user.id } })}

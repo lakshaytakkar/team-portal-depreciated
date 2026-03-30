@@ -114,6 +114,7 @@ export const tasks = pgTable("tasks", {
   dueDate: timestamp("due_date").notNull(),
   assignedTo: varchar("assigned_to").notNull().references(() => users.id),
   teamId: text("team_id"),
+  leadId: varchar("lead_id").references(() => leads.id, { onDelete: 'set null' }),
   tags: jsonb("tags").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

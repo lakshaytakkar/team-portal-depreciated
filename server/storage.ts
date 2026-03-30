@@ -109,7 +109,7 @@ export interface IStorage {
   
   // Tasks
   getTask(id: string): Promise<Task | undefined>;
-  getTasks(options?: { userId?: string; teamId?: string }): Promise<Task[]>;
+  getTasks(options?: { userId?: string; teamId?: string; leadId?: string }): Promise<Task[]>;
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: string, updates: Partial<InsertTask>): Promise<Task | undefined>;
   deleteTask(id: string): Promise<boolean>;
@@ -529,14 +529,17 @@ export class Storage implements IStorage {
     return data ? toCamelCase<Task>(data) : undefined;
   }
 
-  async getTasks(options?: { userId?: string; teamId?: string }): Promise<Task[]> {
-    const { userId, teamId } = options || {};
+  async getTasks(options?: { userId?: string; teamId?: string; leadId?: string }): Promise<Task[]> {
+    const { userId, teamId, leadId } = options || {};
     let query = supabase.from('tasks').select('*');
     if (teamId) {
       query = query.eq('team_id', teamId);
     }
     if (userId) {
       query = query.eq('assigned_to', userId);
+    }
+    if (leadId) {
+      query = query.eq('lead_id', leadId);
     }
     const { data } = await query.order('due_date', { ascending: false });
     return toCamelCaseArray<Task>(data ?? []);

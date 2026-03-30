@@ -51,6 +51,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import type { Lead, Activity, Task } from "@shared/schema";
 import { LogActivityDialog } from "@/components/dialogs/LogActivityDialog";
 import { EditLeadDialog } from "@/components/dialogs/EditLeadDialog";
 import { GenerateQuoteDialog } from "@/components/dialogs/GenerateQuoteDialog";
@@ -64,7 +65,7 @@ export default function LeadDetail() {
   const [note, setNote] = useState("");
   const [newTag, setNewTag] = useState("");
 
-  const { data: lead } = useQuery<any>({
+  const { data: lead } = useQuery<Lead>({
     queryKey: ['/api/leads', params.id],
     queryFn: async () => {
       const res = await fetch(`/api/leads/${params.id}`, { credentials: 'include' });
@@ -74,7 +75,7 @@ export default function LeadDetail() {
     enabled: !!currentUser && !!params.id,
   });
 
-  const { data: activities = [] } = useQuery<any[]>({
+  const { data: activities = [] } = useQuery<Activity[]>({
     queryKey: ['/api/activities', params.id],
     queryFn: async () => {
       const res = await fetch(`/api/activities?leadId=${params.id}`, { credentials: 'include' });
@@ -84,8 +85,18 @@ export default function LeadDetail() {
     enabled: !!currentUser && !!params.id,
   });
 
+  const { data: leadTasks = [] } = useQuery<Task[]>({
+    queryKey: ['/api/tasks', 'lead', params.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/tasks?leadId=${params.id}`, { credentials: 'include' });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    enabled: !!currentUser && !!params.id,
+  });
+
   const addActivityMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: { leadId: string; userId: string; type: string; notes: string; duration?: number }) => {
       const res = await apiRequest('POST', '/api/activities', data);
       return res.json();
     },
@@ -108,19 +119,45 @@ export default function LeadDetail() {
     updateLeadStageMutation.mutate({ leadId, stage });
   };
   
-  // Local state for UI interactivity (mocking updates)
-  const [rating, setRating] = useState(lead?.rating || 0);
-  const [leadTags, setLeadTags] = useState<string[]>(lead?.tags || []);
-  const [temperature, setTemperature] = useState<'hot'|'warm'|'cold'|undefined>(lead?.temperature);
-  const [bulletNotes, setBulletNotes] = useState<string[]>(["Interested in the enterprise plan", "Budget review pending"]);
-  const [objections, setObjections] = useState([
-    { id: 1, title: "Price is too high", desc: "Customer mentioned they have a quote from a competitor that is 20% lower.", type: "Pricing", date: "Jan 15", author: "Rahul" },
-    { id: 2, title: "Need to consult partner", desc: "Decision maker is not the sole authority.", type: "Authority", date: "Jan 12", author: "Rahul" }
-  ]);
+  const updateLeadMutation = useMutation({
+    mutationFn: async (updates: Partial<Lead>) => {
+      const res = await apiRequest('PATCH', `/api/leads/${params.id}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/leads', params.id] });
+    },
+  });
+
+  const [rating, setRating] = useState<number>(lead?.rating || 0);
+  const [leadTagsLocal, setLeadTagsLocal] = useState<string[]>(lead?.tags || []);
+
+  const handleRatingChange = (star: number) => {
+    const newTemp: 'hot' | 'warm' | 'cold' = star >= 4 ? 'hot' : star === 3 ? 'warm' : 'cold';
+    setRating(star);
+    updateLeadMutation.mutate({ rating: star, temperature: newTemp });
+  };
+
+  const handleAddTagLocal = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && newTag.trim()) {
+      if (!leadTagsLocal.includes(newTag.trim())) {
+        const updated = [...leadTagsLocal, newTag.trim()];
+        setLeadTagsLocal(updated);
+        updateLeadMutation.mutate({ tags: updated });
+      }
+      setNewTag("");
+    }
+  };
+
+  const removeTagLocal = (tagToRemove: string) => {
+    const updated = leadTagsLocal.filter(t => t !== tagToRemove);
+    setLeadTagsLocal(updated);
+    updateLeadMutation.mutate({ tags: updated });
+  };
 
   const leadActivities = activities
-    .filter((a: any) => a.leadId === lead?.id)
-    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    .filter((a: Activity) => a.leadId === lead?.id)
+    .sort((a: Activity, b: Activity) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   if (!lead) {
     return <div className="p-8">Lead not found</div>;
@@ -133,24 +170,11 @@ export default function LeadDetail() {
     if (id) setLocation(`/leads/${id}`);
   };
 
-  const handleAddTag = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && newTag.trim()) {
-      if (!leadTags.includes(newTag.trim())) {
-        setLeadTags([...leadTags, newTag.trim()]);
-      }
-      setNewTag("");
-    }
-  };
-
-  const removeTag = (tagToRemove: string) => {
-    setLeadTags(leadTags.filter(t => t !== tagToRemove));
-  };
-
   const handleAddNote = () => {
-    if (!note.trim()) return;
+    if (!note.trim() || !lead || !currentUser) return;
     addActivityMutation.mutate({
       leadId: lead.id,
-      userId: currentUser?.id,
+      userId: currentUser.id,
       type: 'note',
       notes: note
     });
@@ -225,12 +249,7 @@ export default function LeadDetail() {
                           return (
                             <button 
                               key={star}
-                              onClick={() => {
-                                setRating(star);
-                                if (star >= 4) setTemperature('hot');
-                                else if (star === 3) setTemperature('warm');
-                                else setTemperature('cold');
-                              }}
+                              onClick={() => handleRatingChange(star)}
                               className="focus:outline-none hover:scale-110 transition-transform p-0.5"
                             >
                               <Star className={cn("h-3 w-3 transition-colors", fillClass)} />
@@ -481,6 +500,9 @@ export default function LeadDetail() {
               <div className="flex items-center justify-between mb-4 shrink-0">
                 <TabsList className="bg-card border p-1 h-[44px] rounded-[10px]">
                     <TabsTrigger value="activity" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Timeline</TabsTrigger>
+                    <TabsTrigger value="tasks" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">
+                      Tasks {leadTasks.length > 0 && <span className="ml-1 bg-primary/20 text-primary rounded-full px-1.5 py-0 text-[10px] font-semibold">{leadTasks.length}</span>}
+                    </TabsTrigger>
                     <TabsTrigger value="notes" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Notes</TabsTrigger>
                     <TabsTrigger value="files" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Attachments</TabsTrigger>
                   </TabsList>
@@ -550,101 +572,79 @@ export default function LeadDetail() {
                     </div>
                   </TabsContent>
 
+                  <TabsContent value="tasks" className="h-full mt-0 outline-none">
+                    <div className="bg-card border rounded-[16px] shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] h-full flex flex-col overflow-hidden">
+                      <div className="flex-1 overflow-y-auto p-6">
+                        {leadTasks.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                            <CheckCircle2 className="h-10 w-10 text-border mb-3" />
+                            <p className="font-medium">No tasks linked to this lead</p>
+                            <p className="text-sm mt-1">Tasks created for this lead will appear here.</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {leadTasks.map((task: Task) => (
+                              <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/40 hover:bg-muted transition-colors">
+                                <div className={cn(
+                                  "mt-0.5 h-2 w-2 rounded-full shrink-0",
+                                  task.status === 'completed' ? 'bg-green-500' :
+                                  task.status === 'in_progress' ? 'bg-blue-500' :
+                                  task.priority === 'high' ? 'bg-red-500' : 'bg-orange-400'
+                                )} />
+                                <div className="flex-1 min-w-0">
+                                  <p className={cn(
+                                    "text-sm font-medium",
+                                    task.status === 'completed' && 'line-through text-muted-foreground'
+                                  )}>{task.title}</p>
+                                  {task.description && (
+                                    <p className="text-xs text-muted-foreground mt-0.5 truncate">{task.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-2 mt-1.5">
+                                    <Badge variant="outline" className="text-[10px] h-5 capitalize">{task.status?.replace('_', ' ')}</Badge>
+                                    {task.dueDate && (
+                                      <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {format(new Date(task.dueDate), "MMM d")}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+
                   <TabsContent value="notes" className="h-full mt-0 outline-none">
                      <div className="bg-card border rounded-[16px] shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] h-full flex flex-col overflow-hidden">
                         <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                          {/* Notes Section */}
-                          <section>
-                            <h3 className="text-[16px] font-semibold text-foreground mb-4 flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-primary" /> Key Notes
-                            </h3>
-                            <div className="space-y-2">
-                              {bulletNotes.map((note, idx) => (
-                                <div key={idx} className="flex items-start gap-2 group">
-                                  <div className="mt-2.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                                  <Input 
-                                    value={note}
-                                    onChange={(e) => {
-                                      const newNotes = [...bulletNotes];
-                                      newNotes[idx] = e.target.value;
-                                      setBulletNotes(newNotes);
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Backspace' && note === '') {
-                                        e.preventDefault();
-                                        const newNotes = bulletNotes.filter((_, i) => i !== idx);
-                                        setBulletNotes(newNotes);
-                                      }
-                                    }}
-                                    className="border-none shadow-none focus-visible:ring-0 p-0 h-auto min-h-[24px] text-sm bg-transparent resize-none overflow-hidden hover:bg-muted rounded px-2 -ml-2 w-full transition-colors"
-                                  />
-                                </div>
-                              ))}
-                              <div className="flex items-center gap-2 text-muted-foreground hover:text-foreground cursor-pointer transition-colors pl-0.5" onClick={() => setBulletNotes([...bulletNotes, ""])}>
-                                <Plus className="h-4 w-4" />
-                                <span className="text-sm">Add note...</span>
-                              </div>
-                            </div>
-                          </section>
-
-                          <Separator />
-
                           {/* Tags Section */}
                           <section>
                             <h3 className="text-[16px] font-semibold text-foreground mb-4 flex items-center gap-2">
                               <Tag className="h-4 w-4 text-primary" /> Tags
                             </h3>
                             <div className="flex flex-wrap gap-2 mb-3">
-                              {leadTags.map(tag => (
+                              {leadTagsLocal.map(tag => (
                                 <Badge key={tag} variant="secondary" className="bg-muted text-foreground border px-2 py-1 flex items-center gap-1 font-normal group">
                                   {tag}
-                                  <button onClick={() => removeTag(tag)} className="text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => removeTagLocal(tag)} className="text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <X className="h-3 w-3" />
                                   </button>
                                 </Badge>
                               ))}
-                              {leadTags.length === 0 && <span className="text-sm text-muted-foreground italic">No tags added yet.</span>}
+                              {leadTagsLocal.length === 0 && <span className="text-sm text-muted-foreground italic">No tags added yet.</span>}
                             </div>
                             <div className="relative max-w-sm">
                               <Input 
-                                placeholder="Add a tag..." 
+                                placeholder="Add a tag and press Enter..." 
                                 value={newTag}
                                 onChange={(e) => setNewTag(e.target.value)}
-                                onKeyDown={handleAddTag}
+                                onKeyDown={handleAddTagLocal}
                                 className="h-9 text-sm pr-8 bg-muted border focus-visible:ring-primary"
                               />
                               <Plus className="h-4 w-4 absolute right-3 top-2.5 text-muted-foreground" />
-                            </div>
-                          </section>
-
-                          <Separator />
-
-                          {/* Objections Section */}
-                          <section>
-                            <div className="flex justify-between items-center mb-4">
-                              <h3 className="text-[16px] font-semibold text-foreground flex items-center gap-2">
-                                <XCircle className="h-4 w-4 text-primary" /> Objections
-                              </h3>
-                              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground">Add New</Button>
-                            </div>
-                            <div className="space-y-3">
-                               {objections.map((obj) => (
-                                 <div key={obj.id} className="bg-muted rounded-lg p-3 border border-[#F1F5F9]">
-                                    <div className="flex items-start gap-3">
-                                       <div className={`mt-1.5 h-2 w-2 rounded-full ${obj.type === 'Pricing' ? 'bg-red-500' : 'bg-orange-500'} shrink-0`} />
-                                       <div className="flex-1 min-w-0">
-                                          <h4 className="text-sm font-semibold text-foreground mb-0.5">{obj.title}</h4>
-                                          <p className="text-xs text-muted-foreground leading-relaxed mb-2">
-                                             {obj.desc}
-                                          </p>
-                                          <div className="flex items-center gap-2">
-                                             <Badge variant="outline" className={`text-[10px] h-5 ${obj.type === 'Pricing' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-orange-50 text-orange-700 border-orange-200'}`}>{obj.type}</Badge>
-                                             <span className="text-[10px] text-[#9AA0AC]">• Logged by {obj.author}</span>
-                                          </div>
-                                       </div>
-                                    </div>
-                                 </div>
-                               ))}
                             </div>
                           </section>
                         </div>
