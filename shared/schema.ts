@@ -1730,8 +1730,8 @@ export const aiMessages = pgTable("ai_messages", {
   conversationId: varchar("conversation_id").notNull().references(() => aiConversations.id, { onDelete: 'cascade' }),
   role: text("role").notNull(),
   content: text("content").notNull(),
-  toolCalls: jsonb("tool_calls").$type<any[]>(),
-  toolResults: jsonb("tool_results").$type<any[]>(),
+  toolCalls: jsonb("tool_calls").$type<{ type: string; toolCallId?: string; toolName?: string; args?: Record<string, unknown>; result?: unknown }[]>(),
+  toolResults: jsonb("tool_results").$type<{ toolCallId?: string; result?: unknown }[]>(),
   reasoning: text("reasoning"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

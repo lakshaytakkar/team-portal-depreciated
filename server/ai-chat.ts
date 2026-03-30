@@ -103,7 +103,7 @@ Task priorities: low, medium, high
 Lead temperatures: hot, warm, cold
 
 Guidelines:
-- Always use the queryTable tool to fetch real data. Specify table, columns, where, orderBy, limit, aggregation, and groupBy as structured parameters. Never write raw SQL.
+- Use queryTable, run_sql_query, or analyticsQuery tools to fetch real data. All accept structured parameters (table, columns, filters, orderBy, limit, aggregates, groupBy). Never write raw SQL.
 - Use snake_case column names (e.g., assigned_to, team_id, created_at).
 - Format numbers and currency in Indian Rupee (₹) format when relevant.
 - Keep responses concise but informative.
@@ -342,6 +342,55 @@ function getReadTools(userRole: string) {
         }
       },
     }),
+
+    run_sql_query: tool({
+      description: `Query CRM data (alias for queryTable). Specify structured parameters for table, columns, filters, ordering, and limit. Tables: ${allowedTableNames.join(", ")}.`,
+      parameters: z.object({
+        table: z.string().describe("Table to query"),
+        columns: z.array(z.string()).optional().describe("Columns to select"),
+        filters: z.array(filterOperatorSchema).optional().describe("WHERE conditions"),
+        orderByColumn: z.string().optional().describe("Column to sort by"),
+        orderDirection: z.enum(["ASC", "DESC"]).optional().describe("Sort direction"),
+        limit: z.number().optional().describe("Max rows (default 100, max 100)"),
+      }),
+      execute: async ({ table, columns, filters, orderByColumn, orderDirection, limit }) => {
+        try {
+          const { sql, params, error: buildError } = buildStrictQuery(
+            roleColumns, table, columns, filters, orderByColumn, orderDirection, limit, undefined, undefined
+          );
+          if (buildError) return { error: buildError };
+          const rows = await execParameterizedQuery(sql, params);
+          return { results: rows.slice(0, 100), rowCount: rows.length };
+        } catch (e: unknown) {
+          return { error: e instanceof Error ? e.message : String(e) };
+        }
+      },
+    }),
+
+    analyticsQuery: tool({
+      description: `Run analytics/aggregation queries on CRM data. Use aggregate functions (COUNT, SUM, AVG, MIN, MAX) with optional groupBy. Tables: ${allowedTableNames.join(", ")}.`,
+      parameters: z.object({
+        table: z.string().describe("Table to query"),
+        aggregates: z.array(aggregateFnSchema).describe("Aggregate functions to apply"),
+        groupByColumns: z.array(z.string()).optional().describe("Columns to group by"),
+        filters: z.array(filterOperatorSchema).optional().describe("WHERE conditions"),
+        orderByColumn: z.string().optional().describe("Column to sort by"),
+        orderDirection: z.enum(["ASC", "DESC"]).optional().describe("Sort direction"),
+        limit: z.number().optional().describe("Max rows (default 100, max 100)"),
+      }),
+      execute: async ({ table, aggregates, groupByColumns, filters, orderByColumn, orderDirection, limit }) => {
+        try {
+          const { sql, params, error: buildError } = buildStrictQuery(
+            roleColumns, table, undefined, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns
+          );
+          if (buildError) return { error: buildError };
+          const rows = await execParameterizedQuery(sql, params);
+          return { results: rows, rowCount: rows.length };
+        } catch (e: unknown) {
+          return { error: e instanceof Error ? e.message : String(e) };
+        }
+      },
+    }),
   };
 }
 
@@ -501,11 +550,20 @@ aiRouter.get("/conversations/search", async (req: Request, res: Response) => {
       .order("updated_at", { ascending: false })
       .limit(20);
 
-    const { data: msgHits } = await supabase
-      .from("ai_messages")
-      .select("conversation_id, content")
-      .ilike("content", `%${q}%`)
-      .limit(50);
+    const { data: userConvs } = await supabase
+      .from("ai_conversations")
+      .select("id")
+      .eq("user_id", user.id);
+    const userConvIds = (userConvs || []).map((c: { id: string }) => c.id);
+
+    const { data: msgHits } = userConvIds.length > 0
+      ? await supabase
+          .from("ai_messages")
+          .select("conversation_id, content")
+          .in("conversation_id", userConvIds)
+          .ilike("content", `%${q}%`)
+          .limit(50)
+      : { data: null };
 
     const convIds = new Set((convs || []).map((c: { id: string }) => c.id));
     if (msgHits) {
