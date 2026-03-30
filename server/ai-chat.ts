@@ -196,6 +196,7 @@ function buildStrictQuery(
   limit: number | undefined,
   aggregates: AggregateFn[] | undefined,
   groupByColumns: string[] | undefined,
+  rowFilters?: Record<string, { column: string; value: string }>,
 ): { sql: string; params: (string | number | boolean | null)[]; error?: string } {
   const safeTable = validateTable(table, roleColumns);
   if (!safeTable) {
@@ -259,6 +260,17 @@ function buildStrictQuery(
     query += ` WHERE ${whereParts.join(" AND ")}`;
   }
 
+  const rowFilter = rowFilters?.[safeTable];
+  if (rowFilter) {
+    params.push(rowFilter.value);
+    const rowCondition = `${rowFilter.column} = $${paramIdx++}`;
+    if (filters && filters.length > 0) {
+      query += ` AND ${rowCondition}`;
+    } else {
+      query += ` WHERE ${rowCondition}`;
+    }
+  }
+
   if (groupByColumns && groupByColumns.length > 0) {
     const safeGroups: string[] = [];
     for (const gc of groupByColumns) {
@@ -297,9 +309,20 @@ async function execParameterizedQuery(sql: string, params: (string | number | bo
   }
 }
 
-function getReadTools(userRole: string) {
+function getRowFilters(userRole: string, userId: string): Record<string, { column: string; value: string }> {
+  if (userRole === "superadmin") return {};
+  if (userRole === "manager") return {};
+  return {
+    leads: { column: "assigned_to", value: userId },
+    tasks: { column: "assigned_to", value: userId },
+    activities: { column: "user_id", value: userId },
+  };
+}
+
+function getReadTools(userRole: string, userId: string) {
   const roleColumns = getColumnsForRole(userRole);
   const allowedTableNames = Object.keys(roleColumns);
+  const rowFilters = getRowFilters(userRole, userId);
 
   return {
     getSchema: tool({
@@ -336,7 +359,7 @@ function getReadTools(userRole: string) {
       execute: async ({ table, columns, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns }) => {
         try {
           const { sql, params, error: buildError } = buildStrictQuery(
-            roleColumns, table, columns, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns
+            roleColumns, table, columns, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns, rowFilters
           );
           if (buildError) return { error: buildError };
           const rows = await execParameterizedQuery(sql, params);
@@ -360,7 +383,7 @@ function getReadTools(userRole: string) {
       execute: async ({ table, columns, filters, orderByColumn, orderDirection, limit }) => {
         try {
           const { sql, params, error: buildError } = buildStrictQuery(
-            roleColumns, table, columns, filters, orderByColumn, orderDirection, limit, undefined, undefined
+            roleColumns, table, columns, filters, orderByColumn, orderDirection, limit, undefined, undefined, rowFilters
           );
           if (buildError) return { error: buildError };
           const rows = await execParameterizedQuery(sql, params);
@@ -385,7 +408,7 @@ function getReadTools(userRole: string) {
       execute: async ({ table, aggregates, groupByColumns, filters, orderByColumn, orderDirection, limit }) => {
         try {
           const { sql, params, error: buildError } = buildStrictQuery(
-            roleColumns, table, undefined, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns
+            roleColumns, table, undefined, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns, rowFilters
           );
           if (buildError) return { error: buildError };
           const rows = await execParameterizedQuery(sql, params);
@@ -396,6 +419,26 @@ function getReadTools(userRole: string) {
       },
     }),
   };
+}
+
+function getOwnershipColumn(table: string): string | null {
+  if (table === "leads") return "assigned_to";
+  if (table === "tasks") return "assigned_to";
+  if (table === "activities") return "user_id";
+  return null;
+}
+
+async function verifyRecordOwnership(table: string, id: string, userId: string, userRole: string): Promise<{ allowed: boolean; error?: string }> {
+  if (userRole === "superadmin") return { allowed: true };
+  const ownerCol = getOwnershipColumn(table);
+  if (!ownerCol) return { allowed: false, error: "No ownership column for this table." };
+  const { data, error } = await supabase.from(table).select(ownerCol).eq("id", id).single();
+  if (error || !data) return { allowed: false, error: "Record not found." };
+  const ownerValue = (data as Record<string, unknown>)[ownerCol];
+  if (String(ownerValue) !== userId) {
+    return { allowed: false, error: "You do not have permission to modify this record (not assigned to you)." };
+  }
+  return { allowed: true };
 }
 
 function getMutationTools(userId: string, userRole: string) {
@@ -468,6 +511,8 @@ function getMutationTools(userId: string, userRole: string) {
           if (pending.action !== "update" || pending.table !== table) {
             return { error: `Token was issued for ${pending.action} on ${pending.table}, not update on ${table}.` };
           }
+          const ownership = await verifyRecordOwnership(table, id, userId, userRole);
+          if (!ownership.allowed) return { error: ownership.error || "Access denied." };
           pendingMutations.delete(confirmationToken);
           const { data: result, error } = await supabase.from(table).update(data).eq("id", id).select().single();
           if (error) return { error: error.message };
@@ -495,6 +540,8 @@ function getMutationTools(userId: string, userRole: string) {
           if (pending.action !== "delete" || pending.table !== table) {
             return { error: `Token was issued for ${pending.action} on ${pending.table}, not delete on ${table}.` };
           }
+          const ownership = await verifyRecordOwnership(table, id, userId, userRole);
+          if (!ownership.allowed) return { error: ownership.error || "Access denied." };
           pendingMutations.delete(confirmationToken);
           const { error } = await supabase.from(table).delete().eq("id", id);
           if (error) return { error: error.message };
@@ -781,7 +828,7 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
       model: openai("gpt-4o"),
       system: getSystemPrompt(user.name),
       messages: chatMessages,
-      tools: { ...getReadTools(user.role), ...getMutationTools(user.id, user.role) },
+      tools: { ...getReadTools(user.role, user.id), ...getMutationTools(user.id, user.role) },
       maxSteps: 8,
       onError: (error) => {
         console.error("AI stream error:", error);
