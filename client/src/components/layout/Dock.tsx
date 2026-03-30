@@ -56,31 +56,36 @@ export function Dock({ className }: DockProps) {
         {accessibleTeams.map((team) => {
           const isActive = currentTeamId === team.id;
           const TeamIcon = team.icon;
+          const activeTeamIds = ["travel-sales"];
+          const isEnabled = activeTeamIds.includes(team.id);
           return (
             <Tooltip key={team.id} delayDuration={300}>
               <TooltipTrigger asChild>
                 <div className="relative flex items-center justify-center w-full">
-                  {isActive && (
+                  {isActive && isEnabled && (
                     <div
                       className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-[3px]"
                       style={{ backgroundColor: 'hsl(var(--foreground))' }}
                     />
                   )}
                   <button
-                    onClick={() => setCurrentTeamId(team.id)}
+                    onClick={() => isEnabled && setCurrentTeamId(team.id)}
                     className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-[10px] cursor-pointer transition-opacity",
-                      isActive ? "ring-2 ring-offset-1 ring-sidebar-border" : "opacity-80 hover:opacity-100"
+                      "flex h-9 w-9 items-center justify-center rounded-[10px] transition-opacity",
+                      isEnabled
+                        ? cn("cursor-pointer", isActive ? "ring-2 ring-offset-1 ring-sidebar-border" : "opacity-80 hover:opacity-100")
+                        : "cursor-not-allowed grayscale opacity-40"
                     )}
-                    style={{ backgroundColor: team.color }}
+                    style={{ backgroundColor: isEnabled ? team.color : undefined }}
                     data-testid={`dock-icon-${team.id}`}
+                    disabled={!isEnabled}
                   >
-                    <TeamIcon className="h-[18px] w-[18px] text-white" />
+                    <TeamIcon className={cn("h-[18px] w-[18px]", isEnabled ? "text-white" : "text-muted-foreground")} />
                   </button>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right" className="text-xs font-medium" data-testid={`tooltip-dock-${team.id}`}>
-                {team.name}
+                {team.name}{!isEnabled && " (Coming Soon)"}
               </TooltipContent>
             </Tooltip>
           );
