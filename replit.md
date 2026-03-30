@@ -9,6 +9,7 @@ A comprehensive team portal and CRM system for Suprans Business Consulting. The 
 - **LLC Clients**: LLC formation tracking, document management, bank applications, and client timeline
 - **Public Website**: Company information, services, travel packages, and contact forms
 - **Scheduling System**: In-house booking/scheduling (like Calendly) with booking types, availability, public booking pages, and team analytics
+- **AI Chat Assistant**: GPT-4o powered chat drawer (header Sparkles icon) with database querying tools, streaming responses, conversation history, and CRM record management
 
 ## User Credentials
 All users have password: **Suprans@123**
@@ -58,6 +59,7 @@ client/
 │   │   └── queryClient.ts
 │   └── assets/images/    # Static images
 server/
+├── ai-chat.ts            # AI Chat Assistant (GPT-4o streaming, tools, conversation CRUD)
 ├── auth.ts               # Authentication logic
 ├── db.ts                 # Database connection
 ├── routes.ts             # API endpoints
@@ -76,6 +78,7 @@ shared/
 - Faire: faire_stores, faire_suppliers, faire_products, faire_product_variants, faire_orders, faire_order_items, faire_shipments
 - LLC: llc_banks, llc_document_types, llc_clients, llc_client_documents, llc_client_timeline
 - Scheduling: booking_types, availability_schedules, availability_overrides, bookings, booking_reminders
+- AI: ai_conversations, ai_messages
 
 ## Routes
 - `/` - Public homepage

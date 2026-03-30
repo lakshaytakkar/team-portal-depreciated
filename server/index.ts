@@ -90,7 +90,10 @@ app.use((req, res, next) => {
   next();
 });
 
+import { aiRouter } from "./ai-chat";
+
 (async () => {
+  app.use("/api/ai", aiRouter);
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {

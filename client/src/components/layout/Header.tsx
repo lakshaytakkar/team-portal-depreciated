@@ -14,7 +14,8 @@ import {
   Eye,
   Crown,
   Moon,
-  Sun
+  Sun,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
@@ -36,11 +37,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getTeamById } from "@/lib/teams-config";
 import { useTheme } from "@/components/theme-provider";
+import { AIChatDrawer } from "@/components/ai-chat/AIChatDrawer";
 
 export function Header() {
   const { currentUser, simulatedRole, setSimulatedRole, currentTeamId, getEffectiveRole } = useStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const isSuperadmin = currentUser?.role === 'superadmin';
@@ -211,6 +214,16 @@ export function Header() {
             </PopoverContent>
           </Popover>
 
+          <div
+            className="relative cursor-pointer"
+            onClick={() => setAiChatOpen(true)}
+            data-testid="button-ai-chat"
+          >
+            <div className="flex items-center justify-center h-8 w-8 rounded-full border bg-card hover:bg-primary/10 transition-colors">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+          </div>
+
           <div className="h-5 w-px bg-border" />
 
           <DropdownMenu>
@@ -262,6 +275,7 @@ export function Header() {
       
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
       <SignOutDialog open={logoutOpen} onOpenChange={setLogoutOpen} onConfirm={handleLogout} />
+      <AIChatDrawer open={aiChatOpen} onOpenChange={setAiChatOpen} />
     </>
   );
 }
