@@ -177,7 +177,7 @@ export default function VenueComparisonPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F34147]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563EB]" />
       </div>
     );
   }
@@ -191,7 +191,7 @@ export default function VenueComparisonPage() {
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#F34147] hover:bg-[#D93036] text-white" data-testid="button-add-venue">
+            <Button className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white" data-testid="button-add-venue">
               <Plus className="h-4 w-4 mr-2" /> Add Venue
             </Button>
           </DialogTrigger>
@@ -269,7 +269,7 @@ export default function VenueComparisonPage() {
               </div>
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-                <Button onClick={handleAdd} className="bg-[#F34147] hover:bg-[#D93036] text-white" disabled={addMutation.isPending}>Add Venue</Button>
+                <Button onClick={handleAdd} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white" disabled={addMutation.isPending}>Add Venue</Button>
               </div>
             </div>
           </DialogContent>
@@ -321,7 +321,7 @@ export default function VenueComparisonPage() {
               return (
                 <div key={city}>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-[#F34147]" />
+                    <MapPin className="h-5 w-5 text-[#2563EB]" />
                     {city}
                     <Badge variant="secondary">{cityVenues.length} venues</Badge>
                   </h2>
@@ -419,12 +419,12 @@ function VenueTable({
               <td className="p-3">
                 <div className="space-y-1">
                   {venue.contactPhone && (
-                    <a href={`tel:${venue.contactPhone}`} className="flex items-center gap-1 text-sm text-gray-600 hover:text-[#F34147]">
+                    <a href={`tel:${venue.contactPhone}`} className="flex items-center gap-1 text-sm text-gray-600 hover:text-[#2563EB]">
                       <Phone className="h-3 w-3" /> {venue.contactPhone}
                     </a>
                   )}
                   {venue.email && (
-                    <a href={`mailto:${venue.email}`} className="flex items-center gap-1 text-xs text-gray-500 hover:text-[#F34147] truncate max-w-[150px]">
+                    <a href={`mailto:${venue.email}`} className="flex items-center gap-1 text-xs text-gray-500 hover:text-[#2563EB] truncate max-w-[150px]">
                       <Mail className="h-3 w-3" /> {venue.email}
                     </a>
                   )}
@@ -600,7 +600,7 @@ function EditVenueDialog({
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={() => onSave(form)} className="bg-[#F34147] hover:bg-[#D93036] text-white" disabled={isPending}>Save Changes</Button>
+            <Button onClick={() => onSave(form)} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white" disabled={isPending}>Save Changes</Button>
           </div>
         </div>
       </DialogContent>

@@ -67,6 +67,7 @@ export interface Team {
   name: string;
   subtitle: string;
   icon: LucideIcon;
+  iconImage?: string;
   color: string;
   groups: NavGroup[];
   adminGroups?: NavGroup[];
@@ -77,10 +78,11 @@ export interface Team {
 export const teams: Team[] = [
   {
     id: "travel-sales",
+    iconImage: "/icons/travel-sales.png",
     name: "Suprans - Sales",
     subtitle: "Sales & Lead Management",
     icon: Plane,
-    color: "#F34147",
+    color: "#2563EB",
     groups: [
       {
         label: "Pinned",
@@ -212,6 +214,7 @@ export const teams: Team[] = [
   },
   {
     id: "travel-operations",
+    iconImage: "/icons/travel-operations.png",
     name: "Travel - Operations",
     subtitle: "Logistics & Visa Processing",
     icon: Plane,
@@ -279,6 +282,7 @@ export const teams: Team[] = [
   },
   {
     id: "travel-accounts",
+    iconImage: "/icons/travel-accounts.png",
     name: "Travel - Accounts",
     subtitle: "Payments & Invoicing",
     icon: Calculator,
@@ -339,6 +343,7 @@ export const teams: Team[] = [
   },
   {
     id: "china-import-sales",
+    iconImage: "/icons/china-import-sales.png",
     name: "Import From China - Sales",
     subtitle: "Sourcing & Supplier Connections",
     icon: Ship,
@@ -411,6 +416,7 @@ export const teams: Team[] = [
   },
   {
     id: "china-import-operations",
+    iconImage: "/icons/china-import-operations.png",
     name: "Import From China - Ops",
     subtitle: "Quality Control & Shipping",
     icon: Ship,
@@ -478,6 +484,7 @@ export const teams: Team[] = [
   },
   {
     id: "dropshipping-sales",
+    iconImage: "/icons/dropshipping-sales.png",
     name: "USA Dropshipping - Sales",
     subtitle: "Product Listings & Orders",
     icon: ShoppingCart,
@@ -538,6 +545,7 @@ export const teams: Team[] = [
   },
   {
     id: "dropshipping-operations",
+    iconImage: "/icons/dropshipping-operations.png",
     name: "USA Dropshipping - Ops",
     subtitle: "Inventory & Suppliers",
     icon: ShoppingCart,
@@ -603,6 +611,7 @@ export const teams: Team[] = [
   },
   {
     id: "llc-sales",
+    iconImage: "/icons/llc-sales.png",
     name: "USA LLC Formation - Sales",
     subtitle: "Consultation & Packages",
     icon: Briefcase,
@@ -677,6 +686,7 @@ export const teams: Team[] = [
   },
   {
     id: "llc-operations",
+    iconImage: "/icons/llc-operations.png",
     name: "USA LLC Formation - Ops",
     subtitle: "Document Processing",
     icon: Briefcase,
@@ -736,6 +746,7 @@ export const teams: Team[] = [
   },
   {
     id: "events",
+    iconImage: "/icons/events.png",
     name: "Events",
     subtitle: "IBS Seminars & Investor Meets",
     icon: CalendarDays,
@@ -816,6 +827,7 @@ export const teams: Team[] = [
   },
   {
     id: "hr-recruitment",
+    iconImage: "/icons/hr-recruitment.png",
     name: "HR & Recruitment",
     subtitle: "Hiring & Onboarding",
     icon: UserPlus,
@@ -895,6 +907,7 @@ export const teams: Team[] = [
   },
   {
     id: "finance",
+    iconImage: "/icons/finance.png",
     name: "Finance & Accounts",
     subtitle: "Company Finances & Payroll",
     icon: PiggyBank,
@@ -954,6 +967,7 @@ export const teams: Team[] = [
   },
   {
     id: "marketing",
+    iconImage: "/icons/marketing.png",
     name: "Marketing",
     subtitle: "Campaigns & Content",
     icon: Megaphone,
@@ -1018,6 +1032,7 @@ export const teams: Team[] = [
   },
   {
     id: "media",
+    iconImage: "/icons/media.png",
     name: "Media",
     subtitle: "Video Editing & Design",
     icon: Video,
@@ -1077,6 +1092,7 @@ export const teams: Team[] = [
   },
   {
     id: "admin-it",
+    iconImage: "/icons/admin-it.png",
     name: "Admin & IT",
     subtitle: "System Administration",
     icon: Wrench,
@@ -1150,10 +1166,11 @@ export const teams: Team[] = [
   },
   {
     id: "sales",
+    iconImage: "/icons/sales.png",
     name: "Sales",
     subtitle: "Combined Sales Team",
     icon: TrendingUp,
-    color: "#F34147",
+    color: "#2563EB",
     groups: [
       {
         label: "Pinned",
@@ -1256,6 +1273,7 @@ export const teams: Team[] = [
   },
   {
     id: "faire-order-fulfilment",
+    iconImage: "/icons/faire-order-fulfilment.png",
     name: "Faire Order Fulfilment",
     subtitle: "Wholesale Order Management",
     icon: Package,
@@ -1321,6 +1339,7 @@ export const teams: Team[] = [
   },
   {
     id: "faire-products",
+    iconImage: "/icons/faire-products.png",
     name: "Faire - Products",
     subtitle: "Product Development & Inventory",
     icon: Package,

@@ -71,16 +71,24 @@ export function Dock({ className }: DockProps) {
                   <button
                     onClick={() => isEnabled && setCurrentTeamId(team.id)}
                     className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-[10px] transition-opacity",
+                      "flex h-9 w-9 items-center justify-center rounded-[10px] transition-all overflow-hidden",
                       isEnabled
                         ? cn("cursor-pointer", isActive ? "ring-2 ring-offset-1 ring-sidebar-border" : "opacity-80 hover:opacity-100")
                         : "cursor-not-allowed grayscale opacity-40"
                     )}
-                    style={{ backgroundColor: isEnabled ? team.color : undefined }}
                     data-testid={`dock-icon-${team.id}`}
                     disabled={!isEnabled}
                   >
-                    <TeamIcon className={cn("h-[18px] w-[18px]", isEnabled ? "text-white" : "text-muted-foreground")} />
+                    {team.iconImage ? (
+                      <img
+                        src={team.iconImage}
+                        alt={team.name}
+                        className="h-9 w-9 object-contain"
+                        draggable={false}
+                      />
+                    ) : (
+                      <TeamIcon className={cn("h-[18px] w-[18px]", isEnabled ? "text-white" : "text-muted-foreground")} />
+                    )}
                   </button>
                 </div>
               </TooltipTrigger>

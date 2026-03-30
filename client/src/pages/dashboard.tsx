@@ -276,8 +276,8 @@ export default function Dashboard() {
                 <AreaChart data={monthlyLeadsData}>
                   <defs>
                     <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#F34147" stopOpacity={0.1}/>
-                      <stop offset="95%" stopColor="#F34147" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -301,7 +301,7 @@ export default function Dashboard() {
                   <Area 
                     type="monotone" 
                     dataKey="leads" 
-                    stroke="#F34147" 
+                    stroke="#2563EB" 
                     strokeWidth={2}
                     fillOpacity={1} 
                     fill="url(#colorLeads)" 
@@ -340,7 +340,7 @@ export default function Dashboard() {
                   />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
                     {pipelineData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill="#F34147" fillOpacity={0.8} />
+                      <Cell key={`cell-${index}`} fill="#2563EB" fillOpacity={0.8} />
                     ))}
                   </Bar>
                 </BarChart>

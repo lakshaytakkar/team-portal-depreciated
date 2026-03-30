@@ -205,8 +205,8 @@ export default function AdminLeads() {
           <div className="flex flex-col gap-2">
             <span className="text-2xl font-semibold text-foreground">₹{avgDealSize >= 1000 ? `${(avgDealSize/1000).toFixed(1)}k` : avgDealSize}</span>
             <div className="flex items-center gap-2">
-              <div className="bg-[#FFF0F3] px-1.5 py-0.5 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-[#DF1C41]">-1.2%</span>
+              <div className="bg-[#EFF6FF] px-1.5 py-0.5 rounded-full flex items-center justify-center">
+                <span className="text-xs font-medium text-[#DC2626]">-1.2%</span>
               </div>
               <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">vs last week</span>
             </div>
@@ -393,7 +393,7 @@ export default function AdminLeads() {
                           ))}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            className="text-[#DF1C41] hover:text-[#DF1C41] hover:bg-[#FFF0F3]"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/5"
                             onClick={() => deleteLead(lead.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" /> Delete Lead

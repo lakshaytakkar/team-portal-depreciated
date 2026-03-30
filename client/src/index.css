@@ -14,7 +14,7 @@
   --popover-foreground: 240 10% 5%;
   --popover-border: 220 13% 90%;
 
-  --primary: 358 89% 60%;
+  --primary: 217 91% 60%;
   --primary-foreground: 0 0% 100%;
 
   --secondary: 220 14% 96%;
@@ -31,11 +31,11 @@
 
   --border: 220 13% 90%;
   --input: 220 13% 90%;
-  --ring: 358 89% 60%;
+  --ring: 217 91% 60%;
 
   --radius: 0.75rem;
 
-  --chart-1: 358 89% 60%;
+  --chart-1: 217 91% 60%;
   --chart-2: 164 52% 51%;
   --chart-3: 37 100% 65%;
   --chart-4: 192 100% 60%;
@@ -43,12 +43,12 @@
 
   --sidebar: 220 20% 97%;
   --sidebar-foreground: 240 10% 30%;
-  --sidebar-primary: 358 89% 60%;
+  --sidebar-primary: 217 91% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 220 14% 93%;
   --sidebar-accent-foreground: 240 10% 5%;
   --sidebar-border: 220 13% 90%;
-  --sidebar-ring: 358 89% 60%;
+  --sidebar-ring: 217 91% 60%;
 
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -92,7 +92,7 @@
   --popover-foreground: 210 20% 92%;
   --popover-border: 220 14% 16%;
 
-  --primary: 358 89% 60%;
+  --primary: 217 91% 60%;
   --primary-foreground: 0 0% 98%;
 
   --secondary: 220 14% 14%;
@@ -109,9 +109,9 @@
 
   --border: 220 14% 16%;
   --input: 220 14% 18%;
-  --ring: 358 89% 60%;
+  --ring: 217 91% 60%;
 
-  --chart-1: 358 89% 60%;
+  --chart-1: 217 91% 60%;
   --chart-2: 164 52% 51%;
   --chart-3: 37 100% 65%;
   --chart-4: 192 100% 60%;
@@ -119,12 +119,12 @@
 
   --sidebar: 225 14% 11%;
   --sidebar-foreground: 220 11% 70%;
-  --sidebar-primary: 358 89% 60%;
+  --sidebar-primary: 217 91% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 220 14% 16%;
   --sidebar-accent-foreground: 210 20% 92%;
   --sidebar-border: 220 14% 16%;
-  --sidebar-ring: 358 89% 60%;
+  --sidebar-ring: 217 91% 60%;
 
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
@@ -297,11 +297,11 @@
   position: relative;
   overflow: hidden;
   background: linear-gradient(90deg, 
-    #F34147 0%, 
-    #F34147 40%, 
-    #ff6b6f 50%, 
-    #F34147 60%, 
-    #F34147 100%
+    #2563EB 0%, 
+    #2563EB 40%, 
+    #60A5FA 50%, 
+    #2563EB 60%, 
+    #2563EB 100%
   );
   background-size: 200% 100%;
   transition: all 0.3s ease;
@@ -309,5 +309,5 @@
 
 .btn-shine-red:hover {
   animation: metallic-shine 0.8s ease-in-out;
-  box-shadow: 0 4px 20px rgba(243, 65, 71, 0.4);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
 }

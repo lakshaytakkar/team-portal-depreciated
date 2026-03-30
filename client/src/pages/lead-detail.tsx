@@ -489,7 +489,7 @@ export default function LeadDetail() {
 
                     {lead.lastConnected.nextFollowUp && (
                       <div className="mt-4 pt-4 border-t border-[#F1F5F9]">
-                        <div className="flex items-center gap-2 text-sm text-primary font-medium bg-[#FFF0F3] p-3 rounded-lg border border-[#FFE4E8]">
+                        <div className="flex items-center gap-2 text-sm text-primary font-medium bg-[#EFF6FF] p-3 rounded-lg border border-[#DBEAFE]">
                           <Calendar className="h-4 w-4" />
                           Next: {format(new Date(lead.lastConnected.nextFollowUp), 'MMM d, h:mm a')}
                         </div>

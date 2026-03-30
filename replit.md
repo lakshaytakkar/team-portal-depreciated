@@ -146,15 +146,20 @@ shared/
 - **Admin Team Management**: `/team/admin/team` page for superadmin to assign users to teams and set roles
 
 ## Design System
+- **Branding**: "TeamSync" text logo in sidebar header (Team in black, Sync in blue #2563EB)
+- **Primary Color**: Blue (#2563EB / HSL 217 91% 60%) - used across CSS variables, sidebar accents, buttons, charts
+- **Destructive Color**: Red kept for destructive actions (logout, delete) using semantic --destructive token
 - **Font**: Inter Tight (Google Fonts), loaded via CSS @import
 - **Color Tokens**: All pages use semantic Tailwind tokens (text-foreground, text-muted-foreground, bg-card, bg-muted, border) - no hardcoded hex colors
 - **Dark/Light Mode**: ThemeProvider component at `client/src/components/theme-provider.tsx`, toggle in header
-- **Sidebar**: 272px width, light bg (--sidebar), active items use bg-primary text-primary-foreground
+- **Dock**: 52px fixed left panel with AI-generated PNG icons per team (stored in `client/public/icons/`)
+- **Sidebar**: 210px width, light bg, active items use blue accent bar + blue icon color
 - **Header**: h-20, bg-card, search bar with Cmd+K shortcut, notification popover, theme toggle, profile dropdown
 - **Shadows**: `shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none` for cards
 - **Typography**: Page headings use `text-xl font-semibold tracking-tight`, descriptions use `text-sm text-muted-foreground`
 - **Spacing**: Content area uses `px-6 py-6 space-y-6`
-- **Status Colors**: Green (#effefa/#40c4aa), Red (#fff0f3/#df1c41), Yellow (#fff8e6/#d39c3d) with dark mode variants
+- **Status Colors**: Green (#effefa/#40c4aa), Red for negative indicators, Yellow (#fff8e6/#d39c3d) with dark mode variants
+- **Selection Highlights**: Blue tints (#EFF6FF bg, #DBEAFE borders) for selected items
 
 ## Recent Changes
 - March 2026: Upgraded Follow-ups page with Overdue/Today/This Week/Upcoming groups, Mark as Contacted (logs activity + clears follow-up), Snooze (+1 day), View Lead buttons, phone number display, assigned exec display for managers

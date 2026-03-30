@@ -20,9 +20,9 @@ export function SignOutDialog({ open, onOpenChange, onConfirm }: SignOutDialogPr
         <DialogTitle className="sr-only">Sign Out</DialogTitle>
         <div className="flex flex-col items-center gap-4">
           {/* Icon with gradient rings */}
-          <div className="relative flex items-center justify-center p-4 rounded-full bg-gradient-to-b from-[rgba(255,240,243,0.48)] to-transparent border border-[#FFF0F3]">
-            <div className="flex items-center justify-center p-3.5 bg-card border border-[#FADBE1] rounded-full shadow-[0px_2px_4px_0px_rgba(223,28,65,0.04)]">
-              <LogOut className="h-6 w-6 text-[#DF1C41]" />
+          <div className="relative flex items-center justify-center p-4 rounded-full bg-gradient-to-b from-[rgba(219,234,254,0.48)] to-transparent border border-[#DBEAFE]">
+            <div className="flex items-center justify-center p-3.5 bg-card border border-[#BFDBFE] rounded-full shadow-[0px_2px_4px_0px_rgba(37,99,235,0.04)]">
+              <LogOut className="h-6 w-6 text-[#2563EB]" />
             </div>
           </div>
           
@@ -41,7 +41,7 @@ export function SignOutDialog({ open, onOpenChange, onConfirm }: SignOutDialogPr
             Cancel
           </Button>
           <Button 
-            className="flex-1 h-[56px] rounded-lg bg-[#DF1C41] text-white font-semibold text-[16px] shadow-sm border-none"
+            className="flex-1 h-[56px] rounded-lg bg-[#2563EB] text-white font-semibold text-[16px] shadow-sm border-none"
             onClick={onConfirm}
           >
             Yes, Logout

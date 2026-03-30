@@ -329,7 +329,7 @@ export default function Leads() {
       {/* Main Table Container */}
       <div className="bg-card border rounded-lg shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none overflow-hidden flex flex-col">
         {/* Table Header Controls */}
-        <div className={`flex items-center justify-between px-5 py-2 border-b h-[64px] ${selectedLeads.length > 0 ? 'bg-[#fff0f3] dark:bg-[#df1c41]/10' : ''}`}>
+        <div className={`flex items-center justify-between px-5 py-2 border-b h-[64px] ${selectedLeads.length > 0 ? 'bg-[#EFF6FF] dark:bg-[#2563EB]/10' : ''}`}>
           {selectedLeads.length > 0 ? (
             <div className="flex items-center justify-between w-full">
                <div className="flex items-center gap-4">
@@ -411,7 +411,7 @@ export default function Leads() {
                   const lastActivity = getLastActivity(lead.id);
                   const isSelected = selectedLeads.includes(lead.id);
                   return (
-                    <TableRow key={lead.id} className={`border-b hover-elevate transition-colors group h-[64px] ${isSelected ? 'bg-[#fff0f3] dark:bg-[#df1c41]/10' : ''}`}>
+                    <TableRow key={lead.id} className={`border-b hover-elevate transition-colors group h-[64px] ${isSelected ? 'bg-[#EFF6FF] dark:bg-[#2563EB]/10' : ''}`}>
                       <TableCell className="pl-4">
                         <Checkbox 
                           checked={isSelected}
@@ -547,7 +547,7 @@ export default function Leads() {
                                 <>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem 
-                                    className="text-[#df1c41] dark:text-[#df1c41]"
+                                    className="text-destructive dark:text-destructive"
                                     onClick={() => deleteLeadMutation.mutate(lead.id)}
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" /> Delete Lead

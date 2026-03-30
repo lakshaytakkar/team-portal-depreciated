@@ -41,7 +41,7 @@ export default function ManageTemplates() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-[#F34147] hover:bg-[#D93036]">
+            <Button className="bg-[#2563EB] hover:bg-[#1D4ED8]">
               <Plus className="mr-2 h-4 w-4" /> Add New Template
             </Button>
           </DialogTrigger>
@@ -79,7 +79,7 @@ export default function ManageTemplates() {
                 <Textarea className="min-h-[150px]" placeholder="Enter the template content..." />
               </div>
               <div className="flex justify-end pt-4">
-                <Button onClick={() => setIsDialogOpen(false)} className="bg-[#F34147] hover:bg-[#D93036]">
+                <Button onClick={() => setIsDialogOpen(false)} className="bg-[#2563EB] hover:bg-[#1D4ED8]">
                   Save Template
                 </Button>
               </div>
