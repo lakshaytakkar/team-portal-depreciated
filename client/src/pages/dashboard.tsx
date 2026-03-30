@@ -177,7 +177,7 @@ export default function Dashboard() {
       </div>
 
       {/* Overview Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         {/* Total Leads */}
         <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-total-leads">
           <div className="flex items-center justify-between w-full">
@@ -233,6 +233,22 @@ export default function Dashboard() {
               ₹{(totalPipelineValue / 100000).toFixed(1)}L
             </p>
             <p className="text-muted-foreground text-[13px]">active deals only</p>
+          </div>
+        </div>
+
+        {/* Pending Tasks */}
+        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-pending-tasks">
+          <div className="flex items-center justify-between w-full">
+            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">Pending Tasks</p>
+            <div className="w-[36px] h-[36px] bg-card border rounded-lg flex items-center justify-center">
+               <CheckCircle2 className="h-[18px] w-[18px] text-primary" />
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 items-start">
+            <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">{pendingTasks}</p>
+            <p className={cn("text-[13px]", overdueTasks > 0 ? "text-red-500" : "text-muted-foreground")}>
+              {overdueTasks > 0 ? `${overdueTasks} overdue` : "all on track"}
+            </p>
           </div>
         </div>
       </div>
