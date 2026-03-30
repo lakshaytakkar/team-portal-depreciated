@@ -17,7 +17,11 @@ if (!fs.existsSync(uploadsDir)) {
 const upload = multer({
   storage: multer.diskStorage({
     destination: uploadsDir,
-    filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+    filename: (_req, file, cb) => {
+      const safeExt = path.extname(path.basename(file.originalname)).toLowerCase().replace(/[^a-z0-9.]/g, "");
+      const uuid = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      cb(null, `${uuid}${safeExt}`);
+    },
   }),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
@@ -695,8 +699,12 @@ aiRouter.get("/attachments/:filename", async (req: Request, res: Response) => {
     const user = req.user as User;
     const { filename } = req.params;
 
-    const safeName = path.basename(filename);
-    const filePath = path.join(uploadsDir, safeName);
+    const safeName = path.basename(filename).replace(/[^a-z0-9._-]/gi, "");
+    const filePath = path.resolve(uploadsDir, safeName);
+
+    if (!filePath.startsWith(path.resolve(uploadsDir))) {
+      return res.status(400).json({ error: "Invalid filename" });
+    }
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" });
