@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
+import type { Lead } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, ArrowRight } from "lucide-react";
@@ -29,7 +28,7 @@ export function QuickLogActivityDialog({ open, onOpenChange }: QuickLogActivityD
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [showLog, setShowLog] = useState(false);
 
-  const { data: leads = [] } = useQuery<any[]>({
+  const { data: leads = [] } = useQuery<Lead[]>({
     queryKey: ['/api/leads', currentTeamId, effectiveRole],
     queryFn: async () => {
       const role = useStore.getState().getEffectiveRole();
@@ -40,7 +39,7 @@ export function QuickLogActivityDialog({ open, onOpenChange }: QuickLogActivityD
     enabled: !!currentUser && open,
   });
 
-  const filtered = leads.filter((l: any) =>
+  const filtered = leads.filter((l: Lead) =>
     !search || l.name.toLowerCase().includes(search.toLowerCase()) || (l.phone || '').includes(search)
   ).slice(0, 8);
 
@@ -81,7 +80,7 @@ export function QuickLogActivityDialog({ open, onOpenChange }: QuickLogActivityD
               {filtered.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-6">No leads found.</p>
               ) : (
-                filtered.map((lead: any) => {
+                filtered.map((lead: Lead) => {
                   const stage = stages.find(s => s.id === lead.stage);
                   return (
                     <button

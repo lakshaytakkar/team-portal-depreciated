@@ -12,7 +12,9 @@ import {
   Plus,
   KanbanSquare,
   MessageSquare,
+  Trophy,
 } from "lucide-react";
+import type { Lead, Task, User } from "@shared/schema";
 import { 
   AreaChart,
   Area, 
@@ -48,7 +50,7 @@ export default function Dashboard() {
 
   const effectiveRole = useStore.getState().getEffectiveRole();
 
-  const { data: leads = [], isLoading: leadsLoading } = useQuery<any[]>({
+  const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
     queryKey: ['/api/leads', currentTeamId, effectiveRole, simulatedRole],
     queryFn: async () => {
       const role = useStore.getState().getEffectiveRole();
@@ -59,7 +61,7 @@ export default function Dashboard() {
     enabled: !!currentUser,
   });
 
-  const { data: tasks = [], isLoading: tasksLoading } = useQuery<any[]>({
+  const { data: tasks = [], isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ['/api/tasks', currentTeamId, effectiveRole, simulatedRole],
     queryFn: async () => {
       const role = useStore.getState().getEffectiveRole();
@@ -70,19 +72,47 @@ export default function Dashboard() {
     enabled: !!currentUser,
   });
 
+  const { data: teamMembers = [] } = useQuery<User[]>({
+    queryKey: ['/api/users', currentTeamId],
+    queryFn: async () => {
+      const res = await fetch(`/api/users?teamId=${currentTeamId}`, { credentials: 'include' });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    enabled: !!currentUser && effectiveRole === 'manager',
+  });
+
   const totalLeads = leads.length;
-  const activeLeads = leads.filter((l: any) => !['won', 'lost'].includes(l.stage)).length;
-  const wonLeads = leads.filter((l: any) => l.stage === 'won').length;
+  const activeLeads = leads.filter((l: Lead) => !['won', 'lost'].includes(l.stage)).length;
+  const wonLeads = leads.filter((l: Lead) => l.stage === 'won').length;
   const winRate = totalLeads > 0 ? ((wonLeads / totalLeads) * 100).toFixed(1) : '0.0';
   const totalPipelineValue = leads
-    .filter((l: any) => !['won', 'lost'].includes(l.stage))
-    .reduce((acc: number, curr: any) => acc + (curr.value || 0), 0);
+    .filter((l: Lead) => !['won', 'lost'].includes(l.stage))
+    .reduce((acc: number, curr: Lead) => acc + (curr.value || 0), 0);
 
   const pipelineData = stages.map(stage => ({
     name: stage.label,
-    count: leads.filter((l: any) => l.stage === stage.id).length,
+    count: leads.filter((l: Lead) => l.stage === stage.id).length,
     color: stage.color
   })).filter(s => s.count > 0);
+
+  const execLeaderboard = useMemo(() => {
+    if (effectiveRole !== 'manager' || teamMembers.length === 0) return [];
+    return teamMembers
+      .filter((u: User) => u.role !== 'superadmin')
+      .map((u: User) => {
+        const execLeads = leads.filter((l: Lead) => l.assignedTo === u.id);
+        const execWon = execLeads.filter((l: Lead) => l.stage === 'won').length;
+        return {
+          id: u.id,
+          name: u.name,
+          leadsCount: execLeads.length,
+          wonCount: execWon,
+          winRate: execLeads.length > 0 ? ((execWon / execLeads.length) * 100).toFixed(0) : '0',
+        };
+      })
+      .sort((a, b) => b.wonCount - a.wonCount);
+  }, [teamMembers, leads, effectiveRole]);
 
   const monthlyLeadsData = useMemo(() => {
     const now = new Date();
@@ -90,9 +120,9 @@ export default function Dashboard() {
       const monthDate = subMonths(now, 5 - i);
       const start = startOfMonth(monthDate);
       const end = endOfMonth(monthDate);
-      const count = leads.filter((l: any) => {
+      const count = leads.filter((l: Lead) => {
         try {
-          const created = parseISO(l.createdAt);
+          const created = parseISO(l.createdAt.toString());
           return isWithinInterval(created, { start, end });
         } catch {
           return false;
@@ -105,10 +135,10 @@ export default function Dashboard() {
     });
   }, [leads]);
 
-  const pendingTasks = tasks.filter((t: any) => t.status !== 'done').length;
-  const overdueTasks = tasks.filter((t: any) => {
+  const pendingTasks = tasks.filter((t: Task) => t.status !== 'done').length;
+  const overdueTasks = tasks.filter((t: Task) => {
     if (t.status === 'done') return false;
-    try { return new Date(t.dueDate) < new Date(); } catch { return false; }
+    try { return t.dueDate && new Date(t.dueDate) < new Date(); } catch { return false; }
   }).length;
 
   if (leadsLoading || tasksLoading) {
@@ -250,7 +280,7 @@ export default function Dashboard() {
                   />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', background: 'hsl(var(--card))' }}
-                    formatter={(value: any) => [value, 'New Leads']}
+                    formatter={(value: number) => [value, 'New Leads']}
                   />
                   <Area 
                     type="monotone" 
@@ -290,7 +320,7 @@ export default function Dashboard() {
                   <Tooltip 
                     cursor={{ fill: 'transparent' }}
                     contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', background: 'hsl(var(--card))' }}
-                    formatter={(value: any) => [value, 'Leads']}
+                    formatter={(value: number) => [value, 'Leads']}
                   />
                   <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
                     {pipelineData.map((entry, index) => (
@@ -488,6 +518,44 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Executive Leaderboard — Manager only */}
+      {effectiveRole === 'manager' && execLeaderboard.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Trophy className="h-5 w-5 text-amber-500" />
+            <h2 className="text-base font-semibold text-foreground">Team Leaderboard</h2>
+          </div>
+          <div className="border rounded-lg overflow-hidden bg-card">
+            <table className="w-full text-sm" data-testid="table-leaderboard">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground tracking-wide">#</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground tracking-wide">Member</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground tracking-wide">Assigned Leads</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground tracking-wide">Deals Won</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground tracking-wide">Win Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                {execLeaderboard.map((exec, idx) => (
+                  <tr key={exec.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors" data-testid={`row-leaderboard-${exec.id}`}>
+                    <td className="px-6 py-3 text-muted-foreground font-medium">{idx + 1}</td>
+                    <td className="px-6 py-3 font-medium text-foreground">{exec.name}</td>
+                    <td className="px-6 py-3 text-muted-foreground">{exec.leadsCount}</td>
+                    <td className="px-6 py-3 text-green-600 font-semibold">{exec.wonCount}</td>
+                    <td className="px-6 py-3">
+                      <Badge variant="secondary" className="rounded-md px-2.5 py-1 font-medium border-0">
+                        {exec.winRate}%
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <AddLeadDialog open={showAddLead} onOpenChange={setShowAddLead} />
       <QuickLogActivityDialog open={showLogActivity} onOpenChange={setShowLogActivity} />
