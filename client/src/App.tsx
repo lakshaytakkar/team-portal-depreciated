@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -32,7 +32,6 @@ import EventsPage from "@/pages/events";
 import EventDetailPage from "@/pages/events/event-detail";
 import EventCheckinPage from "@/pages/events/checkin";
 import VenueComparisonPage from "@/pages/events/venues";
-import EventsDashboard from "@/pages/events/events-dashboard";
 import TeamMembersPage from "@/pages/team-members";
 import HREmployeesPage from "@/pages/hr/employees";
 import HREmployeeDetailPage from "@/pages/hr/employee-detail";
@@ -58,47 +57,27 @@ import AvailabilityPage from "@/pages/bookings/availability";
 import MyBookingsPage from "@/pages/bookings/my-bookings";
 import AllBookingsPage from "@/pages/bookings/all-bookings";
 import CalendarPage from "@/pages/bookings/calendar";
+import PublicBookingPage from "@/pages/bookings/public-booking";
 import { useStore } from "@/lib/store";
-import { api } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 
-import Login from "@/pages/login";
-import PublicBookingPage from "@/pages/bookings/public-booking";
+const DEFAULT_USER = {
+  id: "cef223ad-1909-4c9b-bdee-239aa5e99387",
+  name: "Admin",
+  email: "admin@suprans.in",
+  role: "superadmin",
+  phone: "+919350818272" as string | null,
+  avatar: null as string | null,
+  createdAt: new Date(),
+};
 
-function TeamPortalRouter() {
-  const { currentUser, setCurrentUser } = useStore();
-  const [location, setLocation] = useLocation();
-  const [loading, setLoading] = useState(true);
+function PortalRouter() {
+  const { setCurrentUser } = useStore();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await api.getCurrentUser() as any;
-        setCurrentUser(user);
-      } catch (error) {
-        if (location !== '/login') {
-          setLocation('/login');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
+    setCurrentUser(DEFAULT_USER);
   }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F34147]"></div>
-      </div>
-    );
-  }
-
-  if (!currentUser) {
-    return <Login />;
-  }
 
   return (
     <AppShell>
@@ -174,29 +153,13 @@ function TeamPortalRouter() {
         <Route path="/faire/shipments" component={FaireOrdersPage} />
         <Route path="/faire/variants" component={FaireProductsPage} />
 
+        {/* Public booking (standalone) */}
+        <Route path="/book/:slug" component={PublicBookingPage} />
+
         <Route component={NotFound} />
       </Switch>
     </AppShell>
   );
-}
-
-function Router() {
-  const [location] = useLocation();
-
-  if (location === '/login') {
-    return <Login />;
-  }
-
-  if (location.startsWith('/book/')) {
-    return (
-      <Switch>
-        <Route path="/book/:slug" component={PublicBookingPage} />
-        <Route component={NotFound} />
-      </Switch>
-    );
-  }
-
-  return <TeamPortalRouter />;
 }
 
 function App() {
@@ -205,7 +168,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <PortalRouter />
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>

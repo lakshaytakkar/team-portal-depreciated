@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { passport, hashPassword, requireAuth, requireRole } from "./auth";
+import { requireAuth, requireRole } from "./auth";
+import bcrypt from "bcryptjs";
 import QRCode from "qrcode";
 import { supabase } from "./db";
 import { 
@@ -41,7 +42,7 @@ export async function registerRoutes(
       }
       
       // Hash password
-      const hashedPassword = await hashPassword(parsed.password);
+      const hashedPassword = await bcrypt.hash(parsed.password, 10);
       
       // Create user
       const user = await storage.createUser({
@@ -61,34 +62,14 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/login", (req, res, next) => {
-    passport.authenticate("local", (err: any, user: User, info: any) => {
-      if (err) {
-        return next(err);
-      }
-      
-      if (!user) {
-        return res.status(401).json({ message: info?.message || "Invalid credentials" });
-      }
-      
-      req.logIn(user, (err) => {
-        if (err) {
-          return next(err);
-        }
-        
-        const { password, ...userWithoutPassword } = user;
-        res.json(userWithoutPassword);
-      });
-    })(req, res, next);
+  app.post("/api/auth/login", (req, res) => {
+    const user = req.user as User;
+    const { password, ...userWithoutPassword } = user;
+    res.json(userWithoutPassword);
   });
 
-  app.post("/api/auth/logout", requireAuth, (req, res) => {
-    req.logout((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Logout failed" });
-      }
-      res.json({ message: "Logged out successfully" });
-    });
+  app.post("/api/auth/logout", (req, res) => {
+    res.json({ message: "Logged out successfully" });
   });
 
   app.get("/api/auth/me", requireAuth, (req, res) => {
