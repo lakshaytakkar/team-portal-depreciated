@@ -76,8 +76,8 @@ export interface Team {
 export const teams: Team[] = [
   {
     id: "travel-sales",
-    name: "Travel - Sales",
-    subtitle: "Tour Bookings & Inquiries",
+    name: "Suprans - Sales",
+    subtitle: "Sales & Lead Management",
     icon: Plane,
     color: "#F34147",
     groups: [
@@ -92,8 +92,8 @@ export const teams: Team[] = [
       {
         label: "My Sales",
         items: [
-          { href: "/leads", icon: Users, label: "My Inquiries" },
-          { href: "/pipeline", icon: KanbanSquare, label: "Booking Pipeline" },
+          { href: "/leads", icon: Users, label: "My Leads" },
+          { href: "/pipeline", icon: KanbanSquare, label: "Pipeline" },
           { href: "/tasks", icon: CheckSquare, label: "My Tasks" },
           { href: "/follow-ups", icon: Phone, label: "Follow-ups" },
         ]
@@ -102,16 +102,13 @@ export const teams: Team[] = [
         label: "Scheduling",
         items: [
           { href: "/calendar", icon: CalendarDays, label: "Calendar" },
-          { href: "/bookings", icon: Calendar, label: "My Bookings" },
-          { href: "/bookings/availability", icon: CalendarCheck, label: "My Availability" },
-          { href: "/bookings/types", icon: CalendarDays, label: "Booking Types" },
         ]
       },
       {
         label: "Resources",
         items: [
           { href: "/resources/templates", icon: FileText, label: "Templates" },
-          { href: "/knowledge/services", icon: BookOpen, label: "Packages & FAQs" },
+          { href: "/knowledge/services", icon: BookOpen, label: "Knowledge Base" },
         ]
       },
       {
@@ -133,8 +130,8 @@ export const teams: Team[] = [
       {
         label: "Sales Management",
         items: [
-          { href: "/admin/leads", icon: Users, label: "All Tour Inquiries" },
-          { href: "/pipeline", icon: KanbanSquare, label: "Booking Pipeline" },
+          { href: "/admin/leads", icon: Users, label: "All Leads" },
+          { href: "/pipeline", icon: KanbanSquare, label: "Pipeline" },
           { href: "/admin/assignments", icon: UserCheck, label: "Assignments" },
           { href: "/payment-links", icon: Link2, label: "Payment Links" },
         ]
@@ -143,10 +140,6 @@ export const teams: Team[] = [
         label: "Scheduling",
         items: [
           { href: "/calendar", icon: CalendarDays, label: "Calendar" },
-          { href: "/bookings", icon: Calendar, label: "My Bookings" },
-          { href: "/bookings/availability", icon: CalendarCheck, label: "My Availability" },
-          { href: "/bookings/types", icon: CalendarDays, label: "Booking Types" },
-          { href: "/admin/bookings", icon: Users, label: "All Team Bookings" },
         ]
       },
       {
@@ -160,7 +153,7 @@ export const teams: Team[] = [
         label: "Resources",
         items: [
           { href: "/resources/templates", icon: FileText, label: "Templates" },
-          { href: "/knowledge/services", icon: BookOpen, label: "Packages & FAQs" },
+          { href: "/knowledge/services", icon: BookOpen, label: "Knowledge Base" },
         ]
       }
     ],

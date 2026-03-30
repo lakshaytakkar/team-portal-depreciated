@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,10 @@ import {
   Briefcase,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  KanbanSquare,
+  Phone,
 } from "lucide-react";
 import { 
   AreaChart,
@@ -35,30 +38,16 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { stages } from "@/lib/mock-data";
-import { format } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from "date-fns";
 import { useStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
 import EventsDashboard from "@/pages/events/events-dashboard";
-
-// Mock Revenue Data
-const revenueData = [
-  { month: 'Jan', revenue: 45000, target: 40000 },
-  { month: 'Feb', revenue: 52000, target: 42000 },
-  { month: 'Mar', revenue: 48000, target: 45000 },
-  { month: 'Apr', revenue: 61000, target: 48000 },
-  { month: 'May', revenue: 55000, target: 50000 },
-  { month: 'Jun', revenue: 67000, target: 55000 },
-  { month: 'Jul', revenue: 72000, target: 58000 },
-  { month: 'Aug', revenue: 65000, target: 60000 },
-  { month: 'Sep', revenue: 85000, target: 65000 },
-  { month: 'Oct', revenue: 90000, target: 70000 },
-  { month: 'Nov', revenue: 88000, target: 75000 },
-  { month: 'Dec', revenue: 95000, target: 80000 },
-];
+import { AddLeadDialog } from "@/components/dialogs/AddLeadDialog";
 
 export default function Dashboard() {
-  const { currentUser, currentTeamId, simulatedRole } = useStore();
+  const { currentUser, currentTeamId } = useStore();
   const [activeStage, setActiveStage] = useState('all');
+  const [showAddLead, setShowAddLead] = useState(false);
 
   if (currentTeamId === 'events') {
     return <EventsDashboard />;
@@ -90,6 +79,7 @@ export default function Dashboard() {
   const totalLeads = leads.length;
   const activeLeads = leads.filter((l: any) => !['won', 'lost'].includes(l.stage)).length;
   const wonLeads = leads.filter((l: any) => l.stage === 'won').length;
+  const winRate = totalLeads > 0 ? ((wonLeads / totalLeads) * 100).toFixed(1) : '0.0';
   const totalPipelineValue = leads
     .filter((l: any) => !['won', 'lost'].includes(l.stage))
     .reduce((acc: number, curr: any) => acc + (curr.value || 0), 0);
@@ -99,6 +89,33 @@ export default function Dashboard() {
     count: leads.filter((l: any) => l.stage === stage.id).length,
     color: stage.color
   })).filter(s => s.count > 0);
+
+  const monthlyLeadsData = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const monthDate = subMonths(now, 5 - i);
+      const start = startOfMonth(monthDate);
+      const end = endOfMonth(monthDate);
+      const count = leads.filter((l: any) => {
+        try {
+          const created = parseISO(l.createdAt);
+          return isWithinInterval(created, { start, end });
+        } catch {
+          return false;
+        }
+      }).length;
+      return {
+        month: format(monthDate, 'MMM'),
+        leads: count,
+      };
+    });
+  }, [leads]);
+
+  const pendingTasks = tasks.filter((t: any) => t.status !== 'done').length;
+  const overdueTasks = tasks.filter((t: any) => {
+    if (t.status === 'done') return false;
+    try { return new Date(t.dueDate) < new Date(); } catch { return false; }
+  }).length;
 
   if (leadsLoading || tasksLoading) {
     return (
@@ -113,22 +130,24 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold leading-[1.35] tracking-tight text-foreground">
-            {isAdmin ? "Company Dashboard" : "My Dashboard"}
+            {effectiveRole === 'manager' ? "Sales Dashboard" : "My Dashboard"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isAdmin 
-              ? "Overview of company-wide sales performance and pipeline." 
+            {effectiveRole === 'manager'
+              ? "Overview of team-wide sales performance and pipeline."
               : "Track your personal sales performance and active deals."}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline">
-            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-            Last 30 Days
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/pipeline">
+              <KanbanSquare className="mr-2 h-4 w-4 text-muted-foreground" />
+              View Pipeline
+            </Link>
           </Button>
-          <Button>
-            <Download className="mr-2 h-4 w-4" />
-            Export Report
+          <Button size="sm" onClick={() => setShowAddLead(true)} data-testid="button-add-lead">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Lead
           </Button>
         </div>
       </div>
@@ -136,7 +155,7 @@ export default function Dashboard() {
       {/* Overview Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Leads */}
-        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
+        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-total-leads">
           <div className="flex items-center justify-between w-full">
             <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
               Total Leads
@@ -145,26 +164,18 @@ export default function Dashboard() {
                <Users className="h-[18px] w-[18px] text-primary" />
             </div>
           </div>
-          
           <div className="flex flex-col gap-2 items-start">
             <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">
               {totalLeads}
             </p>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#effefa] text-[#40c4aa] dark:bg-[#40c4aa]/10 dark:text-[#40c4aa] px-[6px] py-[2px] rounded-[50px] flex items-center justify-center">
-                <p className="text-[12px] font-medium tracking-[0.24px]">
-                  +12.5%
-                </p>
-              </div>
-              <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
-                from last month
-              </p>
-            </div>
+            <p className="text-muted-foreground text-[13px]">
+              {activeLeads} active
+            </p>
           </div>
         </div>
 
         {/* Active Deals */}
-        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
+        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-active-deals">
           <div className="flex items-center justify-between w-full">
             <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
               Active Deals
@@ -173,26 +184,18 @@ export default function Dashboard() {
                <Briefcase className="h-[18px] w-[18px] text-primary" />
             </div>
           </div>
-          
           <div className="flex flex-col gap-2 items-start">
             <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">
               {activeLeads}
             </p>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#effefa] text-[#40c4aa] dark:bg-[#40c4aa]/10 dark:text-[#40c4aa] px-[6px] py-[2px] rounded-[50px] flex items-center justify-center">
-                <p className="text-[12px] font-medium tracking-[0.24px]">
-                  +4.2%
-                </p>
-              </div>
-              <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
-                from last month
-              </p>
-            </div>
+            <p className="text-muted-foreground text-[13px]">
+              {wonLeads} won total
+            </p>
           </div>
         </div>
 
         {/* Win Rate */}
-        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
+        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-win-rate">
           <div className="flex items-center justify-between w-full">
             <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
               Win Rate
@@ -201,26 +204,18 @@ export default function Dashboard() {
                <Target className="h-[18px] w-[18px] text-primary" />
             </div>
           </div>
-          
           <div className="flex flex-col gap-2 items-start">
             <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">
-              {((wonLeads / totalLeads) * 100).toFixed(1)}%
+              {winRate}%
             </p>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#effefa] text-[#40c4aa] dark:bg-[#40c4aa]/10 dark:text-[#40c4aa] px-[6px] py-[2px] rounded-[50px] flex items-center justify-center">
-                <p className="text-[12px] font-medium tracking-[0.24px]">
-                  +8.1%
-                </p>
-              </div>
-              <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
-                from last month
-              </p>
-            </div>
+            <p className="text-muted-foreground text-[13px]">
+              {wonLeads} of {totalLeads} leads
+            </p>
           </div>
         </div>
 
         {/* Pipeline Value */}
-        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
+        <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-pipeline-value">
           <div className="flex items-center justify-between w-full">
             <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
               Pipeline Value
@@ -229,121 +224,164 @@ export default function Dashboard() {
                <DollarSign className="h-[18px] w-[18px] text-primary" />
             </div>
           </div>
-          
           <div className="flex flex-col gap-2 items-start">
             <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">
               ₹{(totalPipelineValue / 100000).toFixed(1)}L
             </p>
-            <div className="flex items-center gap-2">
-              <div className="bg-[#effefa] text-[#40c4aa] dark:bg-[#40c4aa]/10 dark:text-[#40c4aa] px-[6px] py-[2px] rounded-[50px] flex items-center justify-center">
-                <p className="text-[12px] font-medium tracking-[0.24px]">
-                  +2.4%
-                </p>
-              </div>
-              <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
-                from last month
-              </p>
-            </div>
+            <p className="text-muted-foreground text-[13px]">
+              active deals only
+            </p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Chart */}
+        {/* Monthly Leads Trend (real data) */}
         <div className="lg:col-span-2 bg-card rounded-xl border p-6 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h3 className="text-lg font-bold text-foreground">Revenue Trend</h3>
-              <p className="text-sm text-muted-foreground">Monthly revenue vs target</p>
-            </div>
-            <div className="flex items-center gap-2 bg-muted p-1 rounded-lg">
-              <Button variant="ghost" size="sm" className="h-8 bg-card shadow-sm text-foreground">Monthly</Button>
-              <Button variant="ghost" size="sm" className="h-8 text-muted-foreground">Quarterly</Button>
+              <h3 className="text-lg font-bold text-foreground">New Leads Trend</h3>
+              <p className="text-sm text-muted-foreground">Leads added each month (last 6 months)</p>
             </div>
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F34147" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#F34147" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                  tickFormatter={(value) => `₹${value/1000}k`}
-                />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', background: 'hsl(var(--card))' }}
-                  formatter={(value: any) => [`₹${value.toLocaleString()}`, 'Revenue']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#F34147" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="target" 
-                  stroke="#0D0D12" 
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                  fill="none" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {monthlyLeadsData.every(d => d.leads === 0) ? (
+            <div className="h-[300px] flex items-center justify-center flex-col gap-3">
+              <TrendingUp className="h-10 w-10 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground">No leads data yet. Add your first lead to see the trend.</p>
+              <Button variant="outline" size="sm" onClick={() => setShowAddLead(true)}>
+                <Plus className="mr-2 h-4 w-4" /> Add Lead
+              </Button>
+            </div>
+          ) : (
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyLeadsData}>
+                  <defs>
+                    <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#F34147" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#F34147" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="month" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', background: 'hsl(var(--card))' }}
+                    formatter={(value: any) => [value, 'New Leads']}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="leads" 
+                    stroke="#F34147" 
+                    strokeWidth={2}
+                    fillOpacity={1} 
+                    fill="url(#colorLeads)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
-        {/* Pipeline Distribution */}
+        {/* Pipeline Distribution (already real data) */}
         <div className="bg-card rounded-xl border p-6 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
           <h3 className="text-lg font-bold text-foreground mb-6">Pipeline by Stage</h3>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pipelineData} layout="vertical" margin={{ left: 0, right: 20 }}>
-                <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  axisLine={false} 
-                  tickLine={false}
-                  width={80}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
-                />
-                <Tooltip 
-                  cursor={{ fill: 'transparent' }}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', background: 'hsl(var(--card))' }}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
-                  {pipelineData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill="#F34147" fillOpacity={0.8} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {pipelineData.length === 0 ? (
+            <div className="h-[300px] flex items-center justify-center flex-col gap-3">
+              <KanbanSquare className="h-10 w-10 text-muted-foreground/30" />
+              <p className="text-sm text-muted-foreground text-center">No pipeline data yet.</p>
+            </div>
+          ) : (
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pipelineData} layout="vertical" margin={{ left: 0, right: 20 }}>
+                  <XAxis type="number" hide allowDecimals={false} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    axisLine={false} 
+                    tickLine={false}
+                    width={80}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
+                  />
+                  <Tooltip 
+                    cursor={{ fill: 'transparent' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', background: 'hsl(var(--card))' }}
+                    formatter={(value: any) => [value, 'Leads']}
+                  />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
+                    {pipelineData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill="#F34147" fillOpacity={0.8} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
           
           <div className="mt-4 pt-6 border-t">
-            <Button variant="outline" className="w-full justify-between group">
-              View Full Pipeline
-              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+            <Button variant="outline" className="w-full justify-between group" asChild>
+              <Link href="/pipeline">
+                View Full Pipeline
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </Button>
           </div>
         </div>
+      </div>
+
+      {/* Quick Actions + Task Summary row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div
+          className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none"
+          onClick={() => setShowAddLead(true)}
+          data-testid="quick-action-add-lead"
+        >
+          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+            <Plus className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-foreground">Add Lead</p>
+            <p className="text-xs text-muted-foreground">Create a new sales lead</p>
+          </div>
+        </div>
+
+        <Link href="/follow-ups" data-testid="quick-action-follow-ups">
+          <div className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
+            <div className="w-10 h-10 bg-orange-50 dark:bg-orange-950/30 rounded-lg flex items-center justify-center">
+              <Phone className="h-5 w-5 text-orange-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm text-foreground">Follow-ups</p>
+              <p className="text-xs text-muted-foreground">Review scheduled follow-ups</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link href="/tasks" data-testid="quick-action-tasks">
+          <div className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/30 rounded-lg flex items-center justify-center">
+              <CheckCircle2 className="h-5 w-5 text-blue-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm text-foreground">Tasks</p>
+              <p className="text-xs text-muted-foreground">
+                {pendingTasks} pending{overdueTasks > 0 ? `, ${overdueTasks} overdue` : ''}
+              </p>
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Recent Leads Table */}
@@ -352,19 +390,13 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-bold text-foreground">Recent Leads</h3>
-              <p className="text-sm text-muted-foreground">New leads added to the system</p>
+              <p className="text-sm text-muted-foreground">Latest leads in the system</p>
             </div>
             <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input 
-                  placeholder="Search leads..." 
-                  className="h-9 pl-9 pr-4 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-[200px] text-foreground placeholder-muted-foreground"
-                />
-              </div>
-              <Button variant="outline" size="sm" className="h-9 gap-2">
-                <Filter className="h-4 w-4" />
-                Filter
+              <Button variant="outline" size="sm" className="h-9 gap-2" asChild>
+                <Link href={effectiveRole === 'manager' ? '/admin/leads' : '/leads'}>
+                  View All <ArrowRight className="h-4 w-4" />
+                </Link>
               </Button>
             </div>
           </div>
@@ -378,6 +410,7 @@ export default function Dashboard() {
                   ? "bg-primary text-primary-foreground border-primary" 
                   : "bg-card text-muted-foreground border hover:bg-muted hover:text-foreground"
               )}
+              data-testid="filter-all-leads"
             >
               All Leads
             </button>
@@ -391,6 +424,7 @@ export default function Dashboard() {
                     ? "bg-primary/10 text-primary border-primary" 
                     : "bg-card text-muted-foreground border hover:bg-muted hover:text-foreground"
                 )}
+                data-testid={`filter-stage-${stage.id}`}
               >
                 <div className={cn("h-2 w-2 rounded-full", `bg-${stage.color}-500`)} />
                 {stage.label}
@@ -399,74 +433,91 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted border-b text-muted-foreground uppercase text-xs font-semibold tracking-wider">
-              <tr>
-                <th className="px-6 py-4 w-[40px]">
-                  <Checkbox className="rounded-[4px]" />
-                </th>
-                <th className="px-6 py-4">Lead Name</th>
-                <th className="px-6 py-4">Company</th>
-                <th className="px-6 py-4">Service</th>
-                <th className="px-6 py-4">Value</th>
-                <th className="px-6 py-4">Stage</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {leads
-                .filter(lead => activeStage === 'all' || lead.stage === activeStage)
-                .slice(0, 5)
-                .map((lead) => {
-                const stage = stages.find(s => s.id === lead.stage);
-                return (
-                  <tr key={lead.id} className="hover:bg-muted transition-colors group">
-                    <td className="px-6 py-4">
-                      <Checkbox className="rounded-[4px]" />
-                    </td>
-                    <td className="px-6 py-4">
-                      <Link href={`/leads/${lead.id}`}>
-                        <div className="flex items-center gap-3 cursor-pointer">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium text-xs">
-                            {lead.name.charAt(0)}
+        {leads.length === 0 ? (
+          <div className="p-12 flex flex-col items-center gap-4 text-center">
+            <Users className="h-10 w-10 text-muted-foreground/30" />
+            <div>
+              <p className="font-semibold text-foreground">No leads yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Add your first lead to get started.</p>
+            </div>
+            <Button size="sm" onClick={() => setShowAddLead(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Add Lead
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-muted border-b text-muted-foreground uppercase text-xs font-semibold tracking-wider">
+                <tr>
+                  <th className="px-6 py-4 w-[40px]">
+                    <Checkbox className="rounded-[4px]" />
+                  </th>
+                  <th className="px-6 py-4">Lead Name</th>
+                  <th className="px-6 py-4">Company</th>
+                  <th className="px-6 py-4">Service</th>
+                  <th className="px-6 py-4">Value</th>
+                  <th className="px-6 py-4">Stage</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {leads
+                  .filter(lead => activeStage === 'all' || lead.stage === activeStage)
+                  .slice(0, 5)
+                  .map((lead) => {
+                  const stage = stages.find(s => s.id === lead.stage);
+                  return (
+                    <tr key={lead.id} className="hover:bg-muted transition-colors group" data-testid={`row-lead-${lead.id}`}>
+                      <td className="px-6 py-4">
+                        <Checkbox className="rounded-[4px]" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link href={`/leads/${lead.id}`}>
+                          <div className="flex items-center gap-3 cursor-pointer">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium text-xs">
+                              {lead.name.charAt(0)}
+                            </div>
+                            <span className="font-semibold text-foreground hover:text-primary transition-colors">{lead.name}</span>
                           </div>
-                          <span className="font-semibold text-foreground hover:text-primary transition-colors">{lead.name}</span>
-                        </div>
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-foreground font-medium">{lead.company}</span>
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {lead.service}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-foreground">
-                      ₹{lead.value.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge 
-                        variant="secondary" 
-                        className={cn(
-                          "rounded-md px-2.5 py-1 font-medium border-0 capitalize",
-                          `bg-${stage?.color}-100 text-${stage?.color}-700`
-                        )}
-                      >
-                        {lead.stage}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-foreground font-medium">{lead.company}</span>
+                      </td>
+                      <td className="px-6 py-4 text-muted-foreground">
+                        {lead.service}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-foreground">
+                        ₹{lead.value.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge 
+                          variant="secondary" 
+                          className={cn(
+                            "rounded-md px-2.5 py-1 font-medium border-0 capitalize",
+                            `bg-${stage?.color}-100 text-${stage?.color}-700`
+                          )}
+                        >
+                          {lead.stage}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity" asChild>
+                          <Link href={`/leads/${lead.id}`}>
+                            <ArrowRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      <AddLeadDialog open={showAddLead} onOpenChange={setShowAddLead} />
     </div>
   );
 }
