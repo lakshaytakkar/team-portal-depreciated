@@ -1,24 +1,16 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   ArrowRight,
   TrendingUp, 
-  Download,
-  Filter,
-  MoreHorizontal,
-  Search,
   Users,
   DollarSign,
   Target,
   Briefcase,
-  Clock,
   CheckCircle2,
-  AlertCircle,
   Plus,
   KanbanSquare,
-  Phone,
   MessageSquare,
 } from "lucide-react";
 import { 
@@ -42,11 +34,13 @@ import { useStore } from "@/lib/store";
 import { useQuery } from "@tanstack/react-query";
 import EventsDashboard from "@/pages/events/events-dashboard";
 import { AddLeadDialog } from "@/components/dialogs/AddLeadDialog";
+import { QuickLogActivityDialog } from "@/components/dialogs/QuickLogActivityDialog";
 
 export default function Dashboard() {
   const { currentUser, currentTeamId, simulatedRole } = useStore();
   const [activeStage, setActiveStage] = useState('all');
   const [showAddLead, setShowAddLead] = useState(false);
+  const [showLogActivity, setShowLogActivity] = useState(false);
 
   if (currentTeamId === 'events') {
     return <EventsDashboard />;
@@ -70,16 +64,6 @@ export default function Dashboard() {
     queryFn: async () => {
       const role = useStore.getState().getEffectiveRole();
       const res = await fetch(`/api/tasks?teamId=${currentTeamId}&effectiveRole=${role}`, { credentials: 'include' });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    enabled: !!currentUser,
-  });
-
-  const { data: teamMembers = [] } = useQuery<any[]>({
-    queryKey: ['/api/users', currentTeamId],
-    queryFn: async () => {
-      const res = await fetch(`/api/users?teamId=${currentTeamId}`, { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -345,17 +329,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <Link href={effectiveRole === 'manager' ? '/admin/leads' : '/leads'} data-testid="quick-action-log-activity">
-          <div className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
-            <div className="w-10 h-10 bg-green-50 dark:bg-green-950/30 rounded-lg flex items-center justify-center">
-              <MessageSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm text-foreground">Log Activity</p>
-              <p className="text-xs text-muted-foreground">Record a call, meeting or note</p>
-            </div>
+        <div
+          className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none"
+          onClick={() => setShowLogActivity(true)}
+          data-testid="quick-action-log-activity"
+        >
+          <div className="w-10 h-10 bg-green-50 dark:bg-green-950/30 rounded-lg flex items-center justify-center">
+            <MessageSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
           </div>
-        </Link>
+          <div>
+            <p className="font-semibold text-sm text-foreground">Log Activity</p>
+            <p className="text-xs text-muted-foreground">Record a call, meeting or note</p>
+          </div>
+        </div>
 
         <Link href="/pipeline" data-testid="quick-action-view-pipeline">
           <div className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
@@ -504,6 +490,7 @@ export default function Dashboard() {
       </div>
 
       <AddLeadDialog open={showAddLead} onOpenChange={setShowAddLead} />
+      <QuickLogActivityDialog open={showLogActivity} onOpenChange={setShowLogActivity} />
     </div>
   );
 }
