@@ -321,6 +321,22 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
               });
             } catch {}
           }
+          if (line.startsWith("g:")) {
+            try {
+              const reasoning = JSON.parse(line.slice(2));
+              setStreamMessages((prev) => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                if (last?.role === "assistant") {
+                  updated[updated.length - 1] = {
+                    ...last,
+                    reasoning: (last.reasoning || "") + reasoning,
+                  };
+                }
+                return updated;
+              });
+            } catch {}
+          }
           if (line.startsWith("9:") || line.startsWith("a:")) {
             try {
               const toolData = JSON.parse(line.slice(2));
@@ -603,6 +619,15 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
                           : "bg-muted/60"
                       )}
                     >
+                      {msg.reasoning && (
+                        <div className="mb-2 px-3 py-2 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200">
+                          <div className="flex items-center gap-1.5 mb-1 font-medium">
+                            <Sparkles className="h-3 w-3" />
+                            <span>Reasoning</span>
+                          </div>
+                          <p className="whitespace-pre-wrap leading-relaxed">{msg.reasoning}</p>
+                        </div>
+                      )}
                       {msg.toolInvocations && msg.toolInvocations.length > 0 && (
                         <div className="mb-2">
                           {msg.toolInvocations.map((tool: any, j: number) => (

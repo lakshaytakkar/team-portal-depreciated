@@ -4,8 +4,28 @@ import { streamText, tool } from "ai";
 import { z } from "zod";
 import { supabase } from "./db";
 import pg from "pg";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { requireAuth } from "./auth";
 import type { User } from "@shared/schema";
+
+const uploadsDir = path.join(process.cwd(), "uploads", "ai-attachments");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: uploadsDir,
+    filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".csv", ".txt", ".json", ".png", ".jpg", ".jpeg", ".pdf"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, allowed.includes(ext));
+  },
+});
 
 const pgPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -99,6 +119,8 @@ Guidelines:
 - For analytics queries, provide clear summaries with key metrics.`;
 }
 
+const pendingMutations = new Map<string, { action: string; table: string; description: string; createdAt: number }>();
+
 const ALLOWED_TABLES = ["leads", "tasks", "activities"] as const;
 type AllowedTable = typeof ALLOWED_TABLES[number];
 
@@ -165,14 +187,19 @@ const aiTools = {
   }),
 
   createRecord: tool({
-    description: "Create a new record in the database. Only supports leads, tasks, and activities tables. Always describe the intended change to the user first.",
+    description: "Create a new record in the database. Only supports leads, tasks, and activities tables. You MUST first call proposeMutation to describe and get a confirmation token, then pass that token here.",
     parameters: z.object({
       table: z.enum(["leads", "tasks", "activities"]).describe("Table to insert into"),
       data: z.record(z.any()).describe("Record data as key-value pairs using snake_case column names"),
+      confirmationToken: z.string().describe("Token from proposeMutation tool confirming this action"),
     }),
-    execute: async ({ table, data }) => {
+    execute: async ({ table, data, confirmationToken }) => {
       try {
         if (!isAllowedTable(table)) return { error: "Table not allowed" };
+        if (!pendingMutations.has(confirmationToken)) {
+          return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
+        }
+        pendingMutations.delete(confirmationToken);
         const { data: result, error } = await supabase.from(table).insert(data).select().single();
         if (error) return { error: error.message };
         return { success: true, record: result };
@@ -183,15 +210,20 @@ const aiTools = {
   }),
 
   updateRecord: tool({
-    description: "Update an existing record in the database by ID. Only supports leads, tasks, and activities. Always describe the intended change to the user first.",
+    description: "Update an existing record in the database by ID. Only supports leads, tasks, and activities. You MUST first call proposeMutation to get a confirmation token.",
     parameters: z.object({
       table: z.enum(["leads", "tasks", "activities"]).describe("Table to update"),
       id: z.string().describe("ID of the record to update"),
       data: z.record(z.any()).describe("Fields to update as key-value pairs using snake_case column names"),
+      confirmationToken: z.string().describe("Token from proposeMutation tool confirming this action"),
     }),
-    execute: async ({ table, id, data }) => {
+    execute: async ({ table, id, data, confirmationToken }) => {
       try {
         if (!isAllowedTable(table)) return { error: "Table not allowed" };
+        if (!pendingMutations.has(confirmationToken)) {
+          return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
+        }
+        pendingMutations.delete(confirmationToken);
         const { data: result, error } = await supabase.from(table).update(data).eq("id", id).select().single();
         if (error) return { error: error.message };
         return { success: true, record: result };
@@ -202,20 +234,43 @@ const aiTools = {
   }),
 
   deleteRecord: tool({
-    description: "Delete a record from the database by ID. Only supports leads, tasks, and activities. Always describe the intended change and get confirmation first.",
+    description: "Delete a record from the database by ID. Only supports leads, tasks, and activities. You MUST first call proposeMutation to get a confirmation token.",
     parameters: z.object({
       table: z.enum(["leads", "tasks", "activities"]).describe("Table to delete from"),
       id: z.string().describe("ID of the record to delete"),
+      confirmationToken: z.string().describe("Token from proposeMutation tool confirming this action"),
     }),
-    execute: async ({ table, id }) => {
+    execute: async ({ table, id, confirmationToken }) => {
       try {
         if (!isAllowedTable(table)) return { error: "Table not allowed" };
+        if (!pendingMutations.has(confirmationToken)) {
+          return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
+        }
+        pendingMutations.delete(confirmationToken);
         const { error } = await supabase.from(table).delete().eq("id", id);
         if (error) return { error: error.message };
         return { success: true, message: `Record ${id} deleted from ${table}` };
       } catch (e: any) {
         return { error: e.message };
       }
+    },
+  }),
+
+  proposeMutation: tool({
+    description: "Propose a database mutation (create/update/delete) and get a confirmation token. Always call this BEFORE createRecord, updateRecord, or deleteRecord to describe the intended change. The token is returned immediately — you should present the description to the user and then proceed with the mutation using the token.",
+    parameters: z.object({
+      action: z.enum(["create", "update", "delete"]).describe("The type of mutation"),
+      table: z.enum(["leads", "tasks", "activities"]).describe("Target table"),
+      description: z.string().describe("Human-readable description of what will be changed"),
+    }),
+    execute: async ({ action, table, description }) => {
+      const token = `mut_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      pendingMutations.set(token, { action, table, description, createdAt: Date.now() });
+      setTimeout(() => pendingMutations.delete(token), 5 * 60 * 1000);
+      return {
+        confirmationToken: token,
+        message: `Mutation proposed: ${action} on ${table}. Description: ${description}. Use this token to execute the mutation.`,
+      };
     },
   }),
 };
@@ -248,6 +303,48 @@ aiRouter.post("/conversations", async (req: Request, res: Response) => {
 
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+aiRouter.get("/conversations/search", async (req: Request, res: Response) => {
+  try {
+    const user = req.user as User;
+    const q = (req.query.q as string || "").trim();
+    if (!q) return res.json([]);
+
+    const { data: convs } = await supabase
+      .from("ai_conversations")
+      .select("id, title, updated_at")
+      .eq("user_id", user.id)
+      .ilike("title", `%${q}%`)
+      .order("updated_at", { ascending: false })
+      .limit(20);
+
+    const { data: msgHits } = await supabase
+      .from("ai_messages")
+      .select("conversation_id, content")
+      .ilike("content", `%${q}%`)
+      .limit(50);
+
+    const convIds = new Set((convs || []).map((c: any) => c.id));
+    if (msgHits) {
+      for (const m of msgHits) {
+        if (!convIds.has(m.conversation_id)) {
+          convIds.add(m.conversation_id);
+        }
+      }
+    }
+
+    const { data: results } = await supabase
+      .from("ai_conversations")
+      .select("*")
+      .eq("user_id", user.id)
+      .in("id", Array.from(convIds))
+      .order("updated_at", { ascending: false });
+
+    res.json(results || []);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -313,6 +410,48 @@ aiRouter.delete("/conversations/:id", async (req: Request, res: Response) => {
     const { error } = await supabase.from("ai_conversations").delete().eq("id", id).eq("user_id", user.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+aiRouter.post("/upload", upload.single("file"), async (req: Request, res: Response) => {
+  try {
+    const user = req.user as User;
+    const file = req.file;
+    const { messageId, conversationId } = req.body;
+
+    if (!file) return res.status(400).json({ error: "No file uploaded" });
+    if (!conversationId) return res.status(400).json({ error: "conversationId is required" });
+
+    if (!(await verifyConversationOwnership(conversationId, user.id))) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    const fileUrl = `/uploads/ai-attachments/${file.filename}`;
+
+    if (messageId) {
+      const { data, error } = await supabase
+        .from("ai_attachments")
+        .insert({
+          message_id: messageId,
+          file_name: file.originalname,
+          file_type: file.mimetype,
+          file_url: fileUrl,
+          file_size: file.size,
+        })
+        .select()
+        .single();
+      if (error) return res.status(500).json({ error: error.message });
+      return res.json(data);
+    }
+
+    res.json({
+      fileName: file.originalname,
+      fileType: file.mimetype,
+      fileUrl,
+      fileSize: file.size,
+    });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }

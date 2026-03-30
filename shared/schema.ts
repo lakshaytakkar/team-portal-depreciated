@@ -1744,4 +1744,22 @@ export const insertAiMessageSchema = createInsertSchema(aiMessages).omit({
 export type InsertAiMessage = z.infer<typeof insertAiMessageSchema>;
 export type AiMessage = typeof aiMessages.$inferSelect;
 
+export const aiAttachments = pgTable("ai_attachments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  messageId: varchar("message_id").notNull().references(() => aiMessages.id, { onDelete: 'cascade' }),
+  fileName: text("file_name").notNull(),
+  fileType: text("file_type").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAiAttachmentSchema = createInsertSchema(aiAttachments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAiAttachment = z.infer<typeof insertAiAttachmentSchema>;
+export type AiAttachment = typeof aiAttachments.$inferSelect;
+
 export { conversations, messages } from "./models/chat";
