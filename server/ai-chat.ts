@@ -123,108 +123,174 @@ function isAllowedTable(t: string): t is AllowedTable {
 
 const ROLE_TABLE_COLUMNS: Record<string, Record<string, string[]>> = {
   superadmin: {
-    leads: ["id", "name", "email", "phone", "company", "status", "source", "assigned_to", "notes", "created_at", "updated_at", "stage", "value", "priority", "last_contact", "next_follow_up"],
-    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "created_by", "lead_id", "created_at", "updated_at", "completed_at"],
-    activities: ["id", "type", "description", "lead_id", "user_id", "created_at", "metadata"],
-    users: ["id", "name", "email", "role", "team", "created_at", "is_active"],
-    team_members: ["id", "user_id", "team", "role", "joined_at"],
-    employees: ["id", "name", "email", "department", "designation", "joined_at", "is_active"],
-    events: ["id", "title", "description", "start_date", "end_date", "location", "created_by", "created_at"],
-    event_attendees: ["id", "event_id", "user_id", "status"],
-    services: ["id", "name", "description", "price", "category", "is_active"],
-    templates: ["id", "name", "content", "type", "created_by", "created_at"],
+    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assigned_to", "team_id", "source", "address", "rating", "tags", "temperature", "next_follow_up", "won_amount", "won_date", "lost_reason", "created_at"],
+    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "team_id", "lead_id", "tags", "created_at"],
+    activities: ["id", "lead_id", "user_id", "type", "notes", "duration", "outcome", "from_stage", "to_stage", "created_at"],
+    users: ["id", "name", "email", "role", "phone", "avatar", "office_id", "created_at"],
+    team_members: ["id", "user_id", "team_id", "role", "created_at"],
+    employees: ["id", "name", "role", "phone", "whatsapp", "avatar", "is_active", "employment_status", "joining_date"],
+    events: ["id", "name", "type", "city", "venue", "date", "capacity", "status", "ticket_price"],
+    event_attendees: ["id", "event_id", "name", "phone", "email", "company", "checked_in", "ticket_status"],
+    services: ["id", "name", "slug", "category", "short_description", "description", "pricing", "is_active"],
   },
   manager: {
-    leads: ["id", "name", "email", "phone", "company", "status", "source", "assigned_to", "notes", "created_at", "updated_at", "stage", "value", "priority", "last_contact", "next_follow_up"],
-    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "created_by", "lead_id", "created_at", "updated_at", "completed_at"],
-    activities: ["id", "type", "description", "lead_id", "user_id", "created_at", "metadata"],
-    team_members: ["id", "user_id", "team", "role", "joined_at"],
-    events: ["id", "title", "description", "start_date", "end_date", "location", "created_by", "created_at"],
-    event_attendees: ["id", "event_id", "user_id", "status"],
+    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assigned_to", "team_id", "source", "address", "rating", "tags", "temperature", "next_follow_up", "won_amount", "won_date", "lost_reason", "created_at"],
+    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "team_id", "lead_id", "tags", "created_at"],
+    activities: ["id", "lead_id", "user_id", "type", "notes", "duration", "outcome", "from_stage", "to_stage", "created_at"],
+    team_members: ["id", "user_id", "team_id", "role", "created_at"],
+    events: ["id", "name", "type", "city", "venue", "date", "capacity", "status", "ticket_price"],
+    event_attendees: ["id", "event_id", "name", "phone", "email", "company", "checked_in", "ticket_status"],
   },
   sales_executive: {
-    leads: ["id", "name", "email", "phone", "company", "status", "source", "assigned_to", "notes", "created_at", "stage", "value", "priority"],
-    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "lead_id", "created_at", "completed_at"],
-    activities: ["id", "type", "description", "lead_id", "user_id", "created_at"],
+    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assigned_to", "source", "temperature", "next_follow_up", "created_at"],
+    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "lead_id", "created_at"],
+    activities: ["id", "lead_id", "user_id", "type", "notes", "duration", "outcome", "created_at"],
   },
 };
-
-const SAFE_IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
-
-function sanitizeIdentifier(name: string): string | null {
-  const lower = name.toLowerCase().trim();
-  return SAFE_IDENTIFIER.test(lower) ? lower : null;
-}
 
 function getColumnsForRole(role: string): Record<string, string[]> {
   return ROLE_TABLE_COLUMNS[role] || ROLE_TABLE_COLUMNS.sales_executive;
 }
 
-function buildSafeQuery(
+const SAFE_IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
+
+function validateColumn(col: string, allowedCols: string[]): string | null {
+  const lower = col.toLowerCase().trim();
+  if (!SAFE_IDENTIFIER.test(lower)) return null;
+  if (!allowedCols.includes(lower)) return null;
+  return lower;
+}
+
+function validateTable(table: string, roleColumns: Record<string, string[]>): string | null {
+  const lower = table.toLowerCase().trim();
+  if (!SAFE_IDENTIFIER.test(lower)) return null;
+  if (!roleColumns[lower]) return null;
+  return lower;
+}
+
+const filterOperatorSchema = z.object({
+  column: z.string(),
+  operator: z.enum(["=", "!=", ">", "<", ">=", "<=", "LIKE", "ILIKE", "IS NULL", "IS NOT NULL", "IN"]),
+  value: z.union([z.string(), z.number(), z.boolean(), z.null(), z.array(z.union([z.string(), z.number()]))]).optional(),
+});
+
+const aggregateFnSchema = z.object({
+  fn: z.enum(["COUNT", "SUM", "AVG", "MIN", "MAX"]),
+  column: z.string().optional().describe("Column to aggregate. Use '*' only with COUNT."),
+});
+
+type FilterOp = z.infer<typeof filterOperatorSchema>;
+type AggregateFn = z.infer<typeof aggregateFnSchema>;
+
+function buildStrictQuery(
   roleColumns: Record<string, string[]>,
   table: string,
   columns: string[] | undefined,
-  where: string | undefined,
-  orderBy: string | undefined,
+  filters: FilterOp[] | undefined,
+  orderByColumn: string | undefined,
+  orderDirection: string | undefined,
   limit: number | undefined,
-  aggregation: string | undefined,
-  groupBy: string | undefined,
-  joinTable: string | undefined,
-  joinOn: string | undefined,
-): { sql: string; error?: string } {
-  const safeTable = sanitizeIdentifier(table);
-  if (!safeTable || !roleColumns[safeTable]) {
-    return { sql: "", error: `Table '${table}' is not accessible for your role. Allowed: ${Object.keys(roleColumns).join(", ")}` };
+  aggregates: AggregateFn[] | undefined,
+  groupByColumns: string[] | undefined,
+): { sql: string; params: (string | number | boolean | null)[]; error?: string } {
+  const safeTable = validateTable(table, roleColumns);
+  if (!safeTable) {
+    return { sql: "", params: [], error: `Table '${table}' is not accessible. Allowed: ${Object.keys(roleColumns).join(", ")}` };
   }
   const allowedCols = roleColumns[safeTable];
+  const params: (string | number | boolean | null)[] = [];
+  let paramIdx = 1;
 
-  let selectCols: string;
-  if (aggregation) {
-    selectCols = aggregation;
-  } else if (!columns || columns.length === 0) {
-    selectCols = allowedCols.map(c => `${safeTable}.${c}`).join(", ");
-  } else {
-    const validCols: string[] = [];
-    for (const col of columns) {
-      const safeCol = sanitizeIdentifier(col);
-      if (!safeCol || !allowedCols.includes(safeCol)) {
-        return { sql: "", error: `Column '${col}' is not accessible on table '${safeTable}'.` };
+  let selectParts: string[] = [];
+
+  if (aggregates && aggregates.length > 0) {
+    for (const agg of aggregates) {
+      if (agg.column && agg.column !== "*") {
+        const safeCol = validateColumn(agg.column, allowedCols);
+        if (!safeCol) return { sql: "", params: [], error: `Column '${agg.column}' not allowed for aggregation on '${safeTable}'.` };
+        selectParts.push(`${agg.fn}(${safeCol})`);
+      } else {
+        if (agg.fn !== "COUNT") return { sql: "", params: [], error: "Only COUNT can use '*'." };
+        selectParts.push("COUNT(*)");
       }
-      validCols.push(`${safeTable}.${safeCol}`);
     }
-    selectCols = validCols.join(", ");
-  }
-
-  let query = `SELECT ${selectCols} FROM ${safeTable}`;
-
-  if (joinTable && joinOn) {
-    const safeJoin = sanitizeIdentifier(joinTable);
-    if (!safeJoin || !roleColumns[safeJoin]) {
-      return { sql: "", error: `Join table '${joinTable}' is not accessible.` };
+    if (groupByColumns && groupByColumns.length > 0) {
+      for (const gc of groupByColumns) {
+        const safeGc = validateColumn(gc, allowedCols);
+        if (!safeGc) return { sql: "", params: [], error: `Column '${gc}' not allowed for GROUP BY on '${safeTable}'.` };
+        if (!selectParts.includes(safeGc)) selectParts.unshift(safeGc);
+      }
     }
-    const safeJoinOn = joinOn.replace(/[;'"\\]/g, "");
-    query += ` JOIN ${safeJoin} ON ${safeJoinOn}`;
+  } else if (!columns || columns.length === 0) {
+    selectParts = allowedCols.map(c => c);
+  } else {
+    for (const col of columns) {
+      const safeCol = validateColumn(col, allowedCols);
+      if (!safeCol) return { sql: "", params: [], error: `Column '${col}' not accessible on '${safeTable}'.` };
+      selectParts.push(safeCol);
+    }
   }
 
-  if (where) {
-    const safeWhere = where.replace(/[;'"\\]/g, "").replace(/--/g, "");
-    query += ` WHERE ${safeWhere}`;
+  let query = `SELECT ${selectParts.join(", ")} FROM ${safeTable}`;
+
+  if (filters && filters.length > 0) {
+    const whereParts: string[] = [];
+    for (const f of filters) {
+      const safeCol = validateColumn(f.column, allowedCols);
+      if (!safeCol) return { sql: "", params: [], error: `Filter column '${f.column}' not accessible on '${safeTable}'.` };
+
+      if (f.operator === "IS NULL") {
+        whereParts.push(`${safeCol} IS NULL`);
+      } else if (f.operator === "IS NOT NULL") {
+        whereParts.push(`${safeCol} IS NOT NULL`);
+      } else if (f.operator === "IN") {
+        if (!Array.isArray(f.value)) return { sql: "", params: [], error: "IN operator requires an array value." };
+        const placeholders = f.value.map((v) => { params.push(v); return `$${paramIdx++}`; });
+        whereParts.push(`${safeCol} IN (${placeholders.join(", ")})`);
+      } else {
+        params.push(f.value as string | number | boolean | null);
+        whereParts.push(`${safeCol} ${f.operator} $${paramIdx++}`);
+      }
+    }
+    query += ` WHERE ${whereParts.join(" AND ")}`;
   }
 
-  if (groupBy) {
-    const safeGroup = groupBy.replace(/[;'"\\]/g, "");
-    query += ` GROUP BY ${safeGroup}`;
+  if (groupByColumns && groupByColumns.length > 0) {
+    const safeGroups: string[] = [];
+    for (const gc of groupByColumns) {
+      const safeGc = validateColumn(gc, allowedCols);
+      if (!safeGc) return { sql: "", params: [], error: `GROUP BY column '${gc}' not allowed.` };
+      safeGroups.push(safeGc);
+    }
+    query += ` GROUP BY ${safeGroups.join(", ")}`;
   }
 
-  if (orderBy) {
-    const safeOrder = orderBy.replace(/[;'"\\]/g, "");
-    query += ` ORDER BY ${safeOrder}`;
+  if (orderByColumn) {
+    const safeOrder = validateColumn(orderByColumn, allowedCols);
+    if (!safeOrder) return { sql: "", params: [], error: `Order column '${orderByColumn}' not accessible.` };
+    const dir = orderDirection === "ASC" ? "ASC" : "DESC";
+    query += ` ORDER BY ${safeOrder} ${dir}`;
   }
 
   const safeLimit = Math.min(Math.max(1, limit || 100), 100);
   query += ` LIMIT ${safeLimit}`;
 
-  return { sql: query };
+  return { sql: query, params };
+}
+
+async function execParameterizedQuery(sql: string, params: (string | number | boolean | null)[]): Promise<Record<string, unknown>[]> {
+  const client = await pgPool.connect();
+  try {
+    await client.query("BEGIN READ ONLY");
+    const result = await client.query(sql, params);
+    await client.query("COMMIT");
+    return result.rows;
+  } catch (e) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    client.release();
+  }
 }
 
 function getReadTools(userRole: string) {
@@ -240,43 +306,39 @@ function getReadTools(userRole: string) {
       execute: async ({ tableName }) => {
         try {
           if (tableName) {
-            const safe = sanitizeIdentifier(tableName);
-            if (!safe || !roleColumns[safe]) {
-              return { error: `Table '${tableName}' is not accessible.` };
-            }
+            const safe = validateTable(tableName, roleColumns);
+            if (!safe) return { error: `Table '${tableName}' is not accessible.` };
             return { schema: { [safe]: roleColumns[safe] } };
           }
           return { schema: roleColumns };
-        } catch (e: any) {
-          return { error: e.message };
+        } catch (e: unknown) {
+          return { error: e instanceof Error ? e.message : String(e) };
         }
       },
     }),
 
     queryTable: tool({
-      description: `Query CRM data from a single table with optional filters, sorting, aggregation, and joins. Tables: ${allowedTableNames.join(", ")}. All column names and table names are validated server-side.`,
+      description: `Query CRM data with structured parameters. All table names, column names, operators, and aggregate functions are validated server-side. Tables: ${allowedTableNames.join(", ")}.`,
       parameters: z.object({
-        table: z.string().describe("Main table to query"),
+        table: z.string().describe("Table to query"),
         columns: z.array(z.string()).optional().describe("Columns to select. Omit for all allowed columns."),
-        where: z.string().optional().describe("WHERE clause conditions (without the WHERE keyword). Use column_name = value syntax."),
-        orderBy: z.string().optional().describe("ORDER BY clause (without the keyword). e.g. 'created_at DESC'"),
-        limit: z.number().optional().describe("Max rows to return (default 100, max 100)"),
-        aggregation: z.string().optional().describe("Aggregation expression for SELECT clause, e.g. 'COUNT(*)', 'status, COUNT(*)'"),
-        groupBy: z.string().optional().describe("GROUP BY columns, e.g. 'status'"),
-        joinTable: z.string().optional().describe("Table to JOIN with"),
-        joinOn: z.string().optional().describe("JOIN condition, e.g. 'leads.assigned_to = users.id'"),
+        filters: z.array(filterOperatorSchema).optional().describe("WHERE conditions as structured filter objects"),
+        orderByColumn: z.string().optional().describe("Column name to sort by"),
+        orderDirection: z.enum(["ASC", "DESC"]).optional().describe("Sort direction"),
+        limit: z.number().optional().describe("Max rows (default 100, max 100)"),
+        aggregates: z.array(aggregateFnSchema).optional().describe("Aggregate functions to apply"),
+        groupByColumns: z.array(z.string()).optional().describe("Columns to group by"),
       }),
-      execute: async ({ table, columns, where, orderBy, limit, aggregation, groupBy, joinTable, joinOn }) => {
+      execute: async ({ table, columns, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns }) => {
         try {
-          const { sql, error: buildError } = buildSafeQuery(
-            roleColumns, table, columns, where, orderBy, limit, aggregation, groupBy, joinTable, joinOn
+          const { sql, params, error: buildError } = buildStrictQuery(
+            roleColumns, table, columns, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns
           );
           if (buildError) return { error: buildError };
-          const rows = await execReadonlySQL(sql);
-          const limited = Array.isArray(rows) ? rows.slice(0, 100) : rows;
-          return { results: limited, rowCount: Array.isArray(rows) ? rows.length : 0 };
-        } catch (e: any) {
-          return { error: e.message };
+          const rows = await execParameterizedQuery(sql, params);
+          return { results: rows.slice(0, 100), rowCount: rows.length };
+        } catch (e: unknown) {
+          return { error: e instanceof Error ? e.message : String(e) };
         }
       },
     }),
@@ -638,7 +700,7 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 
-    const chatMessages = (history || []).map((m: any) => ({
+    const chatMessages = (history || []).map((m: { role: string; content: string }) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
     }));
@@ -660,7 +722,7 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
     });
 
     let fullContent = "";
-    let toolCallsData: any[] = [];
+    let toolCallsData: Record<string, unknown>[] = [];
     let reasoningText = "";
 
     const stream = result.toDataStream();

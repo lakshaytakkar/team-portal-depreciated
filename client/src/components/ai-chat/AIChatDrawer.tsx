@@ -41,12 +41,20 @@ interface AiConversation {
   updated_at: string;
 }
 
+interface ToolInvocation {
+  type: "call" | "result";
+  toolCallId?: string;
+  toolName?: string;
+  args?: Record<string, unknown>;
+  result?: unknown;
+}
+
 interface AiMessage {
   id: string;
   conversation_id: string;
   role: string;
   content: string;
-  tool_calls?: any[];
+  tool_calls?: ToolInvocation[];
   reasoning?: string;
   created_at: string;
 }
@@ -55,7 +63,7 @@ interface StreamMessage {
   role: "user" | "assistant";
   content: string;
   isStreaming?: boolean;
-  toolInvocations?: any[];
+  toolInvocations?: ToolInvocation[];
   reasoning?: string;
 }
 
@@ -292,7 +300,7 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
                   if (line.startsWith("9:")) {
                     invocations.push({ type: "call", ...toolData });
                   } else {
-                    const existing = invocations.find((t: any) => t.toolCallId === toolData.toolCallId);
+                    const existing = invocations.find((t: ToolInvocation) => t.toolCallId === toolData.toolCallId);
                     if (existing) {
                       existing.type = "result";
                       existing.result = toolData.result;
@@ -323,7 +331,7 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
       await queryClient.invalidateQueries({ queryKey: ["/api/ai/conversations", convId, "messages"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/ai/conversations"] });
       setStreamMessages([]);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setStreamMessages((prev) => {
         const updated = [...prev];
         const last = updated[updated.length - 1];
@@ -588,7 +596,7 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
                       )}
                       {msg.toolInvocations && msg.toolInvocations.length > 0 && (
                         <div className="mb-2">
-                          {msg.toolInvocations.map((tool: any, j: number) => (
+                          {msg.toolInvocations.map((tool: ToolInvocation, j: number) => (
                             <ToolCallDisplay
                               key={j}
                               toolName={tool.toolName}
