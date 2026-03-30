@@ -75,7 +75,7 @@ export default function EventsDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/team/events">
+          <Link href="/events">
             <Button variant="outline">
               <CalendarDays className="mr-2 h-4 w-4 text-muted-foreground" />
               View All Events
@@ -162,7 +162,7 @@ export default function EventsDashboard() {
                 </div>
               </div>
             </div>
-            <Link href={`/team/events/${nextEvent.id}`}>
+            <Link href={`/events/${nextEvent.id}`}>
               <Button>
                 View Details
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -188,7 +188,7 @@ export default function EventsDashboard() {
               </div>
             ) : (
               events.slice(0, 6).map((event) => (
-                <Link key={event.id} href={`/team/events/${event.id}`}>
+                <Link key={event.id} href={`/events/${event.id}`}>
                   <div className="p-4 hover-elevate transition-colors cursor-pointer" data-testid={`event-row-${event.id}`}>
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-primary/10 rounded-lg flex flex-col items-center justify-center text-primary">
@@ -222,7 +222,7 @@ export default function EventsDashboard() {
           </div>
           {events.length > 6 && (
             <div className="p-4 border-t">
-              <Link href="/team/events">
+              <Link href="/events">
                 <Button variant="outline" className="w-full justify-between">
                   View All Events
                   <ArrowRight className="h-4 w-4" />
@@ -237,25 +237,25 @@ export default function EventsDashboard() {
           <div className="bg-card rounded-xl border p-6 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
             <h3 className="text-lg font-bold text-foreground mb-4">Quick Actions</h3>
             <div className="space-y-3">
-              <Link href="/team/events/attendees">
+              <Link href="/events/attendees">
                 <Button variant="outline" className="w-full justify-start gap-3 h-12">
                   <Users className="h-5 w-5 text-primary" />
                   Attendee Database
                 </Button>
               </Link>
-              <Link href="/team/venues">
+              <Link href="/venues">
                 <Button variant="outline" className="w-full justify-start gap-3 h-12">
                   <Building2 className="h-5 w-5 text-primary" />
                   Venue Comparison
                 </Button>
               </Link>
-              <Link href="/team/events/cities">
+              <Link href="/events/cities">
                 <Button variant="outline" className="w-full justify-start gap-3 h-12">
                   <MapPin className="h-5 w-5 text-primary" />
                   City Management
                 </Button>
               </Link>
-              <Link href="/team/events/vendors">
+              <Link href="/events/vendors">
                 <Button variant="outline" className="w-full justify-start gap-3 h-12">
                   <TrendingUp className="h-5 w-5 text-primary" />
                   Vendor Management

@@ -43,7 +43,7 @@ export default function Login() {
     try {
       const user = await api.login(email, password) as any;
       setCurrentUser(user);
-      setLocation("/team");
+      setLocation("/");
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.");
     } finally {

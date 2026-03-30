@@ -227,13 +227,13 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <Link href="/team/profile">
+              <Link href="/profile">
                 <DropdownMenuItem data-testid="menuitem-profile">
                   <User className="mr-2 h-4 w-4" />
                   Profile
                 </DropdownMenuItem>
               </Link>
-              <Link href="/team/admin/settings">
+              <Link href="/admin/settings">
                 <DropdownMenuItem data-testid="menuitem-settings">
                   <Settings className="mr-2 h-4 w-4" />
                   Settings

@@ -423,7 +423,7 @@ export default function CandidatesPage() {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <Link href={`/team/hr/candidates/${candidate.id}`}>
+                            <Link href={`/hr/candidates/${candidate.id}`}>
                               <span className="font-medium hover:underline cursor-pointer" data-testid={`link-candidate-${candidate.id}`}>
                                 {candidate.name}
                               </span>
@@ -472,7 +472,7 @@ export default function CandidatesPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <Link href={`/team/hr/candidates/${candidate.id}`}>
+                          <Link href={`/hr/candidates/${candidate.id}`}>
                             <Button size="icon" variant="ghost" data-testid={`button-view-${candidate.id}`}>
                               <Eye className="h-4 w-4" />
                             </Button>

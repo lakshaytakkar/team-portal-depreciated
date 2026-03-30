@@ -268,7 +268,7 @@ export default function CandidateDetailPage() {
       <div className="p-6">
         <div className="text-center py-12">
           <p className="text-muted-foreground">Candidate not found</p>
-          <Link href="/team/hr/candidates">
+          <Link href="/hr/candidates">
             <Button variant="ghost" className="mt-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Candidates
@@ -284,7 +284,7 @@ export default function CandidateDetailPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/team/hr/candidates">
+        <Link href="/hr/candidates">
           <Button variant="ghost" size="icon" data-testid="button-back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -305,7 +305,7 @@ export default function CandidateDetailPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Candidate Details</CardTitle>
-                <Link href={`/team/hr/candidates/${candidate.id}/edit`}>
+                <Link href={`/hr/candidates/${candidate.id}/edit`}>
                   <Button variant="outline" size="sm" data-testid="button-edit-candidate">
                     <Edit className="h-4 w-4 mr-2" />
                     Edit

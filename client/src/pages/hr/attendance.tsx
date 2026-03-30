@@ -287,7 +287,7 @@ export default function HRAttendance() {
                   return (
                     <TableRow key={employee.id} className={hasChange ? "bg-yellow-50" : ""}>
                       <TableCell>
-                        <Link href={`/team/hr/employees/${employee.id}`}>
+                        <Link href={`/hr/employees/${employee.id}`}>
                           <div className="flex items-center gap-3 hover:underline cursor-pointer">
                             <Avatar className="h-9 w-9">
                               <AvatarFallback>

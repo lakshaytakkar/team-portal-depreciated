@@ -206,7 +206,7 @@ export default function HREmployees() {
             {filteredEmployees.map((employee) => (
               <TableRow key={employee.id} data-testid={`row-employee-${employee.id}`}>
                 <TableCell>
-                  <Link href={`/team/hr/employees/${employee.id}`}>
+                  <Link href={`/hr/employees/${employee.id}`}>
                     <div className="flex items-center gap-3 cursor-pointer hover:opacity-80">
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={employee.profilePicture || undefined} />
@@ -270,7 +270,7 @@ export default function HREmployees() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
-                        <Link href={`/team/hr/employees/${employee.id}`}>View Details</Link>
+                        <Link href={`/hr/employees/${employee.id}`}>View Details</Link>
                       </DropdownMenuItem>
                       {employee.phone && (
                         <DropdownMenuItem asChild>

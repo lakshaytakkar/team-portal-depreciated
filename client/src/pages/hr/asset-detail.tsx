@@ -58,7 +58,7 @@ type AssignmentWithEmployee = AssetAssignment & { employee?: HrEmployee | null }
 
 export default function AssetDetail() {
   const { toast } = useToast();
-  const [, params] = useRoute("/team/hr/assets/:id");
+  const [, params] = useRoute("/hr/assets/:id");
   const assetId = params?.id;
   
   const [isEditing, setIsEditing] = useState(false);
@@ -224,7 +224,7 @@ export default function AssetDetail() {
         <div className="text-center py-12">
           <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-medium">Asset not found</h2>
-          <Link href="/team/hr/assets">
+          <Link href="/hr/assets">
             <Button variant="outline" className="mt-4">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Assets
@@ -239,7 +239,7 @@ export default function AssetDetail() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/team/hr/assets">
+          <Link href="/hr/assets">
             <Button variant="ghost" size="icon" data-testid="button-back">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -427,7 +427,7 @@ export default function AssetDetail() {
             <CardContent>
               {asset.status === 'assigned' && asset.assignee ? (
                 <div className="space-y-3">
-                  <Link href={`/team/hr/employees/${asset.assignee.id}`}>
+                  <Link href={`/hr/employees/${asset.assignee.id}`}>
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-muted hover-elevate cursor-pointer">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="text-sm font-medium text-primary">
@@ -515,7 +515,7 @@ export default function AssetDetail() {
                       <TableRow key={assignment.id}>
                         <TableCell>
                           {assignment.employee ? (
-                            <Link href={`/team/hr/employees/${assignment.employee.id}`}>
+                            <Link href={`/hr/employees/${assignment.employee.id}`}>
                               <span className="text-primary hover:underline cursor-pointer">
                                 {assignment.employee.name}
                               </span>

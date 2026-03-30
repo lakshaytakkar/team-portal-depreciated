@@ -212,7 +212,7 @@ export default function Assets() {
             {filteredAssets.map((asset) => (
               <TableRow key={asset.id} data-testid={`row-asset-${asset.id}`}>
                 <TableCell>
-                  <Link href={`/team/hr/assets/${asset.id}`}>
+                  <Link href={`/hr/assets/${asset.id}`}>
                     <div className="flex items-center gap-3 cursor-pointer hover:opacity-80">
                       <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                         {getCategoryIcon(asset.category)}
@@ -259,7 +259,7 @@ export default function Assets() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
-                        <Link href={`/team/hr/assets/${asset.id}`}>View Details</Link>
+                        <Link href={`/hr/assets/${asset.id}`}>View Details</Link>
                       </DropdownMenuItem>
                       {asset.status === "available" && (
                         <DropdownMenuItem>Assign to Employee</DropdownMenuItem>

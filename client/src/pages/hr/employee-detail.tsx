@@ -121,7 +121,7 @@ export default function EmployeeDetail() {
     return (
       <div className="p-6">
         <p className="text-muted-foreground">Employee not found</p>
-        <Link href="/team/hr/employees">
+        <Link href="/hr/employees">
           <Button variant="outline" className="mt-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Employees
@@ -152,7 +152,7 @@ export default function EmployeeDetail() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/team/hr/employees">
+        <Link href="/hr/employees">
           <Button variant="ghost" size="icon" data-testid="button-back">
             <ArrowLeft className="h-4 w-4" />
           </Button>

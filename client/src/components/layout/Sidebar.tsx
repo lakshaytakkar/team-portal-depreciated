@@ -252,8 +252,8 @@ export function Sidebar({ className }: SidebarProps) {
             </h3>
             <div className="space-y-0.5">
               {group.items.map((item) => {
-                const isActive = location === item.href || (item.href !== "/" && item.href !== "/team/dashboard" && location.startsWith(item.href));
-                const isDashboardActive = item.href === "/team/dashboard" && (location === "/team/dashboard" || location === "/team");
+                const isActive = location === item.href || (item.href !== "/" && item.href !== "/dashboard" && location.startsWith(item.href));
+                const isDashboardActive = item.href === "/dashboard" && (location === "/dashboard" || location === "/");
                 const active = isActive || isDashboardActive;
                 return (
                   <Link key={item.label} href={item.href}>
@@ -281,11 +281,11 @@ export function Sidebar({ className }: SidebarProps) {
             <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground px-2 mb-1">
               System
             </h3>
-            <Link href="/team/admin/settings">
+            <Link href="/admin/settings">
               <div 
                 className={cn(
                   "group flex items-center gap-3 rounded-md px-3 h-9 text-[14px] font-medium cursor-pointer transition-all",
-                  location.startsWith("/team/admin/settings")
+                  location.startsWith("/admin/settings")
                     ? "bg-primary text-white"
                     : "text-sidebar-foreground hover-elevate"
                 )}

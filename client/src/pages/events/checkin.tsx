@@ -29,7 +29,7 @@ import { Html5Qrcode } from "html5-qrcode";
 
 export default function CheckinPage() {
   const { toast } = useToast();
-  const [, params] = useRoute("/team/events/:id/checkin");
+  const [, params] = useRoute("/events/:id/checkin");
   const eventId = params?.id;
   const [searchQuery, setSearchQuery] = useState("");
   const [recentCheckins, setRecentCheckins] = useState<EventAttendee[]>([]);
@@ -216,7 +216,7 @@ export default function CheckinPage() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href={`/team/events/${eventId}`}>
+              <Link href={`/events/${eventId}`}>
                 <Button variant="ghost" size="icon" data-testid="button-back-to-event">
                   <ArrowLeft className="h-5 w-5" />
                 </Button>

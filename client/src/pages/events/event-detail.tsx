@@ -89,7 +89,7 @@ import type { Event, EventAttendee, EventHotel, EventFlight, EventCreative, Even
 
 export default function EventDetailPage() {
   const { toast } = useToast();
-  const [, params] = useRoute("/team/events/:id");
+  const [, params] = useRoute("/events/:id");
   const eventId = params?.id;
   const [activeTab, setActiveTab] = useState("attendees");
   const [searchQuery, setSearchQuery] = useState("");
@@ -161,7 +161,7 @@ export default function EventDetailPage() {
     <div className="space-y-6 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/team/events">
+        <Link href="/events">
           <Button variant="ghost" size="icon" data-testid="button-back">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -191,7 +191,7 @@ export default function EventDetailPage() {
             </span>
           </div>
         </div>
-        <Link href={`/team/events/${eventId}/checkin`}>
+        <Link href={`/events/${eventId}/checkin`}>
           <Button className="bg-primary text-white" data-testid="button-checkin-mode">
             <QrCode className="w-4 h-4 mr-2" />
             Check-in Mode

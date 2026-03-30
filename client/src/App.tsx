@@ -64,15 +64,6 @@ import { useEffect, useState } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import Login from "@/pages/login";
-import PublicHome from "@/pages/public/home";
-import PublicServices from "@/pages/public/services";
-import PublicServiceDetail from "@/pages/public/service-detail";
-import PublicAbout from "@/pages/public/about";
-import PublicContact from "@/pages/public/contact";
-import TravelPage from "@/pages/public/travel";
-import TravelDetailPage from "@/pages/public/travel-detail";
-import PublicEventsPage from "@/pages/public/events";
-import PublicEventDetailPage from "@/pages/public/event-detail";
 import PublicBookingPage from "@/pages/bookings/public-booking";
 
 function TeamPortalRouter() {
@@ -86,8 +77,8 @@ function TeamPortalRouter() {
         const user = await api.getCurrentUser() as any;
         setCurrentUser(user);
       } catch (error) {
-        if (!location.startsWith('/team/login')) {
-          setLocation('/team/login');
+        if (location !== '/login') {
+          setLocation('/login');
         }
       } finally {
         setLoading(false);
@@ -105,14 +96,6 @@ function TeamPortalRouter() {
     );
   }
 
-  if (location === '/team/login') {
-    if (currentUser) {
-      setLocation('/team');
-      return null;
-    }
-    return <Login />;
-  }
-
   if (!currentUser) {
     return <Login />;
   }
@@ -120,77 +103,76 @@ function TeamPortalRouter() {
   return (
     <AppShell>
       <Switch>
-        {/* Team Portal Dashboard */}
-        <Route path="/team" component={Dashboard} />
-        <Route path="/team/dashboard" component={Dashboard} />
-        <Route path="/team/profile" component={Profile} />
-        <Route path="/team/chat" component={Chat} />
-        <Route path="/team/members" component={TeamMembersPage} />
-        <Route path="/team/leads" component={Leads} />
-        <Route path="/team/leads/:id" component={LeadDetail} />
-        <Route path="/team/pipeline" component={Pipeline} />
-        <Route path="/team/tasks" component={Tasks} />
-        <Route path="/team/follow-ups" component={FollowUps} />
-        <Route path="/team/performance" component={Performance} />
-        
+        <Route path="/" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/profile" component={Profile} />
+        <Route path="/chat" component={Chat} />
+        <Route path="/members" component={TeamMembersPage} />
+        <Route path="/leads" component={Leads} />
+        <Route path="/leads/:id" component={LeadDetail} />
+        <Route path="/pipeline" component={Pipeline} />
+        <Route path="/tasks" component={Tasks} />
+        <Route path="/follow-ups" component={FollowUps} />
+        <Route path="/performance" component={Performance} />
+
         {/* Resources & Knowledge */}
-        <Route path="/team/resources/templates" component={Templates} />
-        <Route path="/team/knowledge/services" component={Services} />
-        <Route path="/team/training/lms" component={LMS} />
-        <Route path="/team/training/recordings" component={Recordings} />
+        <Route path="/resources/templates" component={Templates} />
+        <Route path="/knowledge/services" component={Services} />
+        <Route path="/training/lms" component={LMS} />
+        <Route path="/training/recordings" component={Recordings} />
 
         {/* Events Management */}
-        <Route path="/team/events" component={EventsPage} />
-        <Route path="/team/events/:id" component={EventDetailPage} />
-        <Route path="/team/events/:id/checkin" component={EventCheckinPage} />
-        <Route path="/team/venues" component={VenueComparisonPage} />
+        <Route path="/events" component={EventsPage} />
+        <Route path="/events/:id" component={EventDetailPage} />
+        <Route path="/events/:id/checkin" component={EventCheckinPage} />
+        <Route path="/venues" component={VenueComparisonPage} />
 
         {/* HR Portal */}
-        <Route path="/team/hr/employees" component={HREmployeesPage} />
-        <Route path="/team/hr/employees/:id" component={HREmployeeDetailPage} />
-        <Route path="/team/hr/employees/:id/attendance" component={HREmployeeAttendancePage} />
-        <Route path="/team/hr/assets" component={HRAssetsPage} />
-        <Route path="/team/hr/assets/:id" component={HRAssetDetailPage} />
-        <Route path="/team/hr/attendance" component={HRAttendancePage} />
-        <Route path="/team/hr/leave-requests" component={HRLeaveRequestsPage} />
-        <Route path="/team/hr/my-leave-requests" component={MyLeaveRequestsPage} />
-        <Route path="/team/hr/jobs" component={JobOpeningsPage} />
-        <Route path="/team/hr/portals" component={JobPortalsPage} />
-        <Route path="/team/hr/candidates" component={CandidatesPage} />
-        <Route path="/team/hr/candidates/:id" component={CandidateDetailPage} />
-        <Route path="/team/hr/interviews" component={InterviewsPage} />
-        <Route path="/team/hr/templates" component={HrTemplatesPage} />
+        <Route path="/hr/employees" component={HREmployeesPage} />
+        <Route path="/hr/employees/:id" component={HREmployeeDetailPage} />
+        <Route path="/hr/employees/:id/attendance" component={HREmployeeAttendancePage} />
+        <Route path="/hr/assets" component={HRAssetsPage} />
+        <Route path="/hr/assets/:id" component={HRAssetDetailPage} />
+        <Route path="/hr/attendance" component={HRAttendancePage} />
+        <Route path="/hr/leave-requests" component={HRLeaveRequestsPage} />
+        <Route path="/hr/my-leave-requests" component={MyLeaveRequestsPage} />
+        <Route path="/hr/jobs" component={JobOpeningsPage} />
+        <Route path="/hr/portals" component={JobPortalsPage} />
+        <Route path="/hr/candidates" component={CandidatesPage} />
+        <Route path="/hr/candidates/:id" component={CandidateDetailPage} />
+        <Route path="/hr/interviews" component={InterviewsPage} />
+        <Route path="/hr/templates" component={HrTemplatesPage} />
 
         {/* Admin Routes */}
-        <Route path="/team/admin" component={AdminDashboard} />
-        <Route path="/team/admin/leads" component={AdminLeads} />
-        <Route path="/team/admin/team" component={TeamManagement} />
-        <Route path="/team/admin/assignments" component={Assignments} />
-        <Route path="/team/admin/reports" component={Reports} />
-        <Route path="/team/admin/settings" component={Settings} />
-        <Route path="/team/admin/templates" component={ManageTemplates} />
-        <Route path="/team/admin/services" component={ManageServices} />
-        <Route path="/team/admin/training" component={ManageTraining} />
-        <Route path="/team/admin/website" component={WebsiteManager} />
+        <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin/leads" component={AdminLeads} />
+        <Route path="/admin/team" component={TeamManagement} />
+        <Route path="/admin/assignments" component={Assignments} />
+        <Route path="/admin/reports" component={Reports} />
+        <Route path="/admin/settings" component={Settings} />
+        <Route path="/admin/templates" component={ManageTemplates} />
+        <Route path="/admin/services" component={ManageServices} />
+        <Route path="/admin/training" component={ManageTraining} />
+        <Route path="/admin/website" component={WebsiteManager} />
 
         {/* Payment Links */}
-        <Route path="/team/payment-links" component={PaymentLinksPage} />
+        <Route path="/payment-links" component={PaymentLinksPage} />
 
         {/* Scheduling & Bookings */}
-        <Route path="/team/calendar" component={CalendarPage} />
-        <Route path="/team/bookings" component={MyBookingsPage} />
-        <Route path="/team/bookings/types" component={BookingTypesPage} />
-        <Route path="/team/bookings/availability" component={AvailabilityPage} />
-        <Route path="/team/admin/bookings" component={AllBookingsPage} />
+        <Route path="/calendar" component={CalendarPage} />
+        <Route path="/bookings" component={MyBookingsPage} />
+        <Route path="/bookings/types" component={BookingTypesPage} />
+        <Route path="/bookings/availability" component={AvailabilityPage} />
+        <Route path="/admin/bookings" component={AllBookingsPage} />
 
         {/* Faire Wholesale Management */}
-        <Route path="/team/faire/orders" component={FaireOrdersPage} />
-        <Route path="/team/faire/products" component={FaireProductsPage} />
-        <Route path="/team/faire/stores" component={FaireStoresPage} />
-        <Route path="/team/faire/suppliers" component={FaireSuppliersPage} />
-        <Route path="/team/faire/inventory" component={FaireProductsPage} />
-        <Route path="/team/faire/shipments" component={FaireOrdersPage} />
-        <Route path="/team/faire/variants" component={FaireProductsPage} />
+        <Route path="/faire/orders" component={FaireOrdersPage} />
+        <Route path="/faire/products" component={FaireProductsPage} />
+        <Route path="/faire/stores" component={FaireStoresPage} />
+        <Route path="/faire/suppliers" component={FaireSuppliersPage} />
+        <Route path="/faire/inventory" component={FaireProductsPage} />
+        <Route path="/faire/shipments" component={FaireOrdersPage} />
+        <Route path="/faire/variants" component={FaireProductsPage} />
 
         <Route component={NotFound} />
       </Switch>
@@ -201,12 +183,10 @@ function TeamPortalRouter() {
 function Router() {
   const [location] = useLocation();
 
-  // Team portal routes (protected)
-  if (location.startsWith('/team')) {
-    return <TeamPortalRouter />;
+  if (location === '/login') {
+    return <Login />;
   }
 
-  // Public booking page (standalone, no header/footer)
   if (location.startsWith('/book/')) {
     return (
       <Switch>
@@ -216,23 +196,7 @@ function Router() {
     );
   }
 
-  // Public routes
-  return (
-    <Switch>
-      <Route path="/" component={PublicHome} />
-      <Route path="/services" component={PublicServices} />
-      <Route path="/services/:id" component={PublicServiceDetail} />
-      <Route path="/travel" component={TravelPage} />
-      <Route path="/travel/:slug" component={TravelDetailPage} />
-      <Route path="/events" component={PublicEventsPage} />
-      <Route path="/events/:id" component={PublicEventDetailPage} />
-      <Route path="/about" component={PublicAbout} />
-      <Route path="/contact" component={PublicContact} />
-      <Route path="/privacy" component={PublicHome} />
-      <Route path="/terms" component={PublicHome} />
-      <Route component={NotFound} />
-    </Switch>
-  );
+  return <TeamPortalRouter />;
 }
 
 function App() {

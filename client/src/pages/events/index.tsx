@@ -417,7 +417,7 @@ function EventCard({ event }: { event: Event }) {
   const eventDate = new Date(event.date);
 
   return (
-    <Link href={`/team/events/${event.id}`}>
+    <Link href={`/events/${event.id}`}>
       <Card className="hover-elevate cursor-pointer transition-all h-full" data-testid={`card-event-${event.id}`}>
         <CardContent className="p-5">
           <div className="flex items-start justify-between mb-3">
