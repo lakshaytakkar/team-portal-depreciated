@@ -214,7 +214,9 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
               messageToSend = `${text}\n[Attached file: ${uploadData.fileName} (${uploadData.fileType}, ${Math.round((uploadData.fileSize || 0) / 1024)}KB)]`;
             }
           }
-        } catch {}
+        } catch (uploadErr) {
+          console.error("File upload failed:", uploadErr);
+        }
       }
 
       const res = await fetch("/api/ai/chat", {
@@ -257,7 +259,9 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
                 }
                 return updated;
               });
-            } catch {}
+            } catch (parseErr) {
+              console.warn("Stream text parse error:", parseErr);
+            }
           }
           if (line.startsWith("g:")) {
             try {
@@ -273,7 +277,9 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
                 }
                 return updated;
               });
-            } catch {}
+            } catch (parseErr) {
+              console.warn("Stream reasoning parse error:", parseErr);
+            }
           }
           if (line.startsWith("9:") || line.startsWith("a:")) {
             try {
@@ -298,7 +304,9 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
                 }
                 return updated;
               });
-            } catch {}
+            } catch (parseErr) {
+              console.warn("Stream tool parse error:", parseErr);
+            }
           }
         }
       }
@@ -345,14 +353,15 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
     setShowConversations(false);
   };
 
+  const historicalMessages: StreamMessage[] = existingMessages.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content,
+    toolInvocations: m.tool_calls || undefined,
+    reasoning: m.reasoning || undefined,
+  }));
   const displayMessages: StreamMessage[] = streamMessages.length > 0
-    ? streamMessages
-    : existingMessages.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-        toolInvocations: m.tool_calls || undefined,
-        reasoning: m.reasoning || undefined,
-      }));
+    ? [...historicalMessages, ...streamMessages]
+    : historicalMessages;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

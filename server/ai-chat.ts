@@ -55,7 +55,9 @@ async function execReadonlySQL(query: string): Promise<any[]> {
   try {
     const { data, error } = await supabase.rpc("exec_readonly_sql", { sql_query: trimmed });
     if (!error) return data || [];
-  } catch {}
+  } catch (rpcErr) {
+    console.warn("RPC exec_readonly_sql unavailable, falling back to pg:", rpcErr);
+  }
 
   const client = await pgPool.connect();
   try {
@@ -265,6 +267,9 @@ function getMutationTools(userId: string, userRole: string) {
           if (!pending || pending.userId !== userId) {
             return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
           }
+          if (pending.action !== "create" || pending.table !== table) {
+            return { error: `Token was issued for ${pending.action} on ${pending.table}, not create on ${table}.` };
+          }
           pendingMutations.delete(confirmationToken);
           const { data: result, error } = await supabase.from(table).insert(data).select().single();
           if (error) return { error: error.message };
@@ -290,6 +295,9 @@ function getMutationTools(userId: string, userRole: string) {
           if (!pending || pending.userId !== userId) {
             return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
           }
+          if (pending.action !== "update" || pending.table !== table) {
+            return { error: `Token was issued for ${pending.action} on ${pending.table}, not update on ${table}.` };
+          }
           pendingMutations.delete(confirmationToken);
           const { data: result, error } = await supabase.from(table).update(data).eq("id", id).select().single();
           if (error) return { error: error.message };
@@ -313,6 +321,9 @@ function getMutationTools(userId: string, userRole: string) {
           const pending = pendingMutations.get(confirmationToken);
           if (!pending || pending.userId !== userId) {
             return { error: "Invalid or expired confirmation token. Call proposeMutation first." };
+          }
+          if (pending.action !== "delete" || pending.table !== table) {
+            return { error: `Token was issued for ${pending.action} on ${pending.table}, not delete on ${table}.` };
           }
           pendingMutations.delete(confirmationToken);
           const { error } = await supabase.from(table).delete().eq("id", id);
@@ -487,7 +498,9 @@ aiRouter.post("/upload", upload.single("file"), async (req: Request, res: Respon
       try {
         const raw = fs.readFileSync(path.join(uploadsDir, storedFilename), "utf-8");
         fileContent = raw.slice(0, 50000);
-      } catch {}
+      } catch (readErr) {
+        console.error("Failed to read uploaded file content:", readErr);
+      }
     }
 
     res.json({
@@ -612,19 +625,25 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
             try {
               const text = JSON.parse(line.slice(2));
               fullContent += text;
-            } catch {}
+            } catch (e) {
+              console.warn("Stream text chunk parse error:", e);
+            }
           }
           if (line.startsWith("9:")) {
             try {
               const toolCall = JSON.parse(line.slice(2));
               toolCallsData.push(toolCall);
-            } catch {}
+            } catch (e) {
+              console.warn("Stream tool call parse error:", e);
+            }
           }
           if (line.startsWith("g:")) {
             try {
               const reasoning = JSON.parse(line.slice(2));
               reasoningText += reasoning;
-            } catch {}
+            } catch (e) {
+              console.warn("Stream reasoning parse error:", e);
+            }
           }
         }
       }
