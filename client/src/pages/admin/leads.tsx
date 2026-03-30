@@ -67,7 +67,7 @@ export default function AdminLeads() {
       const effectiveRole = useStore.getState().getEffectiveRole();
       const params = new URLSearchParams();
       if (currentTeamId) params.set('teamId', currentTeamId);
-      if (effectiveRole === 'executive' && currentUser?.id) params.set('assignedTo', currentUser.id);
+      if (effectiveRole) params.set('effectiveRole', effectiveRole);
       const res = await fetch(`/api/leads?${params}`, { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
       return res.json();

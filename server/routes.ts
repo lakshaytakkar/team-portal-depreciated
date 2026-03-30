@@ -319,6 +319,17 @@ export async function registerRoutes(
       }
       
       const lead = await storage.updateLead(req.params.id, req.body);
+
+      // Log a stage_change activity whenever the stage is updated
+      if (req.body.stage && req.body.stage !== existingLead.stage) {
+        await storage.createActivity({
+          leadId: req.params.id,
+          userId: user.id,
+          type: 'stage_change',
+          notes: `Stage changed from "${existingLead.stage}" to "${req.body.stage}"`,
+        }).catch(() => { /* non-critical — don't fail the update */ });
+      }
+
       res.json(lead);
     } catch (error) {
       next(error);
@@ -407,7 +418,22 @@ export async function registerRoutes(
       const effectiveRole = req.query.effectiveRole as string | undefined;
       const leadId = req.query.leadId as string | undefined;
 
+      // If leadId is provided, verify the caller has access to that lead before returning its tasks
       if (leadId) {
+        const lead = await storage.getLead(leadId);
+        if (!lead) return res.status(404).json({ message: "Lead not found" });
+        // Superadmin can see any lead; regular users must own or manage the lead's team
+        if (user.role !== 'superadmin') {
+          const isOwner = lead.assignedTo === user.id;
+          let isTeamManager = false;
+          if (lead.teamId) {
+            const userTeams = await storage.getUserTeams(user.id);
+            isTeamManager = userTeams.some(t => t.teamId === lead.teamId && t.role === 'manager');
+          }
+          if (!isOwner && !isTeamManager) {
+            return res.status(403).json({ message: "Forbidden" });
+          }
+        }
         const tasks = await storage.getTasks({ leadId });
         return res.json(tasks);
       }
