@@ -33,6 +33,7 @@ import {
   Trash2,
   Edit,
   ArrowUpDown,
+  ArrowRight,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -298,6 +299,8 @@ export default function AdminLeads() {
                   <Checkbox className="border data-[state=checked]:bg-primary data-[state=checked]:border-primary rounded-[4px]" />
                 </TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Lead Name</TableHead>
+                <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Phone</TableHead>
+                <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Source</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Assigned To</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Value</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Stage</TableHead>
@@ -308,8 +311,11 @@ export default function AdminLeads() {
             <TableBody>
               {filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-32 text-center text-muted-foreground">
-                    No leads found matching your criteria.
+                  <TableCell colSpan={9} className="h-40 text-center">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <p className="text-sm font-medium">No leads found</p>
+                      <p className="text-xs">Try adjusting your filters or check back later.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -325,6 +331,16 @@ export default function AdminLeads() {
                         </a>
                       </Link>
                       <div className="text-xs text-muted-foreground">{lead.company}</div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-foreground">{lead.phone || <span className="text-muted-foreground italic text-xs">—</span>}</span>
+                    </TableCell>
+                    <TableCell>
+                      {lead.source ? (
+                        <Badge variant="outline" className="text-xs font-normal">{lead.source}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs italic">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -359,6 +375,13 @@ export default function AdminLeads() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/leads/${lead.id}`}>
+                              <div className="flex items-center w-full cursor-pointer">
+                                <ArrowRight className="mr-2 h-4 w-4" /> View Details
+                              </div>
+                            </Link>
+                          </DropdownMenuItem>
                           <EditLeadDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><Edit className="mr-2 h-4 w-4" /> Edit Details</DropdownMenuItem>} />
                           <LogActivityDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><MessageSquare className="mr-2 h-4 w-4" /> Log Activity</DropdownMenuItem>} />
                           <DropdownMenuSeparator />

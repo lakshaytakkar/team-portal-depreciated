@@ -61,7 +61,9 @@ import { SendWhatsAppDialog } from "@/components/dialogs/SendWhatsAppDialog";
 export default function LeadDetail() {
   const params = useParams();
   const [, setLocation] = useLocation();
-  const { currentUser } = useStore();
+  const { currentUser, simulatedRole } = useStore();
+  const effectiveRole = simulatedRole || currentUser?.role || 'executive';
+  const isManagerView = effectiveRole === 'manager' || effectiveRole === 'superadmin';
   const [note, setNote] = useState("");
   const [newTag, setNewTag] = useState("");
 
@@ -195,10 +197,10 @@ export default function LeadDetail() {
         {/* Header Navigation */}
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center text-sm text-muted-foreground gap-2">
-            <Link href="/leads">
+            <Link href={isManagerView ? "/admin/leads" : "/leads"}>
               <a className="hover:text-foreground transition-colors flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                Leads
+                {isManagerView ? "All Leads" : "My Leads"}
               </a>
             </Link>
             <ChevronRight className="h-4 w-4" />
@@ -503,19 +505,63 @@ export default function LeadDetail() {
             </div>
 
           <div className="lg:col-span-2 flex flex-col h-full overflow-hidden">
-            <Tabs defaultValue="activity" className="w-full flex flex-col h-full">
+            <Tabs defaultValue="overview" className="w-full flex flex-col h-full">
               <div className="flex items-center justify-between mb-4 shrink-0">
                 <TabsList className="bg-card border p-1 h-[44px] rounded-[10px]">
+                    <TabsTrigger value="overview" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Overview</TabsTrigger>
                     <TabsTrigger value="activity" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Activity</TabsTrigger>
                     <TabsTrigger value="tasks" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">
                       Tasks {leadTasks.length > 0 && <span className="ml-1 bg-primary/20 text-primary rounded-full px-1.5 py-0 text-[10px] font-semibold">{leadTasks.length}</span>}
                     </TabsTrigger>
-                    <TabsTrigger value="notes" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Notes</TabsTrigger>
-                    <TabsTrigger value="files" className="rounded-[8px] data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground">Attachments</TabsTrigger>
                   </TabsList>
                 </div>
                 
               <div className="flex-1 overflow-hidden pb-1">
+                <TabsContent value="overview" className="h-full mt-0 outline-none">
+                   <div className="bg-card border rounded-[16px] shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] h-full flex flex-col overflow-hidden">
+                      <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                        {/* Tags Section */}
+                        <section>
+                          <h3 className="text-[16px] font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <Tag className="h-4 w-4 text-primary" /> Tags
+                          </h3>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {leadTagsLocal.map(tag => (
+                              <Badge key={tag} variant="secondary" className="bg-muted text-foreground border px-2 py-1 flex items-center gap-1 font-normal group">
+                                {tag}
+                                <button onClick={() => removeTagLocal(tag)} className="text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </Badge>
+                            ))}
+                            {leadTagsLocal.length === 0 && <span className="text-sm text-muted-foreground italic">No tags added yet.</span>}
+                          </div>
+                          <div className="relative max-w-sm">
+                            <Input 
+                              placeholder="Add a tag and press Enter..." 
+                              value={newTag}
+                              onChange={(e) => setNewTag(e.target.value)}
+                              onKeyDown={handleAddTagLocal}
+                              className="h-9 text-sm pr-8 bg-muted border focus-visible:ring-primary"
+                            />
+                            <Plus className="h-4 w-4 absolute right-3 top-2.5 text-muted-foreground" />
+                          </div>
+                        </section>
+                        {/* Attachments Section */}
+                        <section>
+                          <h3 className="text-[16px] font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" /> Attachments
+                          </h3>
+                          <div className="flex flex-col items-center justify-center py-10 text-muted-foreground border rounded-xl bg-muted/40">
+                            <FileText className="h-10 w-10 text-border mb-3" />
+                            <p className="text-sm font-medium">No attachments uploaded yet</p>
+                            <Button variant="link" className="text-primary text-sm mt-1">Upload Attachment</Button>
+                          </div>
+                        </section>
+                      </div>
+                   </div>
+                </TabsContent>
+
                 <TabsContent value="activity" className="h-full mt-0 outline-none">
                     <div className="bg-card border rounded-[16px] shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] overflow-hidden h-full flex flex-col">
                       <div className="px-5 py-4 border-b border shrink-0">
@@ -624,47 +670,6 @@ export default function LeadDetail() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="notes" className="h-full mt-0 outline-none">
-                     <div className="bg-card border rounded-[16px] shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] h-full flex flex-col overflow-hidden">
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                          {/* Tags Section */}
-                          <section>
-                            <h3 className="text-[16px] font-semibold text-foreground mb-4 flex items-center gap-2">
-                              <Tag className="h-4 w-4 text-primary" /> Tags
-                            </h3>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {leadTagsLocal.map(tag => (
-                                <Badge key={tag} variant="secondary" className="bg-muted text-foreground border px-2 py-1 flex items-center gap-1 font-normal group">
-                                  {tag}
-                                  <button onClick={() => removeTagLocal(tag)} className="text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </Badge>
-                              ))}
-                              {leadTagsLocal.length === 0 && <span className="text-sm text-muted-foreground italic">No tags added yet.</span>}
-                            </div>
-                            <div className="relative max-w-sm">
-                              <Input 
-                                placeholder="Add a tag and press Enter..." 
-                                value={newTag}
-                                onChange={(e) => setNewTag(e.target.value)}
-                                onKeyDown={handleAddTagLocal}
-                                className="h-9 text-sm pr-8 bg-muted border focus-visible:ring-primary"
-                              />
-                              <Plus className="h-4 w-4 absolute right-3 top-2.5 text-muted-foreground" />
-                            </div>
-                          </section>
-                        </div>
-                     </div>
-                  </TabsContent>
-
-                  <TabsContent value="files" className="h-full mt-0 outline-none">
-                      <div className="bg-card border rounded-[16px] shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] h-full flex flex-col items-center justify-center text-muted-foreground">
-                        <FileText className="h-12 w-12 text-border mb-3" />
-                        <p className="font-medium">No attachments uploaded yet</p>
-                        <Button variant="link" className="text-primary">Upload Attachment</Button>
-                      </div>
-                  </TabsContent>
               </div>
             </Tabs>
           </div>

@@ -396,8 +396,14 @@ export default function Leads() {
             <TableBody>
               {filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
-                    No leads found.
+                  <TableCell colSpan={10} className="h-40 text-center">
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <p className="text-sm font-medium">No leads found</p>
+                      <p className="text-xs">Try adjusting your filters or add a new lead to get started.</p>
+                      <AddLeadDialog trigger={
+                        <Button size="sm" className="mt-1 bg-primary text-white h-8 px-3 text-xs">Add New Lead</Button>
+                      } />
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -533,6 +539,7 @@ export default function Leads() {
                                   </div>
                                 </Link>
                               </DropdownMenuItem>
+                              <LogActivityDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><MessageSquare className="mr-2 h-4 w-4" /> Log Activity</DropdownMenuItem>} />
                               <EditLeadDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit Details</DropdownMenuItem>} />
                               <GenerateQuoteDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><DollarSign className="mr-2 h-4 w-4" /> Generate Quote</DropdownMenuItem>} />
                               <SendWhatsAppDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><MessageSquare className="mr-2 h-4 w-4" /> Send WhatsApp</DropdownMenuItem>} />
