@@ -62,7 +62,7 @@ export default function LeadDetail() {
   const params = useParams();
   const [, setLocation] = useLocation();
   const { currentUser, simulatedRole } = useStore();
-  const effectiveRole = simulatedRole || currentUser?.role || 'executive';
+  const effectiveRole = useStore.getState().getEffectiveRole();
   const isManagerView = effectiveRole === 'manager' || effectiveRole === 'superadmin';
   const [note, setNote] = useState("");
   const [newTag, setNewTag] = useState("");
