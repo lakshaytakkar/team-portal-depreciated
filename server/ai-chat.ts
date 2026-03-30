@@ -42,40 +42,6 @@ const openai = createOpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-const DANGEROUS_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|EXEC|EXECUTE)\b/i;
-
-async function execReadonlySQL(query: string): Promise<any[]> {
-  const trimmed = query.trim();
-  if (!trimmed.toUpperCase().startsWith("SELECT")) {
-    throw new Error("Only SELECT queries are allowed");
-  }
-  if (DANGEROUS_KEYWORDS.test(trimmed.replace(/^SELECT\b/i, ""))) {
-    throw new Error("Query contains disallowed keywords");
-  }
-  if (trimmed.includes(";")) {
-    throw new Error("Multi-statement queries are not allowed");
-  }
-
-  try {
-    const { data, error } = await supabase.rpc("exec_readonly_sql", { sql_query: trimmed });
-    if (!error) return data || [];
-  } catch (rpcErr) {
-    console.warn("RPC exec_readonly_sql unavailable, falling back to pg:", rpcErr);
-  }
-
-  const client = await pgPool.connect();
-  try {
-    await client.query("BEGIN READ ONLY");
-    const result = await client.query(trimmed);
-    await client.query("COMMIT");
-    return result.rows;
-  } catch (e) {
-    await client.query("ROLLBACK").catch(() => {});
-    throw e;
-  } finally {
-    client.release();
-  }
-}
 
 async function verifyConversationOwnership(conversationId: string, userId: string): Promise<boolean> {
   const { data } = await supabase
