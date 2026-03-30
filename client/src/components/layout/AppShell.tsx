@@ -1,3 +1,4 @@
+import { Dock } from "./Dock";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -12,29 +13,45 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const isMobile = useIsMobile();
 
+  if (!isMobile) {
+    return (
+      <div className="flex h-screen w-full bg-background">
+        <Dock />
+        <div className="w-[210px] flex-shrink-0" style={{ marginLeft: '52px' }}>
+          <Sidebar />
+        </div>
+
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header />
+          <main className="flex-1 overflow-y-auto bg-background">
+            <div className="px-6 py-6 space-y-6 animate-in fade-in duration-300">
+              {children}
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-full bg-background">
-      <div className="hidden md:block w-[272px] flex-shrink-0">
-        <Sidebar className="fixed w-[272px] h-full" />
-      </div>
-
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="md:hidden flex items-center h-16 px-4 border-b">
+        <div className="flex items-center h-14 px-4 border-b">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" data-testid="button-mobile-menu">
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[272px]">
-              <Sidebar />
+            <SheetContent side="left" className="p-0 w-[210px]">
+              <Sidebar inSheet />
             </SheetContent>
           </Sheet>
           <span className="ml-4 text-[15px] font-semibold text-foreground tracking-tight">Suprans Portal</span>
         </div>
 
         <Header />
-        
+
         <main className="flex-1 overflow-y-auto bg-background">
           <div className="px-6 py-6 space-y-6 animate-in fade-in duration-300">
             {children}
