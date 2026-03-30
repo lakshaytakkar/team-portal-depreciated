@@ -335,9 +335,11 @@ export default function Leads() {
                <div className="flex items-center gap-4">
                  <span className="font-semibold text-foreground">{selectedLeads.length} selected</span>
                  <div className="h-4 w-[1px] bg-border" />
-                 <Button variant="ghost" size="sm" className="text-primary">
-                   <Trash2 className="mr-2 h-4 w-4" /> Delete
-                 </Button>
+                 {isManager && (
+                   <Button variant="ghost" size="sm" className="text-primary">
+                     <Trash2 className="mr-2 h-4 w-4" /> Delete
+                   </Button>
+                 )}
                  <Button variant="ghost" size="sm" className="text-muted-foreground">
                    Mark as Lost
                  </Button>
@@ -526,13 +528,17 @@ export default function Leads() {
                               <EditLeadDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit Details</DropdownMenuItem>} />
                               <GenerateQuoteDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><DollarSign className="mr-2 h-4 w-4" /> Generate Quote</DropdownMenuItem>} />
                               <SendWhatsAppDialog leadId={lead.id} trigger={<DropdownMenuItem onSelect={(e) => e.preventDefault()}><MessageSquare className="mr-2 h-4 w-4" /> Send WhatsApp</DropdownMenuItem>} />
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-[#df1c41] dark:text-[#df1c41]"
-                                onClick={() => deleteLeadMutation.mutate(lead.id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Lead
-                              </DropdownMenuItem>
+                              {isManager && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem 
+                                    className="text-[#df1c41] dark:text-[#df1c41]"
+                                    onClick={() => deleteLeadMutation.mutate(lead.id)}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Lead
+                                  </DropdownMenuItem>
+                                </>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

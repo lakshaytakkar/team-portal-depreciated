@@ -44,10 +44,6 @@ export default function Dashboard() {
   const [showAddLead, setShowAddLead] = useState(false);
   const [showLogActivity, setShowLogActivity] = useState(false);
 
-  if (currentTeamId === 'events') {
-    return <EventsDashboard />;
-  }
-
   const effectiveRole = useStore.getState().getEffectiveRole();
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
@@ -140,6 +136,10 @@ export default function Dashboard() {
     if (t.status === 'done') return false;
     try { return t.dueDate && new Date(t.dueDate) < new Date(); } catch { return false; }
   }).length;
+
+  if (currentTeamId === 'events') {
+    return <EventsDashboard />;
+  }
 
   if (leadsLoading || tasksLoading) {
     return (

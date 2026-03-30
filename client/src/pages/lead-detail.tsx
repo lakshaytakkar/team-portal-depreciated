@@ -40,7 +40,7 @@ import {
   Plus
 } from "lucide-react";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { stages } from "@/lib/mock-data";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -129,8 +129,15 @@ export default function LeadDetail() {
     },
   });
 
-  const [rating, setRating] = useState<number>(lead?.rating || 0);
-  const [leadTagsLocal, setLeadTagsLocal] = useState<string[]>(lead?.tags || []);
+  const [rating, setRating] = useState<number>(0);
+  const [leadTagsLocal, setLeadTagsLocal] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (lead) {
+      setRating(lead.rating || 0);
+      setLeadTagsLocal(lead.tags || []);
+    }
+  }, [lead?.id, lead?.rating, lead?.tags]);
 
   const handleRatingChange = (star: number) => {
     const newTemp: 'hot' | 'warm' | 'cold' = star >= 4 ? 'hot' : star === 3 ? 'warm' : 'cold';
