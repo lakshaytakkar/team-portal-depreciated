@@ -347,7 +347,7 @@ export function AIChatDrawer({ open, onOpenChange }: { open: boolean; onOpenChan
     } finally {
       setIsStreaming(false);
     }
-  }, [activeConversationId, isStreaming, queryClient]);
+  }, [activeConversationId, isStreaming, queryClient, pendingAttachment]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
