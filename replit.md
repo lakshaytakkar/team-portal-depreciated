@@ -153,6 +153,8 @@ shared/
 - **Status Colors**: Green (#effefa/#40c4aa), Red (#fff0f3/#df1c41), Yellow (#fff8e6/#d39c3d) with dark mode variants
 
 ## Recent Changes
+- March 2026: Upgraded Follow-ups page with Overdue/Today/This Week/Upcoming groups, Mark as Contacted (logs activity + clears follow-up), Snooze (+1 day), View Lead buttons, phone number display, assigned exec display for managers
+- March 2026: Upgraded Performance page with real data charts (no mock data), Total Leads/Leads Won/Win Rate/Total Revenue stats, Leads by Stage bar chart, New Leads Trend (last 6 months), Recent Activity feed, Manager leaderboard table (sortable by leads/won/rate/value), Team Activity weekly chart
 - January 2026: Imported from GitHub repository (replit-agent branch)
 - January 24, 2026: Added Faire Wholesale management (stores, suppliers, products, orders)
 - January 24, 2026: Added LLC Clients module (banks, clients, documents, timeline)
