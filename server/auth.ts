@@ -14,12 +14,14 @@ passport.use(
     async (email, password, done) => {
       try {
         const user = await storage.getUserByEmail(email);
+        console.log('[AUTH DEBUG] getUserByEmail result:', user ? { id: user.id, email: user.email, hasPassword: !!user.password, passwordStart: user.password?.substring(0, 7) } : 'null');
         
         if (!user) {
           return done(null, false, { message: 'Invalid email or password' });
         }
 
         const isValid = await bcrypt.compare(password, user.password);
+        console.log('[AUTH DEBUG] bcrypt.compare result:', isValid);
         
         if (!isValid) {
           return done(null, false, { message: 'Invalid email or password' });
