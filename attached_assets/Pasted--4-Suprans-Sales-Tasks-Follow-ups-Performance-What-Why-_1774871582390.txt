@@ -1,0 +1,44 @@
+#4 - Suprans Sales – Tasks, Follow-ups & Performance
+What & Why
+The second major work area after the core sales module. Covers:
+
+Tasks (/tasks) — already has Kanban and Table views with DnD; polish, verify, and connect properly to the team context
+Follow-ups (/follow-ups) — thin (131 lines); upgrade to a proper action-driven page
+Performance (/performance) — thin (155 lines); expand with meaningful charts and real data
+Done looks like
+Tasks (/tasks)
+Dual view: Kanban (default) and Table view, toggled by button in header
+Kanban columns: Todo | In Progress | Review | Done
+Manager sees all team tasks; Executive sees only assigned to them
+Table view: Title, Priority badge, Due Date, Assigned To, Status, Actions
+Add Task button (opens AddTaskDialog) — title, description, priority, due date, assignedTo; saves to backend
+Clicking a task card opens TaskDetailDialog — shows full detail, allows status change, comment/notes
+Priority colors: High = red, Medium = amber, Low = green
+Overdue tasks (past due date, not done) shown with red date badge
+Filter bar: search by title, filter by priority, filter by status
+Follow-ups (/follow-ups)
+Groups leads by: Overdue | Today | This Week | Upcoming
+Each follow-up card: lead name (link to detail), phone, next follow-up date/time, stage badge, assigned exec (manager view)
+Action buttons on each card: Mark as Contacted (logs a 'call' activity + clears nextFollowUp), Snooze (+1 day), View Lead
+Manager sees all follow-ups across team; Executive sees only their own
+Count badges on each group heading (e.g., "Overdue (3)")
+Empty state per group when none exist
+Performance (/performance)
+Executive view (My Performance):
+Stats row: Total Leads, Leads Won, Win Rate %, Total Revenue
+Bar chart: Leads by Stage (how many in each stage)
+Monthly trend: new leads added per month (last 6 months)
+Recent activity feed: last 5 logged activities
+Manager view (Team Performance):
+Same stat row but company-wide
+Leaderboard table: each exec's name, leads count, won count, win rate, total value — sortable
+Team activity chart: total activities logged per week
+All data from real API (leads + activities + users)
+Key files
+client/src/pages/tasks.tsx
+client/src/pages/follow-ups.tsx
+client/src/pages/performance.tsx
+client/src/components/dialogs/AddTaskDialog.tsx
+client/src/components/dialogs/TaskDetailDialog.tsx
+server/routes.ts (POST /api/tasks, PATCH /api/tasks/:id, GET /api/activities)
+Dependencies

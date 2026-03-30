@@ -1,0 +1,48 @@
+#3 - Suprans Sales – Sales Module (Leads, Pipeline, Lead Detail)
+What & Why
+The core sales module. Polish and verify the three main pages that make up daily sales work:
+
+Leads list (/leads for Executive, /admin/leads for Manager) — table view with search, filter, add, edit, assign, bulk actions
+Pipeline (/pipeline) — drag-and-drop Kanban by stage for both roles
+Lead Detail (/leads/:id) — the tabbed detail page with activity log, stage control, and actions
+These pages already exist with substantial code. This task audits them, fixes any broken wiring, and fills gaps for the Manager vs Executive role split.
+
+Done looks like
+Leads List (/leads — Executive, /admin/leads — Manager)
+Executive sees only their own leads (filtered by assignedTo === currentUser.id)
+Manager sees all leads across the team with an "Assigned To" column
+Both views: search by name/phone/email, filter by stage, filter by source
+Table columns: Name + avatar, Phone, Stage badge, Value, Source, Assigned To (manager only), Next Follow-up, Created date, Actions menu
+Actions menu per row: View Details, Edit, Log Activity, Delete (manager only)
+Add Lead button opens AddLeadDialog — works and saves to backend
+Pagination (or scroll) for long lists
+Empty state with CTA when no leads exist
+Pipeline Kanban (/pipeline)
+Columns: New → Contacted → Qualified → Proposal → Negotiation → Won → Lost
+Manager sees all team leads; Executive sees only their own
+Drag a card between columns → updates stage in backend immediately
+Each card shows: lead name, value, phone, days since created, last activity date
+Clicking a card goes to /leads/:id
+Column header shows count badge
+Lead Detail (/leads/:id)
+Header: Name, stage badge, value, phone, email, source, assigned-to avatar
+Stage change bar (horizontal stepper or dropdown) — clicking a stage calls PATCH and logs a stage_change activity
+Tabs: Overview | Activity | Tasks (tasks linked to this lead)
+Overview: contact info, address, notes, temperature/rating, next follow-up
+Activity tab: chronological list of all logged activities (call, email, meeting, note, stage_change); LogActivityDialog works
+Quick action buttons: Call, WhatsApp, Email, Edit (all open existing dialogs)
+Back button returns to leads list
+Role handling
+Uses getEffectiveRole() from store (respects Manager/Executive toggle in Header)
+Manager routes through /admin/leads in teams-config; Executive through /leads
+Key files
+client/src/pages/leads.tsx
+client/src/pages/admin/leads.tsx
+client/src/pages/pipeline.tsx
+client/src/pages/lead-detail.tsx
+client/src/components/dialogs/AddLeadDialog.tsx
+client/src/components/dialogs/EditLeadDialog.tsx
+client/src/components/dialogs/LogActivityDialog.tsx
+server/routes.ts (PATCH /api/leads/:id for stage changes, GET filters by role)
+Dependencies
+Task: "Suprans Sales Identity + Dashboard" should be done first so nav labels are already updated when this runs.
