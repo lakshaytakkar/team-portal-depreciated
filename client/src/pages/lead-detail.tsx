@@ -63,7 +63,7 @@ export default function LeadDetail() {
   const [, setLocation] = useLocation();
   const { currentUser, simulatedRole } = useStore();
   const effectiveRole = useStore.getState().getEffectiveRole();
-  const isManagerView = effectiveRole === 'manager' || effectiveRole === 'superadmin';
+  const isManagerView = effectiveRole === 'manager';
   const [note, setNote] = useState("");
   const [newTag, setNewTag] = useState("");
 
@@ -236,7 +236,7 @@ export default function LeadDetail() {
             <div className="flex flex-col gap-4 flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-4">
                 <Avatar className="h-12 w-12 border shadow-sm">
-                  <AvatarImage src={lead.avatar} className="object-cover" />
+                  <AvatarImage src={lead.avatar ?? undefined} className="object-cover" />
                   <AvatarFallback className="text-sm bg-muted">{lead.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 
@@ -520,6 +520,58 @@ export default function LeadDetail() {
                 <TabsContent value="overview" className="h-full mt-0 outline-none">
                    <div className="bg-card border rounded-[16px] shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] h-full flex flex-col overflow-hidden">
                       <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                        {/* Contact Context */}
+                        <section>
+                          <h3 className="text-[16px] font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <Users className="h-4 w-4 text-primary" /> Contact Details
+                          </h3>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-lg border bg-muted/40 p-3">
+                              <p className="text-xs text-muted-foreground mb-1">Email</p>
+                              <p className="text-sm text-foreground">{lead.email || <span className="italic text-muted-foreground">—</span>}</p>
+                            </div>
+                            <div className="rounded-lg border bg-muted/40 p-3">
+                              <p className="text-xs text-muted-foreground mb-1">Phone</p>
+                              <p className="text-sm text-foreground">{lead.phone || <span className="italic text-muted-foreground">—</span>}</p>
+                            </div>
+                            <div className="rounded-lg border bg-muted/40 p-3">
+                              <p className="text-xs text-muted-foreground mb-1">Source</p>
+                              <p className="text-sm text-foreground">{lead.source || <span className="italic text-muted-foreground">—</span>}</p>
+                            </div>
+                            <div className="rounded-lg border bg-muted/40 p-3">
+                              <p className="text-xs text-muted-foreground mb-1">Next Follow-up</p>
+                              <p className="text-sm text-foreground">
+                                {lead.nextFollowUp
+                                  ? format(new Date(lead.nextFollowUp), 'MMM d, yyyy')
+                                  : <span className="italic text-muted-foreground">Not scheduled</span>}
+                              </p>
+                            </div>
+                          </div>
+                        </section>
+                        {/* Last Interaction Section */}
+                        <section>
+                          <h3 className="text-[16px] font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" /> Last Interaction
+                          </h3>
+                          {lead.lastConnected ? (
+                            <div className="rounded-lg border bg-muted/40 p-4 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Date</span>
+                                <span className="text-sm text-foreground">{lead.lastConnected.date ? format(new Date(lead.lastConnected.date), 'MMM d, yyyy') : '—'}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Outcome</span>
+                                <span className="text-sm text-foreground capitalize">{lead.lastConnected.outcome || '—'}</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Duration</span>
+                                <span className="text-sm text-foreground">{lead.lastConnected.duration || '—'}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground italic">No interactions recorded yet.</p>
+                          )}
+                        </section>
                         {/* Tags Section */}
                         <section>
                           <h3 className="text-[16px] font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -555,7 +607,7 @@ export default function LeadDetail() {
                           <div className="flex flex-col items-center justify-center py-10 text-muted-foreground border rounded-xl bg-muted/40">
                             <FileText className="h-10 w-10 text-border mb-3" />
                             <p className="text-sm font-medium">No attachments uploaded yet</p>
-                            <Button variant="link" className="text-primary text-sm mt-1">Upload Attachment</Button>
+                            <button className="text-primary text-sm mt-1 underline hover:no-underline">Upload Attachment</button>
                           </div>
                         </section>
                       </div>

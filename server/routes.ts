@@ -79,9 +79,14 @@ export async function registerRoutes(
   });
 
   // User routes (admin only)
-  app.get("/api/users", requireAuth, requireRole("superadmin"), async (req, res, next) => {
+  app.get("/api/users", requireAuth, async (req, res, next) => {
     try {
       const currentUser = req.user as User;
+      const userTeams = await storage.getUserTeams(currentUser.id);
+      const isManager = userTeams.some(t => t.role === 'manager') || currentUser.role === 'superadmin';
+      if (!isManager) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
       const users = await storage.getAllUsers();
       
       // Only show salary to admin@suprans.in

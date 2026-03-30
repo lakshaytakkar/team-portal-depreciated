@@ -345,7 +345,7 @@ export default function AdminLeads() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
-                          <AvatarImage src={users.find(u => u.id === lead.assignedTo)?.avatar} />
+                          <AvatarImage src={users.find(u => u.id === lead.assignedTo)?.avatar ?? undefined} />
                           <AvatarFallback>
                             {getUserName(lead.assignedTo).charAt(0)}
                           </AvatarFallback>

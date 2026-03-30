@@ -462,7 +462,7 @@ export default function Leads() {
                                   className="flex items-center gap-2"
                                 >
                                   <Avatar className="h-6 w-6">
-                                    <AvatarImage src={user.avatar} />
+                                    <AvatarImage src={user.avatar ?? undefined} />
                                     <AvatarFallback>{user.name[0]}</AvatarFallback>
                                   </Avatar>
                                   <span>{user.name}</span>
