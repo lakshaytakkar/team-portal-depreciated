@@ -787,6 +787,7 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
     const stream = result.toDataStream();
     const reader = stream.getReader();
 
+    let parseBuffer = "";
     try {
       while (true) {
         const { done, value } = await reader.read();
@@ -795,8 +796,11 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
         const chunk = typeof value === "string" ? value : new TextDecoder().decode(value);
         res.write(chunk);
 
-        const lines = chunk.split("\n");
+        parseBuffer += chunk;
+        const lines = parseBuffer.split("\n");
+        parseBuffer = lines.pop() || "";
         for (const line of lines) {
+          if (!line.trim()) continue;
           if (line.startsWith("0:")) {
             try {
               const text = JSON.parse(line.slice(2));
@@ -821,6 +825,11 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
               console.warn("Stream reasoning parse error:", e);
             }
           }
+        }
+      }
+      if (parseBuffer.trim()) {
+        if (parseBuffer.startsWith("0:")) {
+          try { fullContent += JSON.parse(parseBuffer.slice(2)); } catch {}
         }
       }
     } finally {

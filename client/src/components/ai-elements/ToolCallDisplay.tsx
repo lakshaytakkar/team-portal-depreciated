@@ -44,7 +44,7 @@ export function ToolCallDisplay({ toolName, args, result }: ToolCallDisplayProps
               {typeof args === "string" ? args : JSON.stringify(args, null, 2)}
             </pre>
           )}
-          {result && (
+          {result !== undefined && result !== null && (
             <pre className="text-xs text-green-600 dark:text-green-400 bg-background rounded p-2 overflow-x-auto whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
               {typeof result === "string" ? result : JSON.stringify(result, null, 2)}
             </pre>
