@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { 
   ArrowRight,
   TrendingUp, 
-  TrendingDown,
-  Calendar, 
   Download,
   Filter,
   MoreHorizontal,
@@ -21,6 +19,7 @@ import {
   Plus,
   KanbanSquare,
   Phone,
+  MessageSquare,
 } from "lucide-react";
 import { 
   AreaChart,
@@ -45,7 +44,7 @@ import EventsDashboard from "@/pages/events/events-dashboard";
 import { AddLeadDialog } from "@/components/dialogs/AddLeadDialog";
 
 export default function Dashboard() {
-  const { currentUser, currentTeamId } = useStore();
+  const { currentUser, currentTeamId, simulatedRole } = useStore();
   const [activeStage, setActiveStage] = useState('all');
   const [showAddLead, setShowAddLead] = useState(false);
 
@@ -53,13 +52,13 @@ export default function Dashboard() {
     return <EventsDashboard />;
   }
 
-  const isAdmin = currentUser?.role === 'superadmin';
   const effectiveRole = useStore.getState().getEffectiveRole();
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery<any[]>({
-    queryKey: ['/api/leads', currentTeamId, effectiveRole],
+    queryKey: ['/api/leads', currentTeamId, effectiveRole, simulatedRole],
     queryFn: async () => {
-      const res = await fetch(`/api/leads?teamId=${currentTeamId}&effectiveRole=${effectiveRole}`, { credentials: 'include' });
+      const role = useStore.getState().getEffectiveRole();
+      const res = await fetch(`/api/leads?teamId=${currentTeamId}&effectiveRole=${role}`, { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -67,9 +66,20 @@ export default function Dashboard() {
   });
 
   const { data: tasks = [], isLoading: tasksLoading } = useQuery<any[]>({
-    queryKey: ['/api/tasks', currentTeamId, effectiveRole],
+    queryKey: ['/api/tasks', currentTeamId, effectiveRole, simulatedRole],
     queryFn: async () => {
-      const res = await fetch(`/api/tasks?teamId=${currentTeamId}&effectiveRole=${effectiveRole}`, { credentials: 'include' });
+      const role = useStore.getState().getEffectiveRole();
+      const res = await fetch(`/api/tasks?teamId=${currentTeamId}&effectiveRole=${role}`, { credentials: 'include' });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    enabled: !!currentUser,
+  });
+
+  const { data: teamMembers = [] } = useQuery<any[]>({
+    queryKey: ['/api/users', currentTeamId],
+    queryFn: async () => {
+      const res = await fetch(`/api/users?teamId=${currentTeamId}`, { credentials: 'include' });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
@@ -157,69 +167,49 @@ export default function Dashboard() {
         {/* Total Leads */}
         <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-total-leads">
           <div className="flex items-center justify-between w-full">
-            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
-              Total Leads
-            </p>
+            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">Total Leads</p>
             <div className="w-[36px] h-[36px] bg-card border rounded-lg flex items-center justify-center">
                <Users className="h-[18px] w-[18px] text-primary" />
             </div>
           </div>
           <div className="flex flex-col gap-2 items-start">
-            <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">
-              {totalLeads}
-            </p>
-            <p className="text-muted-foreground text-[13px]">
-              {activeLeads} active
-            </p>
+            <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">{totalLeads}</p>
+            <p className="text-muted-foreground text-[13px]">{activeLeads} active</p>
           </div>
         </div>
 
         {/* Active Deals */}
         <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-active-deals">
           <div className="flex items-center justify-between w-full">
-            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
-              Active Deals
-            </p>
+            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">Active Deals</p>
             <div className="w-[36px] h-[36px] bg-card border rounded-lg flex items-center justify-center">
                <Briefcase className="h-[18px] w-[18px] text-primary" />
             </div>
           </div>
           <div className="flex flex-col gap-2 items-start">
-            <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">
-              {activeLeads}
-            </p>
-            <p className="text-muted-foreground text-[13px]">
-              {wonLeads} won total
-            </p>
+            <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">{activeLeads}</p>
+            <p className="text-muted-foreground text-[13px]">{wonLeads} won total</p>
           </div>
         </div>
 
         {/* Win Rate */}
         <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-win-rate">
           <div className="flex items-center justify-between w-full">
-            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
-              Win Rate
-            </p>
+            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">Win Rate</p>
             <div className="w-[36px] h-[36px] bg-card border rounded-lg flex items-center justify-center">
                <Target className="h-[18px] w-[18px] text-primary" />
             </div>
           </div>
           <div className="flex flex-col gap-2 items-start">
-            <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">
-              {winRate}%
-            </p>
-            <p className="text-muted-foreground text-[13px]">
-              {wonLeads} of {totalLeads} leads
-            </p>
+            <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">{winRate}%</p>
+            <p className="text-muted-foreground text-[13px]">{wonLeads} of {totalLeads} leads</p>
           </div>
         </div>
 
         {/* Pipeline Value */}
         <div className="bg-card border rounded-lg p-4 flex flex-col gap-2 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none" data-testid="stat-pipeline-value">
           <div className="flex items-center justify-between w-full">
-            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">
-              Pipeline Value
-            </p>
+            <p className="text-muted-foreground text-[14px] font-medium tracking-[0.28px]">Pipeline Value</p>
             <div className="w-[36px] h-[36px] bg-card border rounded-lg flex items-center justify-center">
                <DollarSign className="h-[18px] w-[18px] text-primary" />
             </div>
@@ -228,15 +218,13 @@ export default function Dashboard() {
             <p className="text-foreground text-2xl font-semibold leading-[1.3] tracking-tight">
               ₹{(totalPipelineValue / 100000).toFixed(1)}L
             </p>
-            <p className="text-muted-foreground text-[13px]">
-              active deals only
-            </p>
+            <p className="text-muted-foreground text-[13px]">active deals only</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Monthly Leads Trend (real data) */}
+        {/* Monthly Leads Trend */}
         <div className="lg:col-span-2 bg-card rounded-xl border p-6 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -294,7 +282,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Pipeline Distribution (already real data) */}
+        {/* Pipeline Distribution */}
         <div className="bg-card rounded-xl border p-6 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
           <h3 className="text-lg font-bold text-foreground mb-6">Pipeline by Stage</h3>
           {pipelineData.length === 0 ? (
@@ -341,7 +329,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions + Task Summary row */}
+      {/* Quick Actions row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div
           className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none"
@@ -357,27 +345,27 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <Link href="/follow-ups" data-testid="quick-action-follow-ups">
+        <Link href={effectiveRole === 'manager' ? '/admin/leads' : '/leads'} data-testid="quick-action-log-activity">
           <div className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
-            <div className="w-10 h-10 bg-orange-50 dark:bg-orange-950/30 rounded-lg flex items-center justify-center">
-              <Phone className="h-5 w-5 text-orange-500" />
+            <div className="w-10 h-10 bg-green-50 dark:bg-green-950/30 rounded-lg flex items-center justify-center">
+              <MessageSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="font-semibold text-sm text-foreground">Follow-ups</p>
-              <p className="text-xs text-muted-foreground">Review scheduled follow-ups</p>
+              <p className="font-semibold text-sm text-foreground">Log Activity</p>
+              <p className="text-xs text-muted-foreground">Record a call, meeting or note</p>
             </div>
           </div>
         </Link>
 
-        <Link href="/tasks" data-testid="quick-action-tasks">
+        <Link href="/pipeline" data-testid="quick-action-view-pipeline">
           <div className="bg-card border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none">
             <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/30 rounded-lg flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5 text-blue-500" />
+              <KanbanSquare className="h-5 w-5 text-blue-500" />
             </div>
             <div>
-              <p className="font-semibold text-sm text-foreground">Tasks</p>
+              <p className="font-semibold text-sm text-foreground">View Pipeline</p>
               <p className="text-xs text-muted-foreground">
-                {pendingTasks} pending{overdueTasks > 0 ? `, ${overdueTasks} overdue` : ''}
+                {activeLeads} active deal{activeLeads !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
@@ -484,9 +472,7 @@ export default function Dashboard() {
                       <td className="px-6 py-4">
                         <span className="text-foreground font-medium">{lead.company}</span>
                       </td>
-                      <td className="px-6 py-4 text-muted-foreground">
-                        {lead.service}
-                      </td>
+                      <td className="px-6 py-4 text-muted-foreground">{lead.service}</td>
                       <td className="px-6 py-4 font-medium text-foreground">
                         ₹{lead.value.toLocaleString()}
                       </td>
