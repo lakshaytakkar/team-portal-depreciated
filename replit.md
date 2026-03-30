@@ -135,7 +135,8 @@ shared/
 - **Role-Based Views**:
   - Executive: sees only items assigned to them within the team
   - Manager: sees all items within the team
-  - Superadmin: can simulate either role via header toggle; member of all teams
+  - SuperAdmin: full access to all data across all teams, plus System section (Settings, User Management, Audit Logs, Billing) in sidebar navigation
+  - Superadmin can simulate SuperAdmin/Manager/Executive roles via 3-button toggle in header; member of all teams
 - **Data Scoping**: `leads` and `tasks` tables have `teamId` column; API routes accept `teamId` and `effectiveRole` query params
 - **Store**: `client/src/lib/store.ts` holds UI state only (currentUser, currentTeamId, simulatedRole, myTeamMemberships) with `getEffectiveRole()` and `getRoleInTeam()` helper methods
 - **All pages use React Query**: No mock data in store; leads, tasks, users fetched from API with team/role filtering

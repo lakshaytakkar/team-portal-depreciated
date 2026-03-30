@@ -75,7 +75,7 @@ export default function Dashboard() {
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
-    enabled: !!currentUser && effectiveRole === 'manager',
+    enabled: !!currentUser && (effectiveRole === 'manager' || effectiveRole === 'superadmin'),
   });
 
   const totalLeads = leads.length;
@@ -93,7 +93,7 @@ export default function Dashboard() {
   })).filter(s => s.count > 0);
 
   const execLeaderboard = useMemo(() => {
-    if (effectiveRole !== 'manager' || teamMembers.length === 0) return [];
+    if ((effectiveRole !== 'manager' && effectiveRole !== 'superadmin') || teamMembers.length === 0) return [];
     return teamMembers
       .filter((u: User) => u.role !== 'superadmin')
       .map((u: User) => {
@@ -154,10 +154,10 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold leading-[1.35] tracking-tight text-foreground">
-            {effectiveRole === 'manager' ? "Sales Dashboard" : "My Dashboard"}
+            {(effectiveRole === 'manager' || effectiveRole === 'superadmin') ? "Sales Dashboard" : "My Dashboard"}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {effectiveRole === 'manager'
+            {(effectiveRole === 'manager' || effectiveRole === 'superadmin')
               ? "Overview of team-wide sales performance and pipeline."
               : "Track your personal sales performance and active deals."}
           </p>
@@ -414,7 +414,7 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="h-9 gap-2" asChild>
-                <Link href={effectiveRole === 'manager' ? '/admin/leads' : '/leads'}>
+                <Link href={(effectiveRole === 'manager' || effectiveRole === 'superadmin') ? '/admin/leads' : '/leads'}>
                   View All <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
@@ -536,7 +536,7 @@ export default function Dashboard() {
       </div>
 
       {/* Executive Leaderboard — Manager only */}
-      {effectiveRole === 'manager' && execLeaderboard.length > 0 && (
+      {(effectiveRole === 'manager' || effectiveRole === 'superadmin') && execLeaderboard.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Trophy className="h-5 w-5 text-amber-500" />

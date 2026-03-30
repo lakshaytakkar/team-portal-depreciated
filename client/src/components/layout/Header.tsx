@@ -12,6 +12,7 @@ import {
   LogOut,
   Shield,
   Eye,
+  Crown,
   Moon,
   Sun
 } from "lucide-react";
@@ -37,14 +38,14 @@ import { getTeamById } from "@/lib/teams-config";
 import { useTheme } from "@/components/theme-provider";
 
 export function Header() {
-  const { currentUser, simulatedRole, setSimulatedRole, currentTeamId } = useStore();
+  const { currentUser, simulatedRole, setSimulatedRole, currentTeamId, getEffectiveRole } = useStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   const isSuperadmin = currentUser?.role === 'superadmin';
   const currentTeam = getTeamById(currentTeamId);
-  const effectiveRole = isSuperadmin ? (simulatedRole || 'manager') : 'executive';
+  const effectiveRole = getEffectiveRole();
 
   const notifications = [
     {
@@ -110,6 +111,16 @@ export function Header() {
         <div className="flex items-center gap-2.5">
           {isSuperadmin && (
             <div className="flex items-center gap-1.5 mr-2 bg-muted p-1 rounded-lg" data-testid="role-switcher">
+              <Button 
+                variant={effectiveRole === 'superadmin' ? 'default' : 'ghost'} 
+                size="sm" 
+                className="text-xs gap-1.5 toggle-elevate"
+                onClick={() => setSimulatedRole('superadmin')}
+                data-testid="button-role-superadmin"
+              >
+                <Crown className="h-3 w-3" />
+                SuperAdmin
+              </Button>
               <Button 
                 variant={effectiveRole === 'manager' ? 'default' : 'ghost'} 
                 size="sm" 
@@ -214,10 +225,10 @@ export function Header() {
                 <div className="flex flex-col items-start">
                   <span className="text-[12px] font-semibold leading-[1.5] tracking-[0.02em]" data-testid="text-user-name">{currentUser?.name}</span>
                   <span className="text-[12px] text-muted-foreground leading-[1.5] tracking-[0.02em]" data-testid="text-user-role">
-                    {isSuperadmin ? 'Super Admin' : effectiveRole === 'manager' ? 'Manager' : 'Executive'}
-                    {isSuperadmin && simulatedRole && (
+                    {effectiveRole === 'superadmin' ? 'Super Admin' : effectiveRole === 'manager' ? 'Manager' : 'Executive'}
+                    {isSuperadmin && simulatedRole && simulatedRole !== 'superadmin' && (
                       <span className="ml-1 text-primary">
-                        (as {simulatedRole})
+                        (viewing as {simulatedRole})
                       </span>
                     )}
                   </span>

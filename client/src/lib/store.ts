@@ -20,16 +20,16 @@ interface TeamMembership {
 interface AppState {
   currentUser: CurrentUser | null;
   currentTeamId: string;
-  simulatedRole: 'manager' | 'executive' | null;
+  simulatedRole: 'superadmin' | 'manager' | 'executive' | null;
   myTeamMemberships: TeamMembership[];
 
   setCurrentUser: (user: CurrentUser | null) => void;
   setCurrentTeamId: (teamId: string) => void;
-  setSimulatedRole: (role: 'manager' | 'executive' | null) => void;
+  setSimulatedRole: (role: 'superadmin' | 'manager' | 'executive' | null) => void;
   setMyTeamMemberships: (memberships: TeamMembership[]) => void;
 
-  getEffectiveRole: () => 'manager' | 'executive';
-  getRoleInTeam: (teamId: string) => 'manager' | 'executive';
+  getEffectiveRole: () => 'superadmin' | 'manager' | 'executive';
+  getRoleInTeam: (teamId: string) => 'superadmin' | 'manager' | 'executive';
 }
 
 export const useStore = create<AppState>()(
@@ -49,7 +49,7 @@ export const useStore = create<AppState>()(
         const { currentUser, currentTeamId, simulatedRole, myTeamMemberships } = get();
         if (!currentUser) return 'executive';
         if (currentUser.role === 'superadmin') {
-          return simulatedRole || 'manager';
+          return simulatedRole || 'superadmin';
         }
         const membership = myTeamMemberships.find(m => m.teamId === currentTeamId);
         return (membership?.role as 'manager' | 'executive') || 'executive';
@@ -59,7 +59,7 @@ export const useStore = create<AppState>()(
         const { currentUser, simulatedRole, myTeamMemberships } = get();
         if (!currentUser) return 'executive';
         if (currentUser.role === 'superadmin') {
-          return simulatedRole || 'manager';
+          return simulatedRole || 'superadmin';
         }
         const membership = myTeamMemberships.find(m => m.teamId === teamId);
         return (membership?.role as 'manager' | 'executive') || 'executive';

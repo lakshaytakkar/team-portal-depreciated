@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 export default function Performance() {
   const { currentUser, currentTeamId, getEffectiveRole } = useStore();
   const effectiveRole = getEffectiveRole();
-  const isManager = effectiveRole === 'manager';
+  const isManager = effectiveRole === 'manager' || effectiveRole === 'superadmin';
 
   const [leaderboardSort, setLeaderboardSort] = useState<'leads' | 'won' | 'rate' | 'value'>('value');
 

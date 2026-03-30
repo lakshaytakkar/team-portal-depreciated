@@ -76,7 +76,7 @@ export default function Leads() {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   
   const effectiveRole = useStore.getState().getEffectiveRole();
-  const isManager = effectiveRole === 'manager';
+  const isManager = effectiveRole === 'manager' || effectiveRole === 'superadmin';
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery<Lead[]>({
     queryKey: ['/api/leads', currentTeamId, effectiveRole, simulatedRole],
@@ -202,7 +202,7 @@ export default function Leads() {
       {/* Page Header */}
       <div className="flex items-center justify-between w-full">
         <h1 className="text-xl font-semibold text-foreground leading-[1.35] tracking-tight" data-testid="text-leads-heading">
-          {effectiveRole === 'manager' ? "All Leads (Manager View)" : "My Leads"}
+          {isManager ? "All Leads (Manager View)" : "My Leads"}
         </h1>
         <div className="flex items-center gap-3">
           <Button variant="outline" className="font-semibold">

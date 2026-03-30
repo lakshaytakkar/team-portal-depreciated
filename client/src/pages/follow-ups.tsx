@@ -33,7 +33,7 @@ export default function FollowUps() {
     queryKey: ['/api/users'],
   });
 
-  const isManager = effectiveRole === 'manager';
+  const isManager = effectiveRole === 'manager' || effectiveRole === 'superadmin';
 
   const myLeads = allLeads
     .filter(l => l.nextFollowUp)

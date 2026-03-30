@@ -70,6 +70,7 @@ export interface Team {
   color: string;
   groups: NavGroup[];
   adminGroups?: NavGroup[];
+  superadminGroups?: NavGroup[];
   members?: TeamMember[];
 }
 
@@ -154,6 +155,54 @@ export const teams: Team[] = [
         items: [
           { href: "/resources/templates", icon: FileText, label: "Templates" },
           { href: "/knowledge/services", icon: BookOpen, label: "Knowledge Base" },
+        ]
+      }
+    ],
+    superadminGroups: [
+      {
+        label: "Pinned",
+        items: [
+          { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+          { href: "/chat", icon: MessageSquare, label: "Chat" },
+          { href: "/members", icon: Users, label: "Team" },
+        ]
+      },
+      {
+        label: "Sales Management",
+        items: [
+          { href: "/admin/leads", icon: Users, label: "All Leads" },
+          { href: "/pipeline", icon: KanbanSquare, label: "Pipeline" },
+          { href: "/admin/assignments", icon: UserCheck, label: "Assignments" },
+          { href: "/payment-links", icon: Link2, label: "Payment Links" },
+        ]
+      },
+      {
+        label: "Scheduling",
+        items: [
+          { href: "/calendar", icon: CalendarDays, label: "Calendar" },
+        ]
+      },
+      {
+        label: "Reports",
+        items: [
+          { href: "/admin/reports", icon: BarChart3, label: "Sales Reports" },
+          { href: "/performance", icon: TrendingUp, label: "Team Performance" },
+        ]
+      },
+      {
+        label: "Resources",
+        items: [
+          { href: "/resources/templates", icon: FileText, label: "Templates" },
+          { href: "/knowledge/services", icon: BookOpen, label: "Knowledge Base" },
+        ]
+      },
+      {
+        label: "System",
+        items: [
+          { href: "/admin/settings", icon: Settings, label: "Settings" },
+          { href: "/admin/users", icon: UserPlus, label: "User Management" },
+          { href: "/admin/audit", icon: ClipboardList, label: "Audit Logs" },
+          { href: "/admin/billing", icon: CreditCard, label: "Billing" },
         ]
       }
     ],

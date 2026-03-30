@@ -43,18 +43,23 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
 
   const currentMembership = myTeamMemberships.find(m => m.teamId === currentTeamId);
   const effectiveRole = isSuperadmin
-    ? (simulatedRole || 'manager')
+    ? (simulatedRole || 'superadmin')
     : (currentMembership?.role || 'executive');
 
-  const isTeamAdmin = effectiveRole === 'manager';
+  const isSuperadminRole = effectiveRole === 'superadmin';
+  const isTeamAdmin = effectiveRole === 'manager' || isSuperadminRole;
 
-  const navGroups = (isTeamAdmin && currentTeam.adminGroups) ? currentTeam.adminGroups : currentTeam.groups;
+  const navGroups = isSuperadminRole && currentTeam.superadminGroups
+    ? currentTeam.superadminGroups
+    : (isTeamAdmin && currentTeam.adminGroups)
+      ? currentTeam.adminGroups
+      : currentTeam.groups;
 
   const initials = currentUser?.name
     ? currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : '?';
 
-  const displayRole = isSuperadmin
+  const displayRole = effectiveRole === 'superadmin'
     ? 'Super Admin'
     : effectiveRole === 'manager' ? 'Manager' : 'Executive';
 
@@ -118,7 +123,7 @@ export function Sidebar({ className, inSheet = false }: SidebarProps) {
             </div>
           ))}
 
-          {isSuperadmin && currentTeam.id !== 'admin-it' && (
+          {isSuperadmin && !isSuperadminRole && currentTeam.id !== 'admin-it' && (
             <div className="py-1">
               <h3 className="text-[10px] font-semibold uppercase tracking-[0.07em] text-muted-foreground px-3.5 mb-0.5 py-1">
                 System
