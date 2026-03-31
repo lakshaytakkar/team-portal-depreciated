@@ -1,31 +1,32 @@
-import { useState } from "react";
-import { 
-  Dialog, 
-  DialogContent,
-} from "@/components/ui/dialog";
+import { useState, useRef } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { taskStages } from "@/lib/mock-data";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useStore } from "@/lib/store";
 import { format } from "date-fns";
-import { 
-  Calendar, 
-  User, 
-  CheckSquare, 
-  MoreHorizontal,
+import {
+  Calendar,
+  User,
+  CheckSquare,
   Paperclip,
   X,
-  Share2,
-  Eye,
   Plus,
-  ArrowRight,
-  Link,
-  Clock
+  Clock,
+  Send,
+  Tag,
+  AlertTriangle,
+  ChevronUp,
+  Minus,
+  ChevronDown,
 } from "lucide-react";
 import {
   Select,
@@ -35,8 +36,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+
+const priorityConfig: Record<string, { icon: JSX.Element; variant: string }> = {
+  high: { icon: <AlertTriangle className="size-3.5 text-red-500" />, variant: "text-red-500 bg-red-50 dark:bg-red-500/10" },
+  medium: { icon: <Minus className="size-3.5 text-orange-500" />, variant: "text-orange-500 bg-orange-50 dark:bg-orange-500/10" },
+  low: { icon: <ChevronDown className="size-3.5 text-blue-500" />, variant: "text-blue-500 bg-blue-50 dark:bg-blue-500/10" },
+};
+
+function formatLabel(s: string): string {
+  return s.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+function getInitials(name: string): string {
+  return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+}
 
 interface TaskDetailDialogProps {
   task: any | null;
@@ -47,8 +61,9 @@ interface TaskDetailDialogProps {
 
 export function TaskDetailDialog({ task, open, onOpenChange, onStatusChange }: TaskDetailDialogProps) {
   const { currentUser } = useStore();
-  const [activeTab, setActiveTab] = useState<'subtask' | 'attachment' | 'comments'>('subtask');
-  const [comment, setComment] = useState("");
+  const { toast } = useToast();
+  const [newSubtask, setNewSubtask] = useState("");
+  const [newComment, setNewComment] = useState("");
 
   const { data: users = [] } = useQuery<any[]>({
     queryKey: ["/api/users"],
@@ -60,28 +75,26 @@ export function TaskDetailDialog({ task, open, onOpenChange, onStatusChange }: T
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
-    }
+      queryClient.invalidateQueries({ predicate: (q) => (q.queryKey[0] as string)?.startsWith('/api/tasks') });
+    },
   });
 
-  const defaultUser = { name: "User", avatar: "" };
-  const commentsUser = users.length > 1 ? users[1] : defaultUser;
+  const [subtasks, setSubtasks] = useState([
+    { id: "st-1", title: "Review requirements", completed: true },
+    { id: "st-2", title: "Draft initial proposal", completed: false },
+    { id: "st-3", title: "Share with team", completed: false },
+  ]);
 
   const [comments, setComments] = useState([
-    { id: 1, user: commentsUser, text: "Can you please update the numbers for Q3?", time: "2 hours ago" },
-    { id: 2, user: currentUser || defaultUser, text: "Sure, working on it right now.", time: "1 hour ago" }
+    { id: "c-1", author: "Dea Ananda", content: "Can you please update the numbers for Q3?", date: "2 hours ago" },
+    { id: "c-2", author: currentUser?.name || "You", content: "Sure, working on it right now.", date: "1 hour ago" },
   ]);
 
   if (!task) return null;
 
   const assignedUser = users.find((u: any) => u.id === task.assignedTo);
-  const currentStage = taskStages.find(s => s.id === task.status);
-
-  const priorityColors = {
-    low: "text-[#2563eb] bg-[#eff6ff] dark:text-[#60a5fa] dark:bg-[#2563eb]/10",
-    medium: "text-[#ea580c] bg-[#fff7ed] dark:text-[#fb923c] dark:bg-[#ea580c]/10",
-    high: "text-[#dc2626] bg-[#fef2f2] dark:text-[#f87171] dark:bg-[#dc2626]/10"
-  };
+  const completedSubtasks = subtasks.filter((s) => s.completed).length;
+  const subtaskProgress = subtasks.length > 0 ? (completedSubtasks / subtasks.length) * 100 : 0;
 
   const handleStatusChange = (val: string) => {
     if (onStatusChange) {
@@ -89,346 +102,279 @@ export function TaskDetailDialog({ task, open, onOpenChange, onStatusChange }: T
     } else {
       updateTaskMutation.mutate({ id: task.id, data: { status: val } });
     }
+    toast({ title: `Status changed to ${formatLabel(val)}` });
   };
 
-  const handleAddComment = () => {
-    if (!comment.trim()) return;
-    setComments([
-      ...comments, 
-      { 
-        id: Date.now(), 
-        user: currentUser || defaultUser, 
-        text: comment, 
-        time: "Just now" 
-      }
-    ]);
-    setComment("");
-    setActiveTab('comments');
+  const handlePriorityChange = (val: string) => {
+    updateTaskMutation.mutate({ id: task.id, data: { priority: val } });
+    toast({ title: `Priority changed to ${formatLabel(val)}` });
   };
+
+  const toggleSubtask = (id: string) => {
+    setSubtasks((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, completed: !s.completed } : s))
+    );
+  };
+
+  const addSubtask = () => {
+    if (!newSubtask.trim()) return;
+    setSubtasks((prev) => [
+      ...prev,
+      { id: `st-${Date.now()}`, title: newSubtask.trim(), completed: false },
+    ]);
+    setNewSubtask("");
+    toast({ title: "Subtask added" });
+  };
+
+  const addComment = () => {
+    if (!newComment.trim()) return;
+    setComments((prev) => [
+      ...prev,
+      {
+        id: `c-${Date.now()}`,
+        author: currentUser?.name || "You",
+        content: newComment.trim(),
+        date: "Just now",
+      },
+    ]);
+    setNewComment("");
+    toast({ title: "Comment added" });
+  };
+
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "done";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[1200px] p-0 gap-0 overflow-hidden rounded-[20px] bg-card border h-[90vh] flex flex-col shadow-2xl">
-        {/* Header - Fixed Height */}
-        <div className="px-6 py-4 border-b border flex items-center justify-between bg-card shrink-0 h-[64px]">
-          <div className="flex items-center gap-4">
-            <div className="bg-muted p-2 rounded-lg">
-              <CheckSquare className="h-5 w-5 text-muted-foreground" />
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-[720px] overflow-y-auto p-0" data-testid="sheet-task-detail">
+        <SheetHeader className="sticky top-0 z-10 bg-background border-b px-6 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge
+                variant="outline"
+                className="shrink-0 text-xs border-primary/40 text-primary"
+                data-testid={`badge-task-id-${task.id}`}
+              >
+                {task.id?.slice(0, 8) || "TASK"}
+              </Badge>
+              <CheckSquare className="size-3.5 text-muted-foreground shrink-0" />
+              <SheetTitle className="text-base font-semibold truncate" data-testid={`text-task-title-${task.id}`}>
+                {task.title}
+              </SheetTitle>
             </div>
-            <div className="h-6 w-[1px] bg-border" />
-            <span className="text-sm font-medium text-muted-foreground">Task Detail</span>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-card border border rounded-lg shadow-sm">
-              <span className="text-xs font-medium text-muted-foreground">6</span>
-              <Eye className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
-              <Share2 className="h-5 w-5" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground" onClick={() => onOpenChange(false)}>
-              <X className="h-5 w-5" />
+            <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => onOpenChange(false)} data-testid="button-close-task-detail">
+              <X className="size-4" />
             </Button>
           </div>
-        </div>
+        </SheetHeader>
 
-        {/* Main Content - Flex Layout */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left Column (Main) */}
-          <div className="flex-1 overflow-y-auto border-r border">
-            <div className="p-8 pb-32">
-              {/* Title & Desc */}
-              <div className="mb-8">
-                <h2 className="text-[24px] font-semibold text-foreground mb-2 leading-tight">{task.title}</h2>
-                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
-                  {task.description || "No description provided for this task."}
+        <div className="flex flex-col lg:flex-row">
+          <div className="flex-1 p-6 space-y-6 min-w-0">
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Description</h4>
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                {task.description || "No description provided."}
+              </p>
+            </div>
+
+            <Separator />
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Subtasks ({completedSubtasks}/{subtasks.length})
+                </h4>
+                {subtasks.length > 0 && (
+                  <span className="text-xs text-muted-foreground">{Math.round(subtaskProgress)}%</span>
+                )}
+              </div>
+              {subtasks.length > 0 && (
+                <Progress value={subtaskProgress} className="h-1.5 mb-3" />
+              )}
+              <div className="space-y-1.5">
+                {subtasks.map((st) => (
+                  <div
+                    key={st.id}
+                    className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50 cursor-pointer"
+                    onClick={() => toggleSubtask(st.id)}
+                    data-testid={`subtask-${st.id}`}
+                  >
+                    <div className={cn(
+                      "flex size-4 shrink-0 items-center justify-center rounded border",
+                      st.completed ? "bg-primary border-primary" : "border-border"
+                    )}>
+                      {st.completed && <CheckSquare className="size-3 text-primary-foreground" />}
+                    </div>
+                    <span className={cn("text-sm", st.completed && "line-through text-muted-foreground")}>
+                      {st.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <Input
+                  value={newSubtask}
+                  onChange={(e) => setNewSubtask(e.target.value)}
+                  placeholder="Add a subtask..."
+                  className="h-8 text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && addSubtask()}
+                  data-testid="input-add-subtask"
+                />
+                <Button size="sm" variant="ghost" onClick={addSubtask} className="shrink-0 h-8" data-testid="button-add-subtask">
+                  <Plus className="size-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            <Tabs defaultValue="comments">
+              <TabsList className="w-full grid grid-cols-2 h-8 bg-muted/60">
+                <TabsTrigger value="comments" className="text-xs gap-1" data-testid="tab-comments">
+                  <Send className="size-3" />
+                  Comments{comments.length > 0 ? ` (${comments.length})` : ""}
+                </TabsTrigger>
+                <TabsTrigger value="files" className="text-xs gap-1" data-testid="tab-files">
+                  <Paperclip className="size-3" />
+                  Files
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="comments" className="mt-3 space-y-3">
+                <div className="space-y-3">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="flex gap-3" data-testid={`comment-${comment.id}`}>
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                        {getInitials(comment.author)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{comment.author}</span>
+                          <span className="text-xs text-muted-foreground">{comment.date}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-0.5">{comment.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {comments.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No comments yet.</p>
+                  )}
+                </div>
+                <div className="flex items-start gap-2">
+                  <Textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Write a comment..."
+                    className="min-h-[60px] text-sm resize-none"
+                    data-testid="input-add-comment"
+                  />
+                  <Button size="sm" onClick={addComment} className="shrink-0 mt-1" disabled={!newComment.trim()} data-testid="button-add-comment">
+                    <Send className="size-3.5" />
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="files" className="mt-3 space-y-3">
+                <div className="flex flex-col items-center justify-center py-8 text-center bg-muted/40 rounded-lg border border-dashed">
+                  <Paperclip className="h-5 w-5 text-muted-foreground mb-2" />
+                  <p className="text-sm font-medium text-foreground">No files attached</p>
+                  <p className="text-xs text-muted-foreground mt-1 mb-3">Upload files to share with your team</p>
+                  <Button variant="outline" size="sm" data-testid="button-upload-file">Upload File</Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <div className="w-full lg:w-[240px] shrink-0 border-t lg:border-t-0 lg:border-l bg-muted/30 p-4 space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <Clock className="size-3" /> Status
+              </label>
+              <Select value={task.status} onValueChange={handleStatusChange}>
+                <SelectTrigger className="h-8 text-sm" data-testid="select-task-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {taskStages.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                {priorityConfig[task.priority]?.icon} Priority
+              </label>
+              <Select value={task.priority} onValueChange={handlePriorityChange}>
+                <SelectTrigger className="h-8 text-sm" data-testid="select-task-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <User className="size-3" /> Assignee
+              </label>
+              <div className="flex items-center gap-2 mt-1">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${task.assignedTo}`} />
+                  <AvatarFallback className="text-xs">{getInitials(assignedUser?.name || "U")}</AvatarFallback>
+                </Avatar>
+                <span className="text-sm truncate">{assignedUser?.name || "Unassigned"}</span>
+              </div>
+            </div>
+
+            <Separator />
+
+            {task.dueDate && (
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <Calendar className="size-3" /> Due Date
+                </label>
+                <p className={cn("text-sm", isOverdue && "text-red-500 font-medium")}>
+                  {format(new Date(task.dueDate), "MMM d, yyyy")}
                 </p>
               </div>
+            )}
 
-              {/* Properties Grid */}
-              <div className="grid grid-cols-2 gap-y-6 gap-x-12 mb-8 border-b border pb-8">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-muted-foreground w-[100px]">Status</span>
-                  <Select 
-                    defaultValue={task.status} 
-                    onValueChange={handleStatusChange}
-                  >
-                    <SelectTrigger className="h-8 border-none bg-[#FEEFE4] text-[#FA7319] font-medium text-xs px-3 rounded-md w-fit focus:ring-0 shadow-none">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {taskStages.map(stage => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-muted-foreground w-[100px]">Assigned to</span>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/micah/svg?seed=${task.assignedTo}`} />
-                      <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium text-foreground">{assignedUser?.name}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-muted-foreground w-[100px]">Start date</span>
-                  <span className="text-sm font-medium text-foreground">{format(new Date(task.createdAt || new Date()), "MMM d, yyyy")}</span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-muted-foreground w-[100px]">Due date</span>
-                  <span className="text-sm font-medium text-foreground">{format(new Date(task.dueDate), "MMM d, yyyy")}</span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-muted-foreground w-[100px]">Priority</span>
-                  <Badge variant="secondary" className={cn("rounded-md px-2 py-0.5 font-medium border-0 capitalize", priorityColors[task.priority as keyof typeof priorityColors])}>
-                    {task.priority}
-                  </Badge>
+            {task.tags && task.tags.length > 0 && (
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <Tag className="size-3" /> Tags
+                </label>
+                <div className="flex flex-wrap gap-1">
+                  {task.tags.map((tag: string) => (
+                    <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* Tabs */}
-              <div className="flex items-center gap-1 border-b border mb-6">
-                <button 
-                  onClick={() => setActiveTab('subtask')}
-                  className={cn(
-                    "px-4 py-3 text-sm font-medium border-b-2 transition-colors",
-                    activeTab === 'subtask' ? "border-foreground text-foreground" : "border-transparent text-muted-foreground"
-                  )}
-                >
-                  Subtask
-                </button>
-                <button 
-                  onClick={() => setActiveTab('attachment')}
-                  className={cn(
-                    "px-4 py-3 text-sm font-medium border-b-2 transition-colors",
-                    activeTab === 'attachment' ? "border-foreground text-foreground" : "border-transparent text-muted-foreground"
-                  )}
-                >
-                  Attachment
-                </button>
-                <button 
-                  onClick={() => setActiveTab('comments')}
-                  className={cn(
-                    "px-4 py-3 text-sm font-medium border-b-2 transition-colors",
-                    activeTab === 'comments' ? "border-foreground text-foreground" : "border-transparent text-muted-foreground"
-                  )}
-                >
-                  Comments
-                </button>
+            <Separator />
+
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Progress</label>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-muted-foreground">Subtasks</span>
+                <span className="font-medium">{Math.round(subtaskProgress)}%</span>
               </div>
-
-              {/* Tab Content */}
-              <div className="space-y-6">
-                {activeTab === 'subtask' && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 bg-muted rounded-full flex items-center justify-center">
-                          <CheckSquare className="h-3 w-3 text-muted-foreground" />
-                        </div>
-                        <span className="text-sm font-medium text-foreground">Subtask</span>
-                        <span className="text-sm text-muted-foreground ml-2">1/3</span>
-                      </div>
-                      <Button variant="outline" size="sm" className="h-8 gap-2 text-foreground">
-                        <Plus className="h-3 w-3" />
-                        Add Subtask
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3">
-                       <div className="flex items-center gap-3 p-2 bg-muted rounded-lg group border border-transparent hover:border transition-all">
-                         <Checkbox className="rounded-md border" checked />
-                         <span className="text-sm text-muted-foreground line-through flex-1">Review requirements</span>
-                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                           <Avatar className="h-5 w-5"><AvatarImage src={users[1]?.avatar}/></Avatar>
-                           <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="h-3 w-3"/></Button>
-                         </div>
-                       </div>
-                       <div className="flex items-center gap-3 p-2 group hover:bg-muted rounded-lg transition-all">
-                         <Checkbox className="rounded-md border" />
-                         <span className="text-sm text-foreground flex-1">Draft initial proposal</span>
-                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="h-3 w-3"/></Button>
-                         </div>
-                       </div>
-                       <div className="flex items-center gap-3 p-2 group hover:bg-muted rounded-lg transition-all">
-                         <Checkbox className="rounded-md border" />
-                         <span className="text-sm text-foreground flex-1">Share with team</span>
-                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="h-3 w-3"/></Button>
-                         </div>
-                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'comments' && (
-                   <div className="space-y-6">
-                      <div className="space-y-4">
-                        {comments.map((c) => (
-                          <div key={c.id} className="flex gap-4">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={(c.user as any)?.avatar} />
-                              <AvatarFallback>{(c.user as any)?.name?.charAt(0) || "U"}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-baseline gap-2 mb-1">
-                                <span className="text-sm font-medium text-foreground">{(c.user as any)?.name || "User"}</span>
-                                <span className="text-xs text-muted-foreground">{c.time}</span>
-                              </div>
-                              <p className="text-sm text-foreground leading-relaxed">{c.text}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      
-                      <div className="flex gap-4 pt-4 border-t border">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={currentUser?.avatar || ""} />
-                        </Avatar>
-                        <div className="flex-1 gap-2 flex flex-col">
-                          <Textarea 
-                            placeholder="Write a comment..." 
-                            className="min-h-[80px] resize-none bg-muted border-none focus:ring-1 focus:ring-ring"
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                          />
-                          <div className="flex justify-between items-center">
-                            <Button variant="ghost" size="sm" className="text-muted-foreground h-8">
-                              <Paperclip className="h-4 w-4 mr-2" />
-                              Attach
-                            </Button>
-                            <Button size="sm" onClick={handleAddComment} className="bg-primary h-8">
-                              Send
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                   </div>
-                )}
-                
-                {activeTab === 'attachment' && (
-                  <div className="flex flex-col items-center justify-center py-12 text-center bg-muted rounded-lg border border-dashed border">
-                    <div className="h-10 w-10 rounded-full bg-card flex items-center justify-center shadow-sm mb-3">
-                      <Paperclip className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-sm font-medium text-foreground">No attachments yet</h3>
-                    <p className="text-xs text-muted-foreground mt-1 mb-4">Upload files to share with your team</p>
-                    <Button variant="outline" size="sm">Upload File</Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column (Sidebar) */}
-          <div className="w-[360px] bg-card shrink-0 flex flex-col">
-            <div className="p-6 border-b border">
-              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider mb-4">Project Stats</h3>
-              <div className="space-y-3">
-                <div className="border rounded-lg p-3">
-                   <div className="flex items-center justify-between mb-2">
-                     <div className="flex items-center gap-2">
-                       <Clock className="h-4 w-4 text-muted-foreground" />
-                       <span className="text-xs font-medium text-foreground">Time Remaining</span>
-                     </div>
-                     <span className="text-xs text-muted-foreground">4d</span>
-                   </div>
-                   <div className="flex items-center justify-between bg-muted p-2 rounded-md">
-                      <span className="text-xs text-muted-foreground">Reminder</span>
-                      <div className="w-8 h-4 bg-border rounded-full relative cursor-pointer">
-                        <div className="absolute left-0.5 top-0.5 h-3 w-3 bg-card rounded-full shadow-sm" />
-                      </div>
-                   </div>
-                </div>
-                
-                <div className="border rounded-lg p-3">
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="font-medium text-foreground">Progress</span>
-                    <span className="text-muted-foreground">40%</span>
-                  </div>
-                  <Progress value={40} className="h-1.5" />
-                </div>
-              </div>
+              <Progress value={subtaskProgress} className="h-1.5" />
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
-               <div className="flex items-center justify-between mb-6">
-                 <h3 className="text-xs font-semibold text-foreground uppercase tracking-wider">Activities</h3>
-                 <Clock className="h-4 w-4 text-muted-foreground" />
-               </div>
-
-               <div className="relative pl-4 space-y-6 before:absolute before:left-[21px] before:top-2 before:bottom-0 before:w-[1px] before:bg-border">
-                 <div className="relative">
-                    <div className="absolute -left-[21px] top-1 h-3 w-3 rounded-full border-2 border-card bg-border ring-1 ring-border" />
-                    <div className="flex gap-3 mb-2">
-                      <Avatar className="h-6 w-6"><AvatarImage src={users[1]?.avatar}/></Avatar>
-                      <div>
-                        <p className="text-xs text-foreground"><span className="font-medium">Dea Ananda</span> checklist subtask</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Jan 8, 2024 at 10:30 AM</p>
-                      </div>
-                    </div>
-                    <div className="bg-muted rounded-lg p-2 ml-9">
-                      <div className="flex items-center gap-2">
-                         <div className="h-4 w-4 bg-[#FA7319] rounded flex items-center justify-center">
-                           <CheckSquare className="h-3 w-3 text-white" />
-                         </div>
-                         <span className="text-xs text-muted-foreground line-through">Accordion</span>
-                      </div>
-                    </div>
-                 </div>
-
-                 <div className="relative">
-                    <div className="absolute -left-[21px] top-1 h-3 w-3 rounded-full border-2 border-card bg-border ring-1 ring-border" />
-                    <div className="flex gap-3 mb-2">
-                      <div className="h-6 w-6 rounded-full bg-[#EEEFF2] flex items-center justify-center">
-                        <Link className="h-3 w-3 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-foreground"><span className="font-medium">Rahmadini</span> moved task card</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Jan 8, 2024 at 09:00 AM</p>
-                      </div>
-                    </div>
-                    <div className="ml-9 flex items-center gap-2">
-                       <Badge variant="secondary" className="bg-[#EFEAFF] text-[#875CFE] border-0 text-[10px]">Upcoming Tasks</Badge>
-                       <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                       <Badge variant="secondary" className="bg-[#FEEFE4] text-[#FA7319] border-0 text-[10px]">Task</Badge>
-                    </div>
-                 </div>
-                 
-                 <div className="relative">
-                    <div className="absolute -left-[21px] top-1 h-3 w-3 rounded-full border-2 border-card bg-border ring-1 ring-border" />
-                    <div className="flex gap-3">
-                      <Avatar className="h-6 w-6"><AvatarImage src={users[0]?.avatar}/></Avatar>
-                      <div>
-                        <p className="text-xs text-foreground"><span className="font-medium">Rahmadini</span> created task</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Jan 7, 2024 at 02:00 PM</p>
-                      </div>
-                    </div>
-                 </div>
-               </div>
-            </div>
-
-            <div className="p-6 border-t border mt-auto">
-              <span className="text-xs text-muted-foreground block mb-2">Created by</span>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-5 w-5"><AvatarImage src={users[0]?.avatar}/></Avatar>
-                <span className="text-sm font-medium text-foreground">Rahmadini</span>
-              </div>
+            <div className="space-y-1 text-xs text-muted-foreground pt-2">
+              {task.createdAt && <p>Created: {format(new Date(task.createdAt), "MMM d, yyyy")}</p>}
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

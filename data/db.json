@@ -7,5 +7,531 @@
       "name": "Travel Sales",
       "description": "Team channel for travel-sales"
     }
+  ],
+  "teams": [
+    {
+      "id": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "name": "Suprans Sales",
+      "ownerId": "admin",
+      "createdAt": "2026-03-31T08:33:20.634Z"
+    }
+  ],
+  "users": [
+    {
+      "id": "991a087c-140e-421f-8036-aa460f54c69a",
+      "name": "Admin",
+      "email": "admin@suprans.com",
+      "role": "superadmin",
+      "phone": "9876543210",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "avatar": null,
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "name": "Rahul Sharma",
+      "email": "rahul@suprans.com",
+      "role": "sales_executive",
+      "phone": "9876543211",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "avatar": null,
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "name": "Priya Patel",
+      "email": "priya@suprans.com",
+      "role": "sales_executive",
+      "phone": "9876543212",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "avatar": null,
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "ec88cf76-2a59-4294-a9a9-ff25f3e11d58",
+      "title": "Prepare Q3 Sales Report",
+      "description": "Compile data from all regions and create presentation",
+      "status": "in_progress",
+      "priority": "high",
+      "dueDate": "2026-04-10",
+      "assignedTo": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "tags": [
+        "Reporting",
+        "Q3"
+      ],
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "f665eb9b-e78c-4fa6-84fc-6fbb6b592e04",
+      "title": "Follow up with TechStart",
+      "description": "Send updated proposal and schedule demo call",
+      "status": "todo",
+      "priority": "high",
+      "dueDate": "2026-04-05",
+      "assignedTo": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "tags": [
+        "Sales",
+        "Follow-up"
+      ],
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "14e362ae-3c58-4314-8b37-e996819b3022",
+      "title": "Update CRM records",
+      "description": "Clean up duplicate leads from import batch",
+      "status": "done",
+      "priority": "low",
+      "dueDate": "2026-03-30",
+      "assignedTo": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "tags": [
+        "Admin"
+      ],
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "ac1ad169-7693-4e4c-a88d-0c577c8ff286",
+      "title": "Team Meeting Preparation",
+      "description": "Create agenda for weekly sync and prepare slides",
+      "status": "todo",
+      "priority": "medium",
+      "dueDate": "2026-04-07",
+      "assignedTo": "991a087c-140e-421f-8036-aa460f54c69a",
+      "tags": [
+        "Internal"
+      ],
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "0d194be3-fc1f-497b-94f9-b56c9257de68",
+      "title": "Contract Review - KM Industries",
+      "description": "Review legal terms with legal team before signing",
+      "status": "review",
+      "priority": "high",
+      "dueDate": "2026-04-08",
+      "assignedTo": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "tags": [
+        "Legal",
+        "Contract"
+      ],
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "078b8de7-a967-4461-8083-1bfee4bdc32f",
+      "title": "Draft Email Sequence",
+      "description": "Create 5-step email sequence for cold outreach campaign",
+      "status": "in_progress",
+      "priority": "medium",
+      "dueDate": "2026-04-12",
+      "assignedTo": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "tags": [
+        "Marketing"
+      ],
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "1db4af1f-1a1c-4d01-bd7b-26ae002ed69e",
+      "title": "Client Onboarding - Nexus Corp",
+      "description": "Setup account, send welcome kit, schedule kickoff",
+      "status": "todo",
+      "priority": "high",
+      "dueDate": "2026-04-03",
+      "assignedTo": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "tags": [
+        "Onboarding"
+      ],
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    },
+    {
+      "id": "9b401a0b-4859-4568-8e42-eb6718b24316",
+      "title": "Quarterly Pipeline Review",
+      "description": "Analyze conversion rates across all pipeline stages",
+      "status": "review",
+      "priority": "medium",
+      "dueDate": "2026-04-15",
+      "assignedTo": "991a087c-140e-421f-8036-aa460f54c69a",
+      "tags": [
+        "Analytics",
+        "Q1"
+      ],
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799",
+      "createdAt": "2026-03-31T08:33:20.635Z"
+    }
+  ],
+  "leads": [
+    {
+      "id": "614687fa-7d22-4e09-9486-9c634250b995",
+      "name": "Vikram Mehta",
+      "company": "TechStart Solutions",
+      "phone": "9876001122",
+      "email": "vikram@techstart.in",
+      "service": "ERP Implementation",
+      "value": 1500000,
+      "stage": "qualified",
+      "source": "Website",
+      "assignedTo": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "temperature": "hot",
+      "tags": [
+        "Enterprise"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "f4ad4459-19d8-4032-902c-d03303378f3a",
+      "name": "Anita Desai",
+      "company": "GreenLeaf Industries",
+      "phone": "9876002233",
+      "email": "anita@greenleaf.co.in",
+      "service": "CRM Setup",
+      "value": 800000,
+      "stage": "new",
+      "source": "Referral",
+      "assignedTo": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "temperature": "warm",
+      "tags": [
+        "SMB"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "b5e1a421-7c39-4531-a23a-e47e28666f51",
+      "name": "Rajesh Kumar",
+      "company": "KM Industries",
+      "phone": "9876003344",
+      "email": "rajesh@kmindustries.in",
+      "service": "Full Suite",
+      "value": 3200000,
+      "stage": "proposal",
+      "source": "LinkedIn",
+      "assignedTo": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "temperature": "hot",
+      "tags": [
+        "Enterprise",
+        "Priority"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "f8ff736c-f230-4863-8a78-4fe916503c4b",
+      "name": "Sunita Rao",
+      "company": "Rao & Associates",
+      "phone": "9876004455",
+      "email": "sunita@raoassoc.in",
+      "service": "Accounting Module",
+      "value": 500000,
+      "stage": "contacted",
+      "source": "Cold Call",
+      "assignedTo": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "temperature": "cold",
+      "tags": [
+        "Professional"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "5ddf6c59-ec9e-460b-8325-39d34ebb9db8",
+      "name": "Arjun Nair",
+      "company": "Nexus Corp",
+      "phone": "9876005566",
+      "email": "arjun@nexuscorp.in",
+      "service": "Sales Automation",
+      "value": 2100000,
+      "stage": "negotiation",
+      "source": "Google Ads",
+      "assignedTo": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "temperature": "hot",
+      "tags": [
+        "Enterprise"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "aedce753-9d3d-4db1-a15d-a31a175ffb32",
+      "name": "Meera Joshi",
+      "company": "Joshi Textiles",
+      "phone": "9876006677",
+      "email": "meera@joshitextiles.in",
+      "service": "Inventory Module",
+      "value": 650000,
+      "stage": "new",
+      "source": "Partner",
+      "assignedTo": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "temperature": "warm",
+      "tags": [
+        "Manufacturing"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "e08f3788-e5b2-48db-a7b5-747167e4d160",
+      "name": "Deepak Gupta",
+      "company": "Gupta Electronics",
+      "phone": "9876007788",
+      "email": "deepak@guptaelec.in",
+      "service": "POS System",
+      "value": 900000,
+      "stage": "won",
+      "source": "Referral",
+      "assignedTo": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "temperature": "hot",
+      "wonAmount": 850000,
+      "wonDate": "2026-03-20",
+      "tags": [
+        "Retail"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "ec0066e7-37ae-47d6-8aa0-93794e6dc31d",
+      "name": "Kavita Singh",
+      "company": "Singh Pharma",
+      "phone": "9876008899",
+      "email": "kavita@singhpharma.in",
+      "service": "Supply Chain",
+      "value": 1800000,
+      "stage": "qualified",
+      "source": "Website",
+      "assignedTo": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "temperature": "warm",
+      "tags": [
+        "Healthcare"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "7f116f46-2977-4f40-ad95-790acaf23f8e",
+      "name": "Ramesh Patel",
+      "company": "Patel Foods Ltd",
+      "phone": "9876009900",
+      "email": "ramesh@patelfoods.in",
+      "service": "HR Module",
+      "value": 400000,
+      "stage": "lost",
+      "source": "Social Media",
+      "assignedTo": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "lostReason": "Chose competitor",
+      "tags": [
+        "FMCG"
+      ],
+      "createdAt": "2026-03-31T08:33:20.635Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "571da7fc-7f18-4351-876f-5f8e9f1c7259",
+      "name": "Lakshmi Iyer",
+      "company": "Iyer Consulting",
+      "phone": "9876010011",
+      "email": "lakshmi@iyerconsulting.in",
+      "service": "Project Mgmt",
+      "value": 1200000,
+      "stage": "contacted",
+      "source": "LinkedIn",
+      "assignedTo": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "temperature": "warm",
+      "tags": [
+        "Consulting"
+      ],
+      "createdAt": "2026-03-31T08:33:20.636Z",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    }
+  ],
+  "activities": [
+    {
+      "id": "0d1d10f7-0876-4daf-8cbc-7ee20076b286",
+      "leadId": "614687fa-7d22-4e09-9486-9c634250b995",
+      "type": "call",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-31T08:33:20.636Z",
+      "userId": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "06e10724-d13b-47ee-9382-fa049c4a859b",
+      "leadId": "f4ad4459-19d8-4032-902c-d03303378f3a",
+      "type": "email",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-30T08:33:20.636Z",
+      "userId": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "22fa822c-89da-4a1d-89a0-90a25235f07d",
+      "leadId": "b5e1a421-7c39-4531-a23a-e47e28666f51",
+      "type": "meeting",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-29T08:33:20.636Z",
+      "userId": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "c44cc990-4940-4ad3-ad89-abc9590919d4",
+      "leadId": "f8ff736c-f230-4863-8a78-4fe916503c4b",
+      "type": "note",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-28T08:33:20.636Z",
+      "userId": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "41360e75-faae-4017-b4ef-55b88d9353f2",
+      "leadId": "5ddf6c59-ec9e-460b-8325-39d34ebb9db8",
+      "type": "call",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-27T08:33:20.636Z",
+      "userId": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "2b72a2ba-8936-4126-ac72-963ca760f5bd",
+      "leadId": "aedce753-9d3d-4db1-a15d-a31a175ffb32",
+      "type": "email",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-26T08:33:20.636Z",
+      "userId": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "e0849cb7-6467-4256-814a-e8f13533cda2",
+      "leadId": "e08f3788-e5b2-48db-a7b5-747167e4d160",
+      "type": "meeting",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-25T08:33:20.636Z",
+      "userId": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "e58fbdb1-5775-4b45-b2c5-b50f4913d71f",
+      "leadId": "ec0066e7-37ae-47d6-8aa0-93794e6dc31d",
+      "type": "note",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-24T08:33:20.636Z",
+      "userId": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "1e615a81-f238-496a-84b6-34b51835acce",
+      "leadId": "7f116f46-2977-4f40-ad95-790acaf23f8e",
+      "type": "call",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-23T08:33:20.636Z",
+      "userId": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    },
+    {
+      "id": "736a6431-ee8d-47cc-becd-29a712cd2b57",
+      "leadId": "571da7fc-7f18-4351-876f-5f8e9f1c7259",
+      "type": "email",
+      "notes": "Initial contact and discussion about requirements",
+      "createdAt": "2026-03-22T08:33:20.636Z",
+      "userId": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "teamId": "b7a64b15-9631-4646-b87d-bae9e7c37799"
+    }
+  ],
+  "team_members": [
+    {
+      "id": "c3ab8913-4cec-4c30-928a-7de73ea2e043",
+      "createdAt": "2026-03-31T08:33:24.675Z",
+      "userId": "991a087c-140e-421f-8036-aa460f54c69a",
+      "teamId": "team-sales",
+      "role": "manager"
+    },
+    {
+      "id": "239ff497-e63b-4eee-9a98-4dd1014e2fee",
+      "createdAt": "2026-03-31T08:33:24.676Z",
+      "userId": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "teamId": "team-sales",
+      "role": "executive"
+    },
+    {
+      "id": "cfbffcb8-2859-474a-a5d4-21f99066e51c",
+      "createdAt": "2026-03-31T08:33:24.677Z",
+      "userId": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "teamId": "team-sales",
+      "role": "executive"
+    },
+    {
+      "id": "e53ffbbe-bec5-4e1c-9615-f36e8497b817",
+      "createdAt": "2026-03-31T08:33:24.677Z",
+      "userId": "991a087c-140e-421f-8036-aa460f54c69a",
+      "teamId": "team-ops",
+      "role": "manager"
+    },
+    {
+      "id": "9010e848-bc8d-47b7-b8e2-27d8aad47d8c",
+      "createdAt": "2026-03-31T08:33:24.678Z",
+      "userId": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "teamId": "team-ops",
+      "role": "executive"
+    },
+    {
+      "id": "34b40557-1928-43a7-85f8-19bd827972b2",
+      "createdAt": "2026-03-31T08:33:24.679Z",
+      "userId": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "teamId": "team-ops",
+      "role": "executive"
+    },
+    {
+      "id": "3a3e2eee-ba68-4839-ab9b-79ce926e0b56",
+      "createdAt": "2026-03-31T08:33:24.680Z",
+      "userId": "991a087c-140e-421f-8036-aa460f54c69a",
+      "teamId": "team-hr",
+      "role": "manager"
+    },
+    {
+      "id": "517e686d-5ec7-4526-a7c0-a5463b9ed4c3",
+      "createdAt": "2026-03-31T08:33:24.680Z",
+      "userId": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "teamId": "team-hr",
+      "role": "executive"
+    },
+    {
+      "id": "f483389a-273c-46d2-9cd0-524e398ca4fb",
+      "createdAt": "2026-03-31T08:33:24.681Z",
+      "userId": "6e056313-dfa6-40c7-8ef7-767fe20ae690",
+      "teamId": "team-hr",
+      "role": "executive"
+    }
+  ],
+  "dm_conversations": [
+    {
+      "id": "b5ec9d13-2ef0-45d8-9861-c2a2a4f6dbcf",
+      "createdAt": "2026-03-31T08:33:44.531Z",
+      "user1Id": "cef223ad-1909-4c9b-bdee-239aa5e99387",
+      "user2Id": "991a087c-140e-421f-8036-aa460f54c69a",
+      "lastMessageAt": "2026-03-31T08:33:46.202Z",
+      "updatedAt": "2026-03-31T08:33:46.203Z"
+    },
+    {
+      "id": "a6bb6abf-a1ec-41d2-872a-9737f0ba3978",
+      "createdAt": "2026-03-31T08:33:48.026Z",
+      "user1Id": "cef223ad-1909-4c9b-bdee-239aa5e99387",
+      "user2Id": "7259dc92-6af0-43ca-a35a-4485dc81fa69",
+      "lastMessageAt": "2026-03-31T08:33:48.026Z"
+    }
+  ],
+  "direct_messages": [
+    {
+      "id": "cfe68028-5a1c-442a-a7db-21f3cadf8ac8",
+      "createdAt": "2026-03-31T08:33:46.202Z",
+      "conversationId": "b5ec9d13-2ef0-45d8-9861-c2a2a4f6dbcf",
+      "senderId": "cef223ad-1909-4c9b-bdee-239aa5e99387",
+      "content": "sasa"
+    }
   ]
 }

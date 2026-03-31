@@ -39,7 +39,7 @@ All users have password: **Suprans@123**
 ## Tech Stack
 - **Frontend**: React, Vite, TypeScript, TailwindCSS, Shadcn/ui
 - **Backend**: Express.js, TypeScript
-- **Database**: PostgreSQL with Drizzle ORM
+- **Database**: JSON file database (`data/db.json`) — no external DB needed
 - **Authentication**: Session-based with passport.js
 
 ## Project Structure
@@ -169,6 +169,17 @@ shared/
 - **Selection Highlights**: Blue tints (#EFF6FF bg, #DBEAFE borders) for selected items
 
 ## Recent Changes
+- March 31, 2026: **Database Migration & UI Upgrades**
+  - Migrated from Supabase/PostgreSQL to local JSON file database (`data/db.json`) — no external credentials needed
+  - `server/db.ts` exports `loadDb()`, `saveDb()`, `genId()` for file-based storage
+  - `server/storage.ts` fully rewritten as JSON-backed IStorage implementation
+  - Dock PNG icons compressed 98.5% (1024px→72px, ~8MB→~112KB total)
+  - **Tasks page** (TeamSync-inspired): Kanban cards with task code thumbnails, priority badges, tag pills, due dates, assignee avatars; header stat chips (Total/In Progress/Overdue/Completed); search + priority filter; board/list view toggle; drag-and-drop column drops with toast feedback
+  - **TaskDetailDialog**: Rewritten as Sheet side panel with subtask progress bar, subtask toggle/add, comments & files tabs, right sidebar with status/priority/assignee/due date/tags selectors
+  - **Pipeline page**: Colored stage column headers (New=slate, Contacted=sky, Qualified=amber, Proposal=blue), deal value totals per column, conversion rate indicators, search bar, total pipeline value display
+  - **Leads page**: 5 stat cards (Total Leads, Active Deals, Win Rate, Pipeline Value, Hot Leads), Temperature column with colored badges, source/stage filter pills with counts
+  - All mutations have error toast handling
+  - Seeded sample data (3 users, 8 tasks, 10 leads, 10 activities) for demonstration
 - March 2026: Upgraded Follow-ups page with Overdue/Today/This Week/Upcoming groups, Mark as Contacted (logs activity + clears follow-up), Snooze (+1 day), View Lead buttons, phone number display, assigned exec display for managers
 - March 2026: Upgraded Performance page with real data charts (no mock data), Total Leads/Leads Won/Win Rate/Total Revenue stats, Leads by Stage bar chart, New Leads Trend (last 6 months), Recent Activity feed, Manager leaderboard table (sortable by leads/won/rate/value), Team Activity weekly chart
 - January 2026: Imported from GitHub repository (replit-agent branch)

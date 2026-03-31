@@ -41,7 +41,8 @@ import {
   Upload,
   Trash2,
   MessageSquare,
-  ArrowRight
+  ArrowRight,
+  Flame,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -224,9 +225,11 @@ export default function Leads() {
         const activeDeals = leads.filter((l: Lead) => !['won', 'lost'].includes(l.stage)).length;
         const wonLeads = leads.filter((l: Lead) => l.stage === 'won').length;
         const winRate = leads.length > 0 ? ((wonLeads / leads.length) * 100).toFixed(0) : '0';
+        const pipelineValue = leads.filter((l: Lead) => !['won', 'lost'].includes(l.stage)).reduce((s, l) => s + (l.value || 0), 0);
+        const hotLeads = leads.filter((l: any) => l.temperature === 'hot').length;
         return (
-          <div className="flex gap-5 w-full overflow-x-auto pb-1">
-            <div className="flex-1 min-w-[200px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-total">
+          <div className="flex gap-4 w-full overflow-x-auto pb-1">
+            <div className="flex-1 min-w-[180px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-total">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Total Leads</span>
                 <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
@@ -239,7 +242,7 @@ export default function Leads() {
               </div>
             </div>
 
-            <div className="flex-1 min-w-[200px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-active">
+            <div className="flex-1 min-w-[180px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-active">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Active Deals</span>
                 <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
@@ -252,7 +255,7 @@ export default function Leads() {
               </div>
             </div>
 
-            <div className="flex-1 min-w-[200px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-winrate">
+            <div className="flex-1 min-w-[180px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-winrate">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Win Rate</span>
                 <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
@@ -262,6 +265,34 @@ export default function Leads() {
               <div className="flex flex-col gap-1">
                 <span className="text-2xl font-semibold text-foreground">{winRate}%</span>
                 <span className="text-sm text-muted-foreground">{wonLeads} won of {leads.length}</span>
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-[180px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-pipeline-value">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Pipeline Value</span>
+                <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
+                  <DollarSign className="w-4 h-4 text-primary" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-2xl font-semibold text-foreground">
+                  {pipelineValue >= 100000 ? `₹${(pipelineValue / 100000).toFixed(1)}L` : `₹${(pipelineValue / 1000).toFixed(0)}K`}
+                </span>
+                <span className="text-sm text-muted-foreground">active deals only</span>
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-[180px] bg-card border rounded-lg p-4 shadow-[0px_1px_2px_0px_rgba(13,13,18,0.06)] dark:shadow-none flex flex-col gap-2" data-testid="stat-leads-hot">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground tracking-[0.28px]">Hot Leads</span>
+                <div className="w-9 h-9 rounded-lg border flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-red-500" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-2xl font-semibold text-red-500">{hotLeads}</span>
+                <span className="text-sm text-muted-foreground">ready to close</span>
               </div>
             </div>
           </div>
@@ -389,6 +420,7 @@ export default function Leads() {
                 {isManager && <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Assignee</TableHead>}
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Value</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Stage</TableHead>
+                <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Temp</TableHead>
                 <TableHead className="h-[40px] text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Last Activity</TableHead>
                 <TableHead className="h-[40px] w-[140px] text-right pr-4 text-muted-foreground font-medium text-[14px] tracking-[0.28px]">Actions</TableHead>
               </TableRow>
@@ -420,10 +452,8 @@ export default function Leads() {
                         />
                       </TableCell>
                       <TableCell>
-                        <Link href={`/leads/${lead.id}`}>
-                          <a className="font-medium text-foreground text-[14px] hover:text-primary transition-colors">
+                        <Link href={`/leads/${lead.id}`} className="font-medium text-foreground text-[14px] hover:text-primary transition-colors">
                             {lead.name}
-                          </a>
                         </Link>
                       </TableCell>
                       <TableCell>
@@ -490,6 +520,23 @@ export default function Leads() {
                             {stages.find(s => s.id === lead.stage)?.label}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const temp = (lead as any).temperature as string | undefined;
+                          if (!temp) return <span className="text-muted-foreground text-xs">—</span>;
+                          const colors: Record<string, string> = {
+                            hot: "bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:border-red-500/20",
+                            warm: "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20",
+                            cold: "bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20",
+                          };
+                          return (
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium capitalize border ${colors[temp] || ""}`}>
+                              {temp === 'hot' && <Flame className="h-2.5 w-2.5 mr-0.5" />}
+                              {temp}
+                            </Badge>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>
                         {lastActivity ? (

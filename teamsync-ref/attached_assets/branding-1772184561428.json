@@ -1,0 +1,138 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "Inter",
+      "role": "body"
+    }
+  ],
+  "colors": {
+    "primary": "#225AEA",
+    "accent": "#225AEA",
+    "background": "#FFFFFF",
+    "textPrimary": "#151E3A",
+    "link": "#151E3A"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Inter",
+      "heading": "Inter"
+    },
+    "fontStacks": {
+      "heading": [
+        "Inter",
+        "sans-serif"
+      ],
+      "body": [
+        "Inter",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "Inter",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "14px",
+      "h2": "18px",
+      "body": "14px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "8px"
+  },
+  "components": {
+    "input": {
+      "background": "#FFFFFF",
+      "textColor": "#151E3A",
+      "borderColor": "#E2E6F3",
+      "borderRadius": "10px",
+      "borderRadiusCorners": {
+        "topLeft": "10px",
+        "topRight": "10px",
+        "bottomRight": "10px",
+        "bottomLeft": "10px"
+      },
+      "shadow": "none"
+    },
+    "buttonPrimary": {
+      "background": "#225AEA",
+      "textColor": "#FFFFFF",
+      "borderRadius": "10px",
+      "borderRadiusCorners": {
+        "topLeft": "10px",
+        "topRight": "10px",
+        "bottomRight": "10px",
+        "bottomLeft": "10px"
+      },
+      "shadow": "rgba(20, 72, 203, 0.48) 0px -1px 2px 0px inset, rgba(34, 90, 234, 0.16) 0px 0px 0px 1px, rgba(34, 90, 234, 0.64) 0px 8px 16px -8px, rgba(0, 0, 0, 0.06) 0px 4px 4px 0px"
+    },
+    "buttonSecondary": {
+      "background": "#FFFFFF",
+      "textColor": "#151E3A",
+      "borderRadius": "8px",
+      "borderRadiusCorners": {
+        "topLeft": "8px",
+        "topRight": "8px",
+        "bottomRight": "8px",
+        "bottomLeft": "8px"
+      },
+      "shadow": "rgba(242, 243, 248, 0.48) 0px -1px 2px 0px inset, rgba(197, 204, 227, 0.45) 0px 0px 0px 1px, rgba(21, 30, 58, 0.04) 0px 4px 4px 0px"
+    }
+  },
+  "images": {
+    "logo": "https://app.dropship.io/static/media/logo.361df1989e707f4fea980743a1f74c18.svg",
+    "favicon": "https://app.dropship.io/favicon.svg",
+    "ogImage": null
+  },
+  "__llm_logo_reasoning": {
+    "selectedIndex": 0,
+    "reasoning": "Selected #0 because it matches the favicon, is visible, and is the only candidate resembling a logo.",
+    "confidence": 0.8,
+    "source": "llm"
+  },
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": 0,
+      "text": "Sign In",
+      "reasoning": "Button #0 has a vibrant blue background (#225AEA), which is the brand color, and the text 'Sign In' indicates a primary action for user login."
+    },
+    "secondary": {
+      "index": 2,
+      "text": "Google",
+      "reasoning": "Button #2 has a white background (#FFFFFF) and offers an alternative login method with 'Google', making it a suitable secondary action."
+    },
+    "confidence": 0.95
+  },
+  "personality": {
+    "tone": "professional",
+    "energy": "medium",
+    "targetAudience": "e-commerce businesses"
+  },
+  "designSystem": {
+    "framework": "custom",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 0.95,
+    "colors": 0.9,
+    "overall": 0.925
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": true,
+      "llmSucceeded": true,
+      "finalSource": "llm",
+      "rawLogoSelection": {
+        "selectedLogoIndex": 0,
+        "selectedLogoReasoning": "Selected #0 because it matches the favicon, is visible, and is the only candidate resembling a logo.",
+        "confidence": 0.8
+      }
+    },
+    "buttonClassification": {
+      "llmCalled": true,
+      "llmSucceeded": true
+    }
+  }
+}

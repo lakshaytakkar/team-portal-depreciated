@@ -1,0 +1,92 @@
+🧭 USER JOURNEY FLOW
+Think of it as a 5-room house. Every client walks through rooms in sequence.
+
+🚪 Room 1 — Entry (Onboarding)
+Client gets access after purchasing the program.
+
+Receives login credentials
+Lands on a Welcome Dashboard
+Sees their progress tracker (what's done, what's next)
+Prompted to complete profile (niche, budget, experience level)
+
+
+📦 Room 2 — Product Research
+This is where they spend the most time early on.
+
+Opens Product Research Engine
+Browses winning products (pulled from live data)
+Filters by niche, price range, trend score
+Views competitor stores selling similar products
+Saves shortlisted products to their personal list
+Gets AI suggestions on what to sell based on their niche
+
+
+🏪 Room 3 — Store Setup
+After picking a product, they move to store execution.
+
+Follows Store Setup Checklist inside the platform
+Gets guided steps (Shopify setup, theme, product page)
+Access to creative generation tools (ad creatives, banners)
+Can view course modules related to store setup
+Submits store for review (if that workflow exists)
+
+
+📢 Room 4 — Ads & Launch
+Once store is ready, they move to running ads.
+
+Access Ad Strategy modules
+Use creative generation for Meta/TikTok ads
+Follow ad launch checklist
+Track ad performance (manual input or integrated)
+Get AI-generated copy suggestions
+
+
+📬 Room 5 — Order Fulfillment & Scaling
+When orders come in, the platform helps them not panic.
+
+View Fulfillment SOPs inside the platform
+Track order status workflow
+Access scaling guides
+Get notified on next milestones
+
+
+🔧 ADMIN FLOW (What Your Team Sees)
+Think of it as a control room behind the house.
+
+👁️ Admin View 1 — Client Pipeline
+
+See all active clients and their current stage
+Know who is stuck, who is progressing, who needs help
+Filter by: stage, join date, LLC status, store status
+
+
+📋 Admin View 2 — Task & Ticket Management
+
+See support requests raised by clients
+Assign tickets to team members
+Track resolution status
+Flag escalations for Lakshay
+
+
+📊 Admin View 3 — Content & Course Management
+
+Add/edit modules, lessons, resources
+Publish session recordings
+Update product database (bestsellers, trending items)
+Manage competitor store data
+
+
+🏢 Admin View 4 — LLC Tracking
+
+See each client's LLC formation stage
+Update status (Filed → EIN Received → BOI Done → Bank Setup)
+Send automated reminders
+Upload documents per client
+
+
+📈 Admin View 5 — Platform Health
+
+Total active users
+Module completion rates
+Most-used features
+Drop-off points (where clients go silent)

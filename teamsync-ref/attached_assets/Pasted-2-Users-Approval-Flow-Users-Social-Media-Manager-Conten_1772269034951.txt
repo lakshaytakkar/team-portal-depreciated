@@ -1,0 +1,172 @@
+2️⃣ Users & Approval Flow
+
+Users:
+
+Social Media Manager
+
+Content Creator
+
+Designer / Video Editor
+
+Copywriter
+
+Founder (final approver)
+
+Approval Flow:
+Idea → Script → Design → Caption → Founder Approval → Schedule → Publish → Performance Review
+
+Founder approval is mandatory for major posts (events, launches, LegalNations, imports).
+
+Daily users: ~6–10.
+
+3️⃣ Platforms (Primary Focus)
+Platform	Post	Schedule	Analytics	Ads
+Instagram (@suprans.in)	✅	✅	✅	✅
+YouTube	✅	⚠️	✅	❌
+LinkedIn	✅	✅	⚠️	❌
+Facebook	✅	⚠️	⚠️	⚠️
+Threads	⚠️	⚠️	❌	❌
+
+Primary growth: Instagram + YouTube.
+
+4️⃣ Content & Workflow
+
+Content Types:
+
+Reels (main growth)
+
+Carousel posts
+
+Static authority posts
+
+Event promos
+
+Webinar promos
+
+Testimonials
+
+Stories
+
+YouTube long-form + Shorts
+
+Lifecycle:
+
+Idea logged
+
+Tagged to Vertical + Campaign
+
+Script written
+
+Design created
+
+Founder approval
+
+Scheduled
+
+Metrics tracked
+
+Performance score assigned
+
+Must Have:
+
+Monthly + Weekly calendar
+
+Campaign grouping
+
+Media library (Approved vs Draft assets)
+
+5️⃣ Required Sections
+Section	Priority
+Dashboard	MUST
+Content Calendar	MUST
+Post Composer	MUST
+Post Library	MUST
+Campaigns	MUST
+Media Library	MUST
+Approvals Queue	MUST
+Analytics	MUST
+Team Assignments	MUST
+Inbox	NICE
+Competitor Tracking	NICE
+6️⃣ Analytics Focus
+
+Track:
+
+Reach
+
+Engagement rate
+
+Saves
+
+Shares
+
+Watch time
+
+Follower growth
+
+Link clicks
+
+Also track:
+Post → Campaign → Leads → Revenue
+
+Reports:
+
+Monthly PDF
+
+Top 5 / Worst 5 posts
+
+Campaign performance
+
+Time filters:
+7 days / 30 days / Month / Custom / Campaign period.
+
+7️⃣ Integrations (Future)
+
+Design schema for:
+
+Meta Graph API
+
+LinkedIn API
+
+YouTube API
+
+Google Analytics
+
+Start with mock data.
+
+8️⃣ Accounts Structure
+
+Organized by Brand → Platform.
+
+Example brands:
+
+Suprans
+
+LegalNations
+
+USDrop
+
+Gullee
+
+Total accounts: ~8–12.
+
+9️⃣ UI Feel
+
+Clean + data-driven + authority.
+Not playful.
+
+Dark mode required.
+
+Reference: Sprout Social + Linear-style minimalism.
+
+🔟 Unique Requirements
+
+Founder approval widget on dashboard.
+
+Posts linked to Campaign + Vertical.
+
+AI tools in composer (generate caption / hooks / CTA).
+
+Repurpose flow (Reel → Short → LinkedIn clip).
+
+Performance score per post.

@@ -1,0 +1,14 @@
+{
+  "categories": [
+    { "id": "toys", "name": "Toys & Games", "icon": "🎮" },
+    { "id": "kitchenware", "name": "Kitchenware", "icon": "🍳" },
+    { "id": "stationery", "name": "Stationery", "icon": "✏️" },
+    { "id": "decor", "name": "Home Decor", "icon": "🏮" },
+    { "id": "bags", "name": "Bags & Storage", "icon": "👜" },
+    { "id": "household", "name": "Household", "icon": "🏠" },
+    { "id": "gifts", "name": "Gifts & Novelty", "icon": "🎁" },
+    { "id": "electronics", "name": "Electronics", "icon": "💡" },
+    { "id": "beauty", "name": "Beauty & Personal Care", "icon": "💄" },
+    { "id": "sports", "name": "Sports & Fitness", "icon": "⚽" }
+  ]
+}

@@ -1,0 +1,169 @@
+# EAZY TO SELL — Lakshay's Command Center (V1 Scope)
+
+## ONE LINE BRIEF
+
+Build Lakshay a single dashboard where he can see everything, control pricing, track clients, and generate proposals — all from his phone.
+
+## WHAT LAKSHAY ACTUALLY DOES DAY-TO-DAY
+
+- Checks which leads are hot and what stage they're at
+- Tweaks pricing / margins before a proposal goes out
+- Reviews product catalog, marks hero SKUs, hides junk
+- Tracks orders in progress (what's in China, what's shipped, what's at Delhi warehouse)
+- Generates a quick investment breakdown to WhatsApp a client
+- Makes decisions — approves stores, sets category mixes, overrides prices
+
+**Everything else (data entry, follow-ups, dispatch) is team work. Lakshay needs visibility + control, not workflows.**
+
+## PORTAL PAGES — BUILD ORDER
+
+### Page 1: Home Dashboard
+**Purpose:** Morning coffee screen. Everything at a glance.
+
+| Card | What it shows |
+|------|--------------|
+| Pipeline snapshot | X leads → X qualified → X token paid → X launched |
+| Revenue tracker | Total tokens collected, pending invoices, estimated pipeline value |
+| Active orders | Orders in transit with ETA bars |
+| Alerts | Anything stuck > 3 days, price changes from suppliers, low-stock flags |
+
+No actions here — just tap any card to drill into its section.
+
+---
+
+### Page 2: Client Pipeline
+**Purpose:** See every client, their stage, and act fast.
+
+**View:** Kanban columns OR simple table (toggle)
+
+**Stages:**
+```
+New Lead → Qualified → Token Paid → Store Design → Inventory Ordered → In Transit → Launched → Reordering
+```
+
+**Each client card shows:** Name, city, store size, package tier, days in current stage, last note.
+
+**Lakshay actions:**
+- Move client between stages (drag or button)
+- Add a quick note
+- Tap to open full client profile
+- Generate proposal / investment sheet (auto-fills from client data)
+
+---
+
+### Page 3: Product Catalog (Admin View)
+**Purpose:** Browse, curate, price.
+
+**What's already there:** haoduobao scraped DB in Supabase.
+
+**What Lakshay needs on top:**
+- Search + filter (category, price range, MOQ)
+- Toggle: Show/Hide from client catalog
+- Mark as "Hero SKU" (featured in proposals)
+- **Price override panel** per product:
+  - See: EXW Yuan → full chain → landed INR → with margin → suggested MRP
+  - Override: any step in the chain (margin %, MRP band)
+- Bulk actions: select multiple → hide / set category / set margin tier
+
+**Critical:** The price calculator runs here. Every product shows the full chain in a collapsible row.
+
+---
+
+### Page 4: Price Calculator (Standalone Tool)
+**Purpose:** Quick what-if pricing for calls and negotiations.
+
+**Input:**
+- EXW price (Yuan)
+- Product weight/volume (for freight calc)
+- Category (auto-fills duty rate)
+- Margin % (default 20%, adjustable)
+
+**Output (live, updates as you type):**
+```
+EXW ¥XX → +domestic freight → FOB ¥XX → +sea freight → CIF ₹XX
+→ +duty XX% → +GST XX% → landed ₹XX → +warehouse ₹XX → +margin XX% → Final ₹XX
+→ Suggested MRP band: ₹XX – ₹XX
+```
+
+**Bonus:** "Save as template" for common product types (toy, kitchenware, stationery) so he doesn't re-enter rates every time.
+
+---
+
+### Page 5: Order Tracker
+**Purpose:** Where's the container / shipment right now?
+
+**View:** Table of active orders.
+
+| Column | Data |
+|--------|------|
+| Order ID | Auto-generated |
+| Client | Linked to pipeline |
+| Status | Ordered → Factory ready → Shipped → Customs → Delhi warehouse → Dispatched |
+| ETA | Calculated from status + standard lead times |
+| Value | INR total |
+| Docs | Packing list, invoice, BL — uploaded as files |
+
+**Lakshay actions:**
+- Update status (dropdown)
+- Upload/view docs
+- Flag delays
+- No complex logistics workflows — just visibility
+
+---
+
+### Page 6: Proposal Generator
+**Purpose:** One-tap investment breakdown to send via WhatsApp.
+
+**Input (auto-filled from client profile, editable):**
+- Store size (default 1000 sq ft)
+- Package tier (Lite / Pro / Elite)
+- Category mix (sliders: toys X%, kitchen X%, stationery X%, etc.)
+- City / location
+
+**Output:**
+- Investment breakdown table (interior kit + inventory + services — line by line)
+- Timeline (30-45 day roadmap)
+- What's included / What's NOT included (scope & boundaries)
+- Payment schedule (token → milestones)
+
+**Export options:**
+- Copy as WhatsApp text (formatted with emojis, Hinglish-friendly)
+- Download as PDF
+- Share link (optional later)
+
+---
+
+## WHAT TO SKIP IN V1
+
+- No login for anyone except Lakshay (hardcode or simple PIN)
+- No role-based access yet
+- No partner-facing portal
+- No automated notifications (Lakshay checks manually)
+- No analytics/reports beyond the dashboard cards
+- No inventory management at SKU level (just order-level tracking)
+
+## TECH NOTES FOR THE AGENT
+
+- **DB:** Supabase (Toysinbulk project has product catalog, use it)
+- **Auth:** Simple — single user for now, don't over-engineer
+- **Mobile-first:** Lakshay works from phone 70% of the time
+- **Speed > polish:** Functional ugly beats beautiful broken
+- **Price calculator is the crown jewel** — get the math right, make it fast, show every step
+- **WhatsApp export format matters** — test that the copied text looks good when pasted into WA
+
+## BUILD SEQUENCE FOR THE AGENT
+
+```
+1. Price Calculator page (standalone, most value, tests the math engine)
+2. Product Catalog with pricing overlay (connects calculator to real products)
+3. Client Pipeline (kanban/table with stages)
+4. Dashboard (pulls data from pipeline + orders)
+5. Order Tracker (simple status table)
+6. Proposal Generator (combines calculator + client data + templates)
+```
+
+**Why this order:** Calculator validates the core business logic. If the numbers are wrong, nothing else matters. Catalog makes it useful. Pipeline makes it operational. The rest layers on top.
+
+---
+
+*Role divisions, team access, partner portal — all come after Lakshay can run the business from this one screen.*

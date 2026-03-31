@@ -1,0 +1,509 @@
+Objective of Event Planning Team Portal
+
+The portal must:
+
+Standardize event execution
+
+Track pre-event readiness
+
+Control budget & vendor payments
+
+Manage registrations & check-in
+
+Prevent event-day chaos
+
+Capture post-event leverage
+
+If it doesn’t reduce stress 48 hours before the event — it failed.
+
+1️⃣ Core Architecture — Event Lifecycle Model
+
+Every event must move through rigid stages:
+
+Stage 0 – Idea Approved
+
+Event name
+
+City
+
+Tentative date
+
+Expected audience size
+
+Budget range
+
+Event type (Seminar / Workshop / Group Meet / Premium Masterclass)
+
+Stage 1 – Venue Locked
+
+Venue finalized
+
+Contract signed
+
+Advance paid
+
+Capacity confirmed
+
+Layout map uploaded
+
+Stage 2 – Vendor Setup
+
+Sound
+
+LED
+
+Photography
+
+Branding
+
+Catering
+
+Registration desk
+
+Security
+
+Each vendor:
+
+Assigned owner
+
+Contact details
+
+Payment status
+
+Due amount
+
+Deadline
+
+Stage 3 – Marketing & Registrations
+
+Landing page live
+
+Ticket pricing
+
+Ads launched
+
+Influencer push
+
+Registration sheet live
+
+Track:
+
+Total registrations
+
+Paid vs free
+
+VIP list
+
+City breakdown
+
+Stage 4 – Pre-Event Finalization (T-7 Days)
+
+Print materials ready
+
+Banners delivered
+
+Staff roles assigned
+
+Run-of-show document ready
+
+Speaker slides collected
+
+Backup laptop ready
+
+Internet tested
+
+Payment balance ready
+
+Stage 5 – Event Day Operations
+
+Team attendance
+
+Vendor arrival check
+
+Check-in live tracking
+
+On-stage coordination
+
+Cash collection log (if any)
+
+Issue log
+
+Stage 6 – Post Event
+
+Payment reconciliation
+
+Vendor settlement
+
+Lead export
+
+Thank-you broadcast
+
+Content distribution
+
+Feedback analysis
+
+ROI summary
+
+If you skip structured lifecycle, it becomes founder-led firefighting.
+
+2️⃣ Core Modules in Event Team Portal
+🧩 Module 1 – Event Master Dashboard
+
+Each event record must show:
+
+Event Name
+
+City
+
+Date
+
+Status
+
+Expected Footfall
+
+Confirmed Registrations
+
+Budget
+
+Actual Spend
+
+Profit/Loss
+
+Event Owner
+
+Founder dashboard must show:
+
+Upcoming events
+
+Events at risk
+
+Budget overruns
+
+Registration gap
+
+🧩 Module 2 – Budget & Vendor Control
+
+For each event:
+
+Budget Table
+
+Venue cost
+
+Catering
+
+Branding
+
+Sound
+
+Team travel
+
+Ads spend
+
+Misc
+
+Each line:
+
+Estimated
+
+Approved
+
+Paid
+
+Pending
+
+Vendor name
+
+This prevents payment leakage.
+
+🧩 Module 3 – Registration System
+
+Internally track:
+
+Name
+
+Phone
+
+Email
+
+Ticket type
+
+Payment status
+
+Source (Ad / Organic / Referral)
+
+Assigned RM (if premium)
+
+Should connect to:
+
+WhatsApp reminders
+
+Check-in list
+
+Critical:
+Registration list must freeze 24 hours before event.
+
+🧩 Module 4 – Check-in System (Event Day)
+
+Simple interface:
+
+Search name / Scan QR
+Mark as:
+
+Checked in
+
+VIP
+
+Walk-in
+
+No show
+
+Track:
+
+Real-time attendance count
+
+VIP arrival
+
+Conversion opportunity list
+
+If check-in is Excel sheet + WhatsApp chaos, it’s amateur.
+
+🧩 Module 5 – Team Assignment Board
+
+For event day:
+
+Roles must be predefined:
+
+Registration Desk
+
+Stage Control
+
+VIP Handling
+
+Media
+
+Sales Desk
+
+Logistics
+
+Cash Handling
+
+Guest Coordination
+
+Each team member:
+
+Assigned zone
+
+Backup person
+
+Contact list
+
+No “who is doing this?” on event day.
+
+🧩 Module 6 – Run of Show Document
+
+Timeline:
+
+9:00 AM – Team arrival
+
+9:30 AM – Vendor check
+
+10:00 AM – Registration open
+
+11:00 AM – Opening speech
+
+12:30 PM – Break
+
+2:00 PM – Offer pitch
+
+4:00 PM – Close
+
+If this is not locked in system, event energy drops.
+
+🧩 Module 7 – Incident Log
+
+Event day always has issues.
+
+Portal should allow logging:
+
+Mic failure
+
+VIP delay
+
+Vendor late
+
+Payment issue
+
+Audience complaint
+
+Post-event review uses this.
+
+🧩 Module 8 – Post-Event ROI Module
+
+Track:
+
+Total registrations
+
+Total attended
+
+Sales closed
+
+Revenue
+
+Event cost
+
+Net profit
+
+Leads generated
+
+Content assets captured
+
+Without this, events become vanity.
+
+3️⃣ Role Structure
+
+Define before building.
+
+Admin (Founder)
+
+Approve budgets
+
+View P&L
+
+Escalate issues
+
+Event Manager
+
+Full control of event lifecycle
+
+Assign vendors
+
+Move stages
+
+Approve checklists
+
+Ops Executive
+
+Vendor coordination
+
+On-ground tasks
+
+Checklist completion
+
+Sales Lead
+
+Track event-day conversions
+
+Assign RMs
+
+Close deals
+
+Registration Team
+
+Check-in management
+
+Walk-in capture
+
+4️⃣ Automation Strategy
+
+When event is created:
+→ Generate default checklist
+
+When Stage = Venue Locked:
+→ Generate vendor tasks
+
+When T-7 days:
+→ Trigger final review checklist
+
+When Event Day:
+→ Activate check-in mode
+
+When Event Completed:
+→ Trigger P&L review template
+
+Automation prevents forgetting critical prep.
+
+5️⃣ Founder Dashboard Must Answer
+
+Are registrations on track?
+
+Is budget under control?
+
+Who owns the event?
+
+What’s the break-even number?
+
+What is expected revenue?
+
+If this isn’t visible in 10 seconds, portal failed.
+
+6️⃣ Real Risk You’re Underestimating
+
+Physical events scale complexity fast:
+
+Multi-city logistics
+
+Travel coordination
+
+Vendor fraud
+
+Budget creep
+
+Registration drop-off
+
+Overpromising seating
+
+Payment mismanagement
+
+If not systemized, founder stress multiplies.
+
+7️⃣ What NOT to Build (v1)
+
+Do NOT:
+
+Overdesign fancy UI
+
+Build CRM inside this
+
+Build full ticketing SaaS
+
+Build marketing analytics
+
+Overcomplicate check-in
+
+Keep it lean:
+Event lifecycle + budget + registration + check-in + ROI.
+
+8️⃣ KPIs to Track
+
+Cost per attendee
+
+Cost per lead
+
+Show-up rate %
+
+Conversion rate %
+
+Revenue per attendee
+
+Vendor delay frequency
+
+Budget variance %
+
+Without KPI tracking, you’ll repeat mistakes city after city.
+
+🔥 Final Strategy Summary
+
+Event Team Portal =
+
+A stage-based execution engine
+
+Budget control system
+
+Registration tracker
+
+Check-in tool
+
+Post-event ROI dashboard
+
+It should turn chaotic physical events
+into predictable operational cycles.

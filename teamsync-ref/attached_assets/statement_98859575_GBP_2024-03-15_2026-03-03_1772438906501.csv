@@ -1,0 +1,24 @@
+"TransferWise ID",Date,"Date Time",Amount,Currency,Description,"Payment Reference","Running Balance","Exchange From","Exchange To","Exchange Rate","Payer Name","Payee Name","Payee Account Number",Merchant,"Card Last Four Digits","Card Holder Full Name",Attachment,Note,"Total fees","Exchange To Amount","Transaction Type","Transaction Details Type"
+TRANSFER-1897109486,11-02-2026,"11-02-2026 14:13:20.670",-250.00,GBP,"Received money from Kavitha Kancharla with reference KAVITHA CANTON2026","KAVITHA CANTON2026",6544.34,,,,"Kavitha Kancharla",,,,,,,,0.00,,DEBIT,DEPOSIT
+TRANSFER-1942740256,28-01-2026,"28-01-2026 19:36:21.620",35.27,GBP,"Received money from CLINICAL SUPPLIES LIMITED with reference Gloves Sample","Gloves Sample",6794.34,,,,"CLINICAL SUPPLIES LIMITED",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1921157576,15-01-2026,"15-01-2026 12:12:51.789",577.08,GBP,"Received money from Kapil Taran with reference 129666",129666,6759.07,,,,"Kapil Taran",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1912200272,09-01-2026,"09-01-2026 17:54:29.170",331.00,GBP,"Received money from Kapil Taran with reference 257829",257829,6181.99,,,,"Kapil Taran",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1900365534,02-01-2026,"02-01-2026 18:32:41.897",330.00,GBP,"Received money from Piyushkumar Tumbadiya with reference Course fees","Course fees",5850.99,,,,"Piyushkumar Tumbadiya",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1897109486,31-12-2025,"31-12-2025 16:08:48.114",250.00,GBP,"Received money from Kavitha Kancharla with reference KAVITHA CANTON2026","KAVITHA CANTON2026",5520.99,,,,"Kavitha Kancharla",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1877786710,19-12-2025,"19-12-2025 11:40:38.774",580.00,GBP,"Received money from A Singh with reference US LLC","US LLC",5270.99,,,,"A Singh",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1840120831,27-11-2025,"27-11-2025 17:57:54.176",344.00,GBP,"Received money from Piyushkumar Tumbadiya with reference Course fees","Course fees",4690.99,,,,"Piyushkumar Tumbadiya",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1835961832,25-11-2025,"25-11-2025 14:47:51.762",335.00,GBP,"Received money from A Singh with reference us dropshipping","us dropshipping",4346.99,,,,"A Singh",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1832279809,22-11-2025,"22-11-2025 17:50:45.626",64.00,GBP,"Received money from CLINICAL SUPPLIES LIMITED with reference NOREF",NOREF,4011.99,,,,"CLINICAL SUPPLIES LIMITED",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1827454985,19-11-2025,"19-11-2025 17:14:42.029",343.00,GBP,"Received money from Chander Subhash with reference 671124",671124,3947.99,,,,"Chander Subhash",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1794004452,30-10-2025,"30-10-2025 16:06:38.450",325.00,GBP,"Received money from P Kumar with reference Pardeep kumar","Pardeep kumar",3604.99,,,,"P Kumar",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1601832698,27-06-2025,"27-06-2025 20:08:57.878",900.00,GBP,"Received money from shinoj vasudevan with reference 311477",311477,3279.99,,,,"shinoj vasudevan",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1565630209,02-06-2025,"02-06-2025 17:59:25.012",545.20,GBP,"Received money from Ankur N/A with reference 676223",676223,2379.99,,,,"Ankur N/A",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1561270029,30-05-2025,"30-05-2025 16:07:01.226",21.72,GBP,"Received money from Pardeep Kumar with reference 556566",556566,1834.79,,,,"Pardeep Kumar",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1547375613,20-05-2025,"20-05-2025 19:49:39.614",174.80,GBP,"Received money from Ankur N/A with reference 282709",282709,1813.07,,,,"Ankur N/A",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1539000771,14-05-2025,"14-05-2025 15:05:39.866",355.05,GBP,"Received money from Tejas vekaria with reference 740270",740270,1638.27,,,,"Tejas vekaria",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1523765217,03-05-2025,"03-05-2025 17:14:22.841",22.24,GBP,"Received money from Prakash Gupta with reference 626475",626475,1283.22,,,,"Prakash Gupta",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1460760426,19-03-2025,"19-03-2025 06:13:02.617",22.22,GBP,"Received money from Priyesh Thakkar with reference 555774",555774,1260.98,,,,"Priyesh Thakkar",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1410844348,10-02-2025,"10-02-2025 17:28:28.101",216.00,GBP,"Received money from Dipenbhai Rami with reference 170386",170386,1238.76,,,,"Dipenbhai Rami",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1385012901,22-01-2025,"22-01-2025 15:27:06.481",24.30,GBP,"Received money from Aksheshkumar Randeriya with reference 822529",822529,1022.76,,,,"Aksheshkumar Randeriya",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1266689211,22-10-2024,"22-10-2024 16:07:58.779",448.46,GBP,"Received money from Sana Ahmad with reference 455596",455596,998.46,,,,"Sana Ahmad",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1208884665,05-09-2024,"05-09-2024 20:41:39.461",550.00,GBP,"Received money from Efs Style Uk Ltd with reference 421927",421927,550.00,,,,"Efs Style Uk Ltd",,,,,,,,0.00,,CREDIT,DEPOSIT

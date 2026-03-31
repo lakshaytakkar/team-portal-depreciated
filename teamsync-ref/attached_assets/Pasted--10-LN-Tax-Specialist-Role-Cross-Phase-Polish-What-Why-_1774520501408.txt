@@ -1,0 +1,43 @@
+#10 - LN Tax Specialist Role & Cross-Phase Polish
+What & Why
+Build the Tax Specialist role pages — the most domain-specific role in the LegalNations portal. Tax filing for US LLCs/Corps owned by international clients involves IRS Form 1120/5472, certified mailing procedures, and strict deadlines. This phase also wires up all cross-role navigation, ensures the dashboard developer toggle (setup/active mode like ETS), and polishes the full portal for consistency.
+
+Done looks like
+Tax Specialist role (5 pages): Dashboard with tax season timeline (Jan-Apr peak), active filings count, deadline alerts, completion rate. Filing Queue with all clients needing annual tax filing, grouped by entity type (Single Member LLC, Multi-Member LLC, Corporation), status tracking (Document Collection → Preparation → Review → Filing → Confirmation). Tax Preparation Workspace showing the 10-step IRS procedure (from the existing SOP data): gather docs → prepare 1120 → prepare 5472 → internal review → client review → print & sign → notarize → certified mail via LetterStream → track delivery → confirm receipt. Filing Detail page for a single client showing all forms, document checklist, mailing tracking number, IRS response status. Tax Calendar page with filing deadlines by entity type and extension dates.
+
+Client Dashboard setup/active toggle — Like ETS dashboard, a developer toggle between "setup mode" (onboarding in progress, formation steps remaining) and "active mode" (company formed, ongoing compliance tracking)
+
+Cross-role links — Admin can click through to any specialist's view of a client. Client messages link to the assigned specialist. Formation pipeline cards link to client detail.
+
+LnSubNavSidebar refined with all role-appropriate entries and proper icon assignments
+
+All pages consistent with px-16 lg:px-24 padding
+
+Out of scope
+Real IRS form generation
+Backend APIs — all mock data
+Replacing the original /portal/legalnations/ pages (future decision)
+Tasks
+Tax Specialist dashboard — Tax season progress bar (current position in Jan-Apr cycle), KPI cards: Active Filings (8), Documents Pending (3), Reviews Needed (2), Filed This Season (15). Upcoming deadlines list sorted by urgency. Filing completion rate gauge. Quick actions: Start New Filing, View Calendar, Check LetterStream Status.
+
+Filing Queue page — Table/card view of all clients requiring tax filing this year. Columns: Client Name, Entity Type, State, Tax Year, Status (Not Started/Document Collection/In Preparation/Under Review/Filed/Confirmed), Assigned To, Deadline, Days Remaining. Filters by status, entity type. Group by status for quick scanning.
+
+Tax Preparation Workspace — Select a client filing → see the 10-step procedure as a vertical checklist: 1) Gather financial documents (P&L, bank statements), 2) Prepare Form 1120, 3) Prepare Form 5472 (foreign-owned), 4) Internal review, 5) Send to client for review, 6) Client approval received, 7) Print & arrange signing, 8) Notarization, 9) Certified mail via LetterStream (tracking number), 10) IRS receipt confirmation. Each step has status (Done/In Progress/Pending), completion date, and notes field. Document attachment links per step.
+
+Filing Detail page — Single client's tax filing detail: entity info, tax year, all required forms listed with status, document checklist (bank statements, P&L, prior year return, etc.) with upload status, mailing section (LetterStream tracking number, mailing date, delivery confirmation), IRS response section (acknowledgment received Y/N, date, any notices). Timeline of all filing activities.
+
+Tax Calendar page — Calendar or timeline view showing all filing deadlines: March 15 (S-Corp/Partnership returns), April 15 (Individual/Single-Member LLC), extension dates (Sep 15, Oct 15). Each deadline shows count of clients due, completion status. Highlight overdue in red, upcoming in yellow, completed in green.
+
+Client dashboard setup/active mode toggle — Add developer toggle button (top-right, like ETS) switching between setup mode (formation in progress — shows onboarding completion %, stage progress, pending KYC items, specialist assignment) and active mode (company operational — shows compliance calendar, tax filing status, upcoming renewals, document vault summary). Wire to mock data states.
+
+Cross-role navigation polish — Ensure admin dashboard client table links to the Formation Specialist's client view. Client messages show specialist role badges. Formation pipeline Kanban cards are clickable and show a detail modal with stage history. Add breadcrumb navigation on detail pages. Verify all role navItem URLs resolve correctly to their pages. Update ln-role-config.ts navItems if any URLs changed.
+
+Relevant files
+client/src/lib/ln-role-config.ts
+client/src/lib/mock-data-dashboard-ln.ts
+client/src/lib/sop-data.ts
+client/src/pages/legalnations/tax-filing.tsx
+client/src/pages/portal/ets/dashboard.tsx
+client/src/components/layout/top-navigation.tsx
+client/src/App.tsx
+Dependencies

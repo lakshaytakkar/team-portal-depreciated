@@ -1,0 +1,60 @@
+modules = ["nodejs-20", "web"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-25_05"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[env]
+PORT = "5000"
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["node", "./dist/index.cjs"]
+build = ["npm", "run", "build"]
+publicDir = "dist/public"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[agent]
+expertMode = true
+integrations = ["javascript_openai_ai_integrations:2.0.0"]
+
+[userenv]
+
+[userenv.shared]
+SUPABASE_URL = "https://ngvrnwjisntjmqrtnume.supabase.co"
+VITE_SUPABASE_URL = "https://ngvrnwjisntjmqrtnume.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ndnJud2ppc250am1xcnRudW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNzUzMzgsImV4cCI6MjA4Nzk1MTMzOH0.fiA5sndv8RSn_kBbKTwZAfSHYMJqm2_Tg4pvv73u6D8"
+SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ndnJud2ppc250am1xcnRudW1lIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjM3NTMzOCwiZXhwIjoyMDg3OTUxMzM4fQ.gGbtLbMBb64iQDUtLDRKywqBRZCKcfHN4BrFbYnOS_c"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ndnJud2ppc250am1xcnRudW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNzUzMzgsImV4cCI6MjA4Nzk1MTMzOH0.fiA5sndv8RSn_kBbKTwZAfSHYMJqm2_Tg4pvv73u6D8"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000

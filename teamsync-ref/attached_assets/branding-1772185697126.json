@@ -1,0 +1,131 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "Inter",
+      "role": "body"
+    },
+    {
+      "family": "Plus Jakarta Sans",
+      "role": "heading"
+    }
+  ],
+  "colors": {
+    "primary": "#225AEA",
+    "accent": "#225AEA",
+    "background": "#FFFFFF",
+    "textPrimary": "#434C69",
+    "link": "#434C69"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Inter",
+      "heading": "Plus Jakarta Sans"
+    },
+    "fontStacks": {
+      "heading": [
+        "Plus Jakarta Sans",
+        "sans-serif"
+      ],
+      "body": [
+        "Inter",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "Inter",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "48px",
+      "h2": "24px",
+      "body": "18px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "12px"
+  },
+  "components": {
+    "buttonPrimary": {
+      "background": "#225AEA",
+      "textColor": "#FFFFFF",
+      "borderColor": "#FFFFFF",
+      "borderRadius": "12px",
+      "borderRadiusCorners": {
+        "topLeft": "12px",
+        "topRight": "12px",
+        "bottomRight": "12px",
+        "bottomLeft": "12px"
+      },
+      "shadow": "rgba(0, 14, 88, 0.4) 0px 1px 2px 0px, rgba(34, 90, 234, 0.84) 0px 0px 0px 1px"
+    },
+    "buttonSecondary": {
+      "background": "#FFFFFF",
+      "textColor": "#151E3A",
+      "borderRadius": "12px",
+      "borderRadiusCorners": {
+        "topLeft": "12px",
+        "topRight": "12px",
+        "bottomRight": "12px",
+        "bottomLeft": "12px"
+      },
+      "shadow": "rgba(21, 30, 58, 0.12) 0px 1px 2px 0px, rgba(21, 30, 58, 0.12) 0px 0px 0px 1px"
+    }
+  },
+  "images": {
+    "logo": "File saved at: attached_assets/logo.svg",
+    "favicon": "File saved at: attached_assets/favicon.png",
+    "ogImage": "File saved at: attached_assets/ogImage.png",
+    "logoHref": "File saved at: attached_assets/logoHref.html"
+  },
+  "__llm_logo_reasoning": {
+    "selectedIndex": 17,
+    "reasoning": "Selected #0 because it is visible, medium-sized, and links to the homepage, matching the brand 'Dropship'.",
+    "confidence": 0.85,
+    "source": "llm"
+  },
+  "__llm_button_reasoning": {
+    "primary": {
+      "index": 0,
+      "text": "Start Free Trial",
+      "reasoning": "Button #6 with text 'Start Free Trial' has a vibrant blue background (#225AEA), which is the brand color, making it the primary CTA."
+    },
+    "secondary": {
+      "index": 5,
+      "text": "Start Free Trial",
+      "reasoning": "Button #9 with text 'Start Free Trial' has a white background (#FFFFFF), providing a clear contrast to the primary button's vibrant color."
+    },
+    "confidence": 0.95
+  },
+  "personality": {
+    "tone": "modern",
+    "energy": "medium",
+    "targetAudience": "entrepreneurs and small business owners"
+  },
+  "designSystem": {
+    "framework": "custom",
+    "componentLibrary": ""
+  },
+  "confidence": {
+    "buttons": 0.95,
+    "colors": 0.9,
+    "overall": 0.925
+  },
+  "__llm_metadata": {
+    "logoSelection": {
+      "llmCalled": true,
+      "llmSucceeded": true,
+      "finalSource": "llm",
+      "rawLogoSelection": {
+        "selectedLogoIndex": 0,
+        "selectedLogoReasoning": "Selected #0 because it is visible, medium-sized, and links to the homepage, matching the brand 'Dropship'.",
+        "confidence": 0.85
+      }
+    },
+    "buttonClassification": {
+      "llmCalled": true,
+      "llmSucceeded": true
+    }
+  }
+}

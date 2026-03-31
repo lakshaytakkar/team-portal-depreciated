@@ -1,0 +1,275 @@
+Below is a **practical mobile UI component checklist (70+ components)** that covers almost everything required to turn a **web CRUD application into a mobile-app-like interface**.
+These are organized by **real usage in business apps like travel management, CRM, dashboards, etc.**
+
+---
+
+# Mobile UI Component Library Checklist
+
+## 1. Navigation Components
+
+1. Bottom Navigation Bar
+2. Top Navigation Bar
+3. Sticky Header
+4. Back Button
+5. Tab Navigation
+6. Side Drawer / Slide Menu
+7. Breadcrumb (mobile version)
+8. Floating Action Button (FAB)
+9. Contextual Action Bar
+10. Step Progress Navigation
+
+---
+
+# 2. List & Data Display Components
+
+11. List Item Row
+12. Card List Item
+13. Expandable List Row
+14. Accordion List
+15. Activity Feed
+16. Timeline Component
+17. Badge / Status Tag
+18. Info Card
+19. Statistic Card
+20. Data Summary Tile
+
+---
+
+# 3. Table Alternatives for Mobile
+
+21. Collapsible Data Row
+22. Swipe Action List
+23. Expandable Card Table
+24. Grid Cards
+25. Compact Info Row
+26. Inline Metadata Row
+
+---
+
+# 4. Form Components
+
+27. Text Input Field
+28. Number Input
+29. Email Input
+30. Phone Input
+31. Password Input
+32. Textarea Field
+33. Checkbox
+34. Radio Button
+35. Toggle Switch
+36. Stepper Input (+ -)
+
+---
+
+# 5. Advanced Input Controls
+
+37. Date Picker
+38. Time Picker
+39. Date Range Picker
+40. Autocomplete Field
+41. Dropdown Select
+42. Multi Select Dropdown
+43. Tag Selector
+44. File Upload
+45. Image Upload
+46. Signature Input
+
+---
+
+# 6. Search & Filter Components
+
+47. Search Bar
+48. Expandable Search
+49. Filter Drawer
+50. Filter Chips
+51. Sort Dropdown
+52. Saved Filters
+
+---
+
+# 7. Action Components
+
+53. Primary Button
+54. Secondary Button
+55. Icon Button
+56. Floating Button
+57. Sticky Bottom Button
+58. Segmented Control
+59. Quick Action Menu
+
+---
+
+# 8. Modal & Overlay Components
+
+60. Bottom Sheet
+61. Full Screen Modal
+62. Confirmation Dialog
+63. Action Sheet
+64. Context Menu
+
+---
+
+# 9. Feedback & Status Components
+
+65. Toast Notification
+66. Success Alert
+67. Error Alert
+68. Warning Alert
+69. Loading Spinner
+70. Skeleton Loader
+71. Progress Bar
+
+---
+
+# 10. Mobile Interaction Components
+
+72. Pull To Refresh
+73. Swipe To Delete
+74. Swipe To Archive
+75. Drag To Reorder
+76. Long Press Action
+
+---
+
+# 11. Media Components
+
+77. Image Viewer
+78. Image Carousel
+79. Video Player
+80. Document Preview
+
+---
+
+# 12. Mobile Utility Components
+
+81. Empty State
+82. Offline Banner
+83. Connection Status Indicator
+84. Permission Prompt
+85. Tooltip / Helper Hint
+
+---
+
+# 13. Mobile Layout Components
+
+86. Section Divider
+87. Container Card
+88. Sticky Footer Actions
+89. Scrollable Tab Bar
+90. Collapsible Header
+
+---
+
+# Recommended Component Structure (React Example)
+
+```
+components/
+   navigation/
+      BottomNav.tsx
+      TopNav.tsx
+      Tabs.tsx
+
+   lists/
+      ListItem.tsx
+      CardItem.tsx
+      ExpandableRow.tsx
+
+   forms/
+      InputField.tsx
+      Select.tsx
+      DatePicker.tsx
+
+   overlays/
+      BottomSheet.tsx
+      Modal.tsx
+      ConfirmDialog.tsx
+
+   feedback/
+      Toast.tsx
+      Skeleton.tsx
+      Loader.tsx
+
+   actions/
+      Button.tsx
+      Fab.tsx
+```
+
+---
+
+# Mobile UX Rules for These Components
+
+Important rules to enforce:
+
+### Tap Size
+
+Minimum **44–48px touch area**
+
+### Spacing
+
+Minimum **8–12px between actions**
+
+### List Rows
+
+Minimum height **56px**
+
+### Bottom Actions
+
+Primary actions should sit **near thumb zone**
+
+### Gestures
+
+Prefer:
+
+* swipe actions
+* bottom sheets
+* pull refresh
+
+instead of complex menus.
+
+---
+
+# If this is a CRUD travel app
+
+You will heavily use:
+
+**Core Components**
+
+1. Bottom Navigation
+2. Card Lists
+3. Sticky Bottom Actions
+4. Search + Filters
+5. Expandable Rows
+6. Bottom Sheets
+7. Date Pickers
+8. Status Tags
+9. Timeline Views
+10. Toast Notifications
+
+These cover **90% of real interactions**.
+
+---
+
+# Components Most Web Apps Forget (But Mobile Needs)
+
+These are critical:
+
+• Skeleton loaders
+• Pull to refresh
+• Sticky bottom action
+• Swipe actions
+• Empty states
+• Offline indicator
+• Bottom sheet menus
+
+Without these the app feels **like a website, not a mobile app**.
+
+---
+
+If you want, I can also show you:
+
+**1️⃣ The 30 most important mobile components only (80/20 list)**
+**2️⃣ A perfect CRUD mobile screen layout system**
+**3️⃣ The ideal mobile navigation architecture for SaaS apps**
+**4️⃣ A ready React + Tailwind mobile component kit structure**
+
+Those will make building **a real app-like UI 5x easier.**

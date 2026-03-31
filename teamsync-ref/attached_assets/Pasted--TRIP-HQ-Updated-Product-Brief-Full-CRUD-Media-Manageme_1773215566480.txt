@@ -1,0 +1,263 @@
+# TRIP HQ — Updated Product Brief
+### Full CRUD + Media Management Layer · Internal Travel Operations Portal
+
+---
+
+## What Changed
+
+The previous brief covered the pages. This update covers the **data layer** — everything that gets captured, uploaded, stored, and managed throughout the trip. This portal isn't just a viewer. It's a working ops tool that gets filled in live, across 10 days, across 6 cities, often on a phone.
+
+Every single piece of information captured on this trip — a business card photo, a voice note from a supplier meeting, a product photo from Yiwu market floor, a train ticket PDF, an expense receipt — needs a home here. Not in WhatsApp. Not in Google Photos. Here.
+
+---
+
+## Core Principle
+
+**Every record in this portal must support: Create, Read, Update, Delete, and Upload.**
+
+No read-only pages. If data can be captured on the trip, it must be addable from the portal. If a mistake is made, it must be editable. If something is irrelevant, it must be deletable. Simple.
+
+---
+
+## What Needs CRUD — Page by Page
+
+---
+
+### Itinerary
+**Create:** Add a new day entry or add a sub-note to an existing day mid-trip when plans change
+
+**Update:** Edit any field inline — morning plan, evening plan, hotel name, meeting time. Plans change on the ground. The Foshan meeting might move to a different time. That should take 10 seconds to update.
+
+**Delete:** Remove a day note or sub-entry that's no longer relevant
+
+**Uploads needed:**
+- Attach a voice note per day (recorded on phone, uploaded here) — end-of-day debrief captured as audio
+- Attach any document to a day — e.g., the Foshan furniture mall printed catalogue, a restaurant receipt as a memory marker
+- Attach photos per day for reference
+
+---
+
+### Contacts
+**Create:** Add a new contact on the ground — someone met unexpectedly at the Yiwu market, a referral from Allen, a supplier who walked up at Huaqiangbei
+
+**Update:** Fill in WeChat ID after exchanging, update meeting status from Upcoming → Met → Followed Up, add notes after the meeting, mark card collected
+
+**Delete:** Remove a contact that turned out to be irrelevant
+
+**Uploads needed:**
+- **Business card photo** — the most critical upload of this entire portal. Take a photo of the card, attach to the contact. Both front and back. This replaces CamCard.
+- Profile photo of the person (optional, from LinkedIn or in-person)
+- Any document they shared — catalogue PDF, price list, product spec sheet
+- Voice note attached to a contact — recorded right after leaving the meeting while impressions are fresh. "Allen was great, hero SKUs are X, Y, Z, pricing was better than expected…"
+
+---
+
+### Catalogue Builder
+**Create:** Add a product on the market floor. Fast form — category, name, CNY price, MOQ, franchise fit score, notes. Should take under 60 seconds per product.
+
+**Update:** Edit price after negotiating, update franchise fit after reflection, change status from Shortlisted → Confirmed → Rejected, add sub-category, fix a typo in product name
+
+**Delete:** Remove a product that got rejected
+
+**Uploads needed:**
+- **Product photo** — photograph the product right in the stall, upload from phone. This is core. A catalogue without photos is useless for franchise stores.
+- Multiple photos per product (front, back, packaging, price tag)
+- Supplier's own catalogue page — if they hand you a printed spec sheet, photograph it and attach to the product
+- Price list document from a supplier — PDF or photo
+
+---
+
+### Budget Tracker
+**Create:** Log an expense immediately after paying. Date, city, category, amount, currency, description.
+
+**Update:** Fix the amount if entered wrong, correct the category, change the currency
+
+**Delete:** Remove a duplicate entry
+
+**Uploads needed:**
+- **Receipt photo** — photograph the bill or receipt, attach to the expense entry
+- Hotel invoice PDF
+- Transaction screenshot from Alipay or WeChat Pay as proof
+
+---
+
+### Pre-Departure Checklist
+**Create:** Add a new task that wasn't in the original list — something that came up
+
+**Update:** Mark complete, add a deadline, add notes like "VPN tested on Mar 10 — working"
+
+**Delete:** Remove tasks that are not applicable
+
+**Uploads needed:**
+- TDAC registration confirmation screenshot
+- Visa confirmation scan / photo
+- Travel insurance policy PDF
+- Hotel booking confirmations PDF
+- Any ticket or booking reference as PDF/image
+
+---
+
+### Packing List
+**Create:** Add an item that wasn't in the original list — something you remembered
+
+**Update:** Mark as packed, update quantity, add a note
+
+**Delete:** Remove something you decided not to bring
+
+**No uploads needed on this page.** It's a checklist, keep it fast.
+
+---
+
+### Transport
+**Create:** Add a leg that wasn't planned — an unplanned DiDi, a bus, a local ferry in Bangkok
+
+**Update:** Add booking reference after booking, update status to Booked, correct timing
+
+**Delete:** Remove a leg that's no longer happening
+
+**Uploads needed:**
+- **Train / flight ticket PDF or screenshot** — upload the actual ticket for each leg. Boarding pass, booking confirmation, everything in one place. Never searching through emails for a ticket at the station.
+- QR code screenshot of train booking (critical for China G-trains — they need the QR at the gate)
+
+---
+
+### Content Planner
+**Create:** Add a new shot idea on the ground — something you see and want to film
+
+**Update:** Change status from Planned → Shot, add notes about what was actually filmed vs planned, log the equipment used
+
+**Delete:** Remove a shot that didn't work out
+
+**Uploads needed:**
+- **Thumbnail / reference photo** — a quick photo of what the shot looks like or a reference for editing
+- Raw video file upload (if small enough) or just a Google Drive / iCloud link field
+- Edited video link (YouTube unlisted, Google Drive, etc.)
+
+---
+
+### Post-Trip Deliverables
+**Create:** Add a new deliverable that emerged from the trip — something agreed upon in a meeting that wasn't anticipated
+
+**Update:** Move status from Pending → In Progress → Done, add completion notes, link to the delivered asset
+
+**Delete:** Remove a deliverable that's no longer needed
+
+**Uploads needed:**
+- Final catalogue file (the completed Google Sheet exported as PDF or Excel)
+- Agreement documents signed with Charlie or others
+- Any reports or summaries generated after the trip
+
+---
+
+## Global File & Document Management
+
+Beyond page-specific uploads, there needs to be a **Documents Hub** — one place where every file uploaded across the entire trip lives, searchable and filterable.
+
+Think of it as the filing cabinet for the trip.
+
+**What gets stored here:**
+- All business card scans (tagged by contact name)
+- All ticket PDFs and booking confirmations
+- All expense receipts
+- All supplier catalogues and price lists received
+- All product photos from the catalogue build
+- All voice notes from meetings and end-of-day debriefs
+- Signed or draft agreements
+- Any photos taken at markets for reference
+
+**How it needs to work:**
+- Upload from phone camera directly (mobile-optimized upload button)
+- Tag every file: Document Type + City + Contact (optional) + Day number (optional)
+- Search by tag, city, contact name, or document type
+- Preview in browser — photos inline, PDFs in viewer, audio playable
+- Download any file
+- Delete any file
+- Bulk download by tag (e.g., "Download all Yiwu product photos")
+
+**File types to support:** JPG, PNG, PDF, MP3, M4A, MP4, WebM, HEIC (iPhone photos)
+
+**Storage:** Supabase Storage buckets — one bucket per category or one bucket with folder structure by city/day
+
+---
+
+## External App Links Manager
+
+A simple page or section within the sidebar that stores all the external tools used during the trip. Not bookmarks — a managed list with context.
+
+**What gets stored:**
+- App name
+- URL or deep link
+- Category (Transport / Payment / Communication / Navigation / Business)
+- Notes field ("Use this to book G-trains — log in with +91 number")
+- Quick-launch button
+
+**Examples of what goes here:**
+- Trip.com — G-train bookings
+- DiDi app — China ride-hailing
+- Alipay — payments
+- WeChat — contacts and payments
+- Amap — China maps
+- Airalo — eSIM top-up
+- Supabase dashboard — if something needs to be checked directly
+- Google Drive folder link — shared trip documents
+- Faire / EazyToSell dashboard links
+
+This saves the mental overhead of remembering which app to open for what. One place, every tool, labelled clearly.
+
+---
+
+## Voice Notes — Specific Requirement
+
+Voice notes need first-class support because the most valuable capture during a sourcing trip happens verbally — impressions right after a meeting, product thoughts while walking the market floor, end-of-day summaries while tired.
+
+**Where voice notes attach:**
+- To a contact (post-meeting debrief)
+- To a catalogue product (why this product was shortlisted or rejected)
+- To a day in the itinerary (end-of-day summary)
+- Standalone in Documents Hub (general capture)
+
+**How it should work:**
+- Upload an M4A or MP3 file (recorded on iPhone Voice Memos or any recorder)
+- Playable inline in the browser without downloading
+- Labeled with duration, upload date, and attached entity (contact name or day)
+- Optional: text notes field alongside the audio for a quick summary
+
+No live recording in the browser needed — just clean upload and playback.
+
+---
+
+## Mobile Experience — Non-Negotiable
+
+The Budget Tracker, Packing List, Contacts (card collection), Catalogue (product photos), and Documents Hub will all be used on a phone while physically in markets, restaurants, and hotel rooms.
+
+These pages specifically must:
+- Have large tap targets (nothing small to press with a thumb)
+- Camera upload that opens the phone camera directly — not a file picker that requires navigating folders
+- Fast forms — minimum required fields to create a record, optional fields collapsible
+- Work on 4G / spotty China network — forms should save optimistically and sync when connection recovers
+- No heavy animations that slow down older phones
+
+---
+
+## What Good Looks Like
+
+Standing in a Yiwu market stall, phone in hand:
+1. Open catalogue page
+2. Hit "Add Product"
+3. Tap the camera icon, photograph the product
+4. Enter name, CNY price, MOQ, hit franchise fit 4/5
+5. Save
+
+That should take 45 seconds. If it takes longer, the form is too complex.
+
+Same for contacts. Walk out of a meeting with Allen:
+1. Open contacts page
+2. Tap Allen's card
+3. Hit "Mark as Met"
+4. Photograph his business card front and back — attached instantly
+5. Hit record voice note — upload the M4A from Voice Memos
+6. Save
+
+That should take 2 minutes. If it takes longer, the UX is wrong.
+
+That's the bar.

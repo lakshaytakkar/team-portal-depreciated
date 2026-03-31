@@ -1,0 +1,14 @@
+"TransferWise ID",Date,"Date Time",Amount,Currency,Description,"Payment Reference","Running Balance","Exchange From","Exchange To","Exchange Rate","Payer Name","Payee Name","Payee Account Number",Merchant,"Card Last Four Digits","Card Holder Full Name",Attachment,Note,"Total fees","Exchange To Amount","Transaction Type","Transaction Details Type"
+TRANSFER-1977080119,17-02-2026,"17-02-2026 12:21:46.669",601.30,CAD,"Received money from Prince N/A with reference 799885",799885,4964.11,,,,"Prince N/A",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1649147982,29-07-2025,"29-07-2025 20:38:30.114",141.47,CAD,"Received money from Riteshkumar  Chaudhari with reference 321728",321728,4362.81,,,,"Riteshkumar  Chaudhari",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1619656563,09-07-2025,"09-07-2025 05:35:13.583",142.74,CAD,"Received money from Riteshkumar  Chaudhari with reference 413708",413708,4221.34,,,,"Riteshkumar  Chaudhari",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1590884217,20-06-2025,"20-06-2025 02:46:45.892",631.00,CAD,"Received money from Riteshkumar  Chaudhari with reference 317799",317799,4078.60,,,,"Riteshkumar  Chaudhari",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1565627136,02-06-2025,"02-06-2025 17:58:03.505",1015.00,CAD,"Received money from DEEPAK SINGH SLATHIA with reference 720449",720449,3447.60,,,,"DEEPAK SINGH SLATHIA",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1523439493,03-05-2025,"03-05-2025 10:47:13.056",653.82,CAD,"Received money from Riteshkumar  Chaudhari with reference 516398",516398,2432.60,,,,"Riteshkumar  Chaudhari",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1522970239,03-05-2025,"03-05-2025 00:42:50.483",1029.81,CAD,"Received money from Akash Nada with reference ",,1778.78,,,,"Akash Nada",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1516488447,29-04-2025,"29-04-2025 09:41:47.521",40.65,CAD,"Received money from Asfaq Ibrahimbhai Achhava with reference 958107",958107,748.97,,,,"Asfaq Ibrahimbhai Achhava",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1394446616,29-01-2025,"29-01-2025 21:54:53.205",665.32,CAD,"Received money from Akash Gajjar with reference 591686",591686,708.32,,,,"Akash Gajjar",,,,,,,,0.00,,CREDIT,DEPOSIT
+TRANSFER-1044159832,29-04-2024,"29-04-2024 08:10:37.441",43.00,CAD,"Sent money to Deepali Manuja (fee: 0.66 CAD)",Lakshay,43.00,,,,,"Deepali Manuja","1******17",,,,,,0.66,,CREDIT,TRANSFER
+TRANSFER-1044159832,23-04-2024,"23-04-2024 10:24:55.204",-42.34,CAD,"Sent money to Deepali Manuja (fee: 0.66 CAD)",Lakshay,0.00,,,,,"Deepali Manuja","1******17",,,,,,0.66,,DEBIT,TRANSFER
+FEE-TRANSFER-1044159832,23-04-2024,"23-04-2024 10:24:55.203",-0.66,CAD,"Wise Charges for: TRANSFER-1044159832",Lakshay,42.34,,,,,Wise,,,,,,,0,,DEBIT,TRANSFER
+BALANCE-1968919324,23-04-2024,"23-04-2024 10:17:37.489",43.00,CAD,"Converted 31.52 USD to 43.00 CAD",,43.00,USD,CAD,1.36985,,,,,,,,,0.00,43.00,CREDIT,CONVERSION

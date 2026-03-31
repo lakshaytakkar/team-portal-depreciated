@@ -1,0 +1,66 @@
+Objective
+Extend the Developer vertical to store per-project infrastructure links (GitHub, Replit, Supabase) and credentials, plus universal API keys/links — with real company logos and inline-editable list/table UI.
+
+Current state:
+
+AppCredential and ImportantLink are global lists with no project association
+DevProject has no links/credentials fields
+Toolkit page has credentials table + links cards + quick tools — all global scope
+Project Board page shows only tasks/kanban — no links or credentials section
+Real company logos (react-icons/si) already set up in toolkit.tsx via getIconComponent()
+What we're adding:
+
+Per-project links (GitHub repo, Replit workspace, Supabase dashboard, etc.) and project-specific credentials/API keys
+A "Links & Credentials" section on the Project Board page with inline editing
+Toolkit "Apps & Credentials" tab upgraded with scope filtering (Universal vs Per-Project) and inline editing
+Real company logos throughout
+Tasks
+T001: Extend Data Model — Per-Project Links & Credentials
+Blocked By: []
+Details:
+In client/src/lib/mock-data-dev.ts:
+Add ProjectLink interface: { id, projectId, service: "github"|"replit"|"supabase"|"vercel"|"figma"|"notion"|"other", url, label, iconName }
+Add ProjectCredential interface: { id, projectId, appName, category, environment, apiKeyHint, status, notes, iconName, url }
+Add projectLinks: ProjectLink[] mock data — each of the 6 projects gets 2-4 links (GitHub repo, Replit workspace, Supabase dashboard, Vercel deploy, etc.)
+Add projectCredentials: ProjectCredential[] mock data — project-specific API keys (e.g., TeamSync's Supabase anon key, EazyToSell's Razorpay key, LegalNations' Stripe key)
+Add optional scope: "universal" | "project" field to existing AppCredential, mark current 10 entries as "universal"
+Files: client/src/lib/mock-data-dev.ts
+Acceptance: Types compile, 6 projects each have 2-4 links and 1-3 project credentials, universal credentials are tagged
+T002: Add Project Links & Credentials Section to Project Board
+Blocked By: [T001]
+Details:
+In client/src/pages/dev/project-board.tsx:
+Add a collapsible "Links & Credentials" section below the project header, above the filter bar / kanban area
+Links row: Horizontal row of compact icon+label chips with real SI logos (SiGithub, SiReplit, SiSupabase, SiVercel, SiFigma, SiNotion) — each chip opens URL in new tab
+Credentials mini-table: Small inline table below links showing project-specific API keys — columns: App (with SI logo), Environment badge, API Key (masked hint in mono font), Status badge, Notes
+Inline editing: Click a URL field → shows text input inline, blur/Enter "saves" (updates local React state). Same for Notes field. API Key hint stays read-only (security convention).
+Collapsible via a ChevronDown/ChevronRight toggle (default: expanded)
+Import SI icons and reuse the getIconComponent pattern from toolkit.tsx (or extract to shared helper)
+Add data-testid on all interactive elements (link chips, edit inputs, collapse toggle, credential rows)
+Files: client/src/pages/dev/project-board.tsx
+Acceptance: Each project board shows its links row with real logos, credentials table with inline edit, section collapses/expands
+T003: Upgrade Toolkit — Scope Filter + Inline Editing for Credentials
+Blocked By: [T001]
+Details:
+In client/src/pages/dev/toolkit.tsx:
+In "Apps & Credentials" tab, add a scope filter: "All" / "Universal" / "Per-Project" (use existing Select or toggle buttons)
+When "Universal" is selected: show current global credentials as-is
+When "Per-Project" is selected: show project credentials grouped by project with project color dot + key badge as group header
+When "All" is selected: show both combined (universal first, then grouped project ones)
+Add inline editing to credential rows: click Notes cell → shows text input, blur/Enter saves to local state. Click URL → editable. API Key hint stays read-only.
+Add inline editing to Important Links tab: click description → editable text, click URL → editable text
+Ensure all rows use real logos via existing getIconComponent
+Add data-testid attributes on scope filter, inline edit inputs, and new credential rows
+Files: client/src/pages/dev/toolkit.tsx
+Acceptance: Scope filter switches between universal/project/all views, project credentials show grouped, inline editing works on Notes and URL fields
+T004: Update Documentation
+Blocked By: [T002, T003]
+Details:
+Update replit.md with:
+New data types (ProjectLink, ProjectCredential)
+Updated Toolkit description (universal vs project scope, inline editing)
+Updated Project Board description (links & credentials section)
+Updated mock data file description
+Verify all pages load without console errors
+Files: replit.md
+Acceptance: Docs reflect new features, app runs cleanly

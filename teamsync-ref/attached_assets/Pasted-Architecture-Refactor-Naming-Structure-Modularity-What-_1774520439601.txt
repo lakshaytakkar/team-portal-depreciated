@@ -1,0 +1,40 @@
+Architecture Refactor: Naming, Structure & Modularity
+What & Why
+The codebase has accumulated structural debt from its evolution as a multi-vertical platform. Vertical IDs don't match business names (e.g., hr means LegalNations), shared components live in a misleadingly-named folder (components/hr/), LegalNations pages are dumped flat in the pages root, mock data files mix TypeScript types with seed data, and the server routes file is a 1,400-line monolith. These issues make onboarding harder and will compound as more verticals go live. This task fixes all five issues in one coordinated sweep.
+
+Done looks like
+Vertical IDs throughout the codebase match their business names: hr → legalnations, sales → usdrop, events → goyotours, admin → lbm
+All pages are organized into vertical-specific folders — no loose LegalNations pages at the pages/ root
+components/hr/ is renamed to components/ds/ (design system) since its 7 components (DataTable, StatusBadge, FormDialog, etc.) are used by 100+ files across all verticals
+Mock data files are split: TypeScript interfaces/types go into a types/ or top-of-file exports, seed arrays stay in mock-data-* files — so types survive when mock data is deleted during Supabase migration
+server/routes.ts Faire API block (~450 lines), Wise API block (~125 lines), and core services block (~400 lines) are extracted into their own route files (server/routes/faire.routes.ts, server/routes/wise.routes.ts, server/routes/core.routes.ts), leaving routes.ts as a thin registry
+The app runs and behaves identically after all renames — no broken imports, no missing routes, no UI regressions
+Out of scope
+Adding new features or pages
+Changing Supabase schema column values (e.g., stored verticalId values in the database remain unchanged — only the application-level constants and references change)
+Restructuring the design system tokens or ds.ts
+Touching portal pages structure (portal/ets/, portal/ln/) which are already well-organized
+Tasks
+Rename vertical IDs — In client/src/lib/verticals-config.ts, change the id field from legacy names to business names (hr → legalnations, sales → usdrop, events → goyotours, admin → lbm). Then find-and-replace every reference to these old IDs across the entire codebase (sidebar configs, route detection, context usage, conditional checks). Update detectVerticalFromUrl and any verticalId === 'hr' style checks. Ensure stored database values are handled via a mapping layer if needed — do not change DB column values.
+Move flat LegalNations pages into folder — Move the ~12 loose LegalNations pages from pages/ root (like compliance-tracker.tsx, clients.tsx, client-intake.tsx, client-detail.tsx, document-vault.tsx, escalations.tsx, annual-reports.tsx, formation-pipeline.tsx, formation-analytics.tsx, stage-overview.tsx, tax-filing.tsx, team-performance.tsx, templates.tsx) into pages/legalnations/. Update all imports and route registrations in App.tsx.
+Rename components/hr/ to components/ds/ — Rename the folder and update all 100+ import paths across the codebase. These 7 components (data-table, empty-state, form-dialog, page-banner, stage-stepper, stats-card, status-badge) are universal design system components, not HR-specific.
+Split types from mock data — For each of the 33 mock-data-*.ts files in client/src/lib/, extract TypeScript interfaces and type definitions into corresponding files under client/src/types/ (e.g., mock-data-ets.ts types → types/ets.ts). Keep the mock arrays in place but have them import types from the new location. This way types survive when mock files are deleted during Supabase migration.
+Split server routes into modules — Extract the Faire API routes (~lines 146-601), Wise API routes (~lines 624-750), and core vertical services (~lines 1002-1397) from server/routes.ts into separate Express Router files: server/routes/faire.routes.ts, server/routes/wise.routes.ts, server/routes/core.routes.ts. Mount them back in the main routes.ts the same way the existing modular routes (ets-api, legalnations-api, triphq-api) are mounted.
+Relevant files
+client/src/lib/verticals-config.ts
+client/src/lib/vertical-store.ts
+client/src/App.tsx
+client/src/components/hr/data-table.tsx
+client/src/components/hr/status-badge.tsx
+client/src/components/hr/form-dialog.tsx
+client/src/components/hr/empty-state.tsx
+client/src/components/hr/page-banner.tsx
+client/src/components/hr/stage-stepper.tsx
+client/src/components/hr/stats-card.tsx
+client/src/components/layout/vertical-switcher.tsx
+server/routes.ts
+server/ets-api.ts
+server/legalnations-api.ts
+server/triphq-api.ts
+client/src/lib/ds.ts
+Dependencies
