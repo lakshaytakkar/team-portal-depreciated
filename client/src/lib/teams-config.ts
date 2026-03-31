@@ -43,6 +43,9 @@ import {
   UserCheck,
   GraduationCap as Training,
   Link2,
+  Contact,
+  Handshake,
+  Ticket,
   type LucideIcon
 } from "lucide-react";
 
@@ -102,6 +105,15 @@ export const teams: Team[] = [
         ]
       },
       {
+        label: "CRM",
+        items: [
+          { href: "/contacts", icon: Contact, label: "Contacts" },
+          { href: "/deals", icon: Handshake, label: "Deals" },
+          { href: "/appointments", icon: CalendarCheck, label: "Appointments" },
+          { href: "/tickets", icon: Ticket, label: "Tickets" },
+        ]
+      },
+      {
         label: "Scheduling",
         items: [
           { href: "/calendar", icon: CalendarDays, label: "Calendar" },
@@ -137,6 +149,15 @@ export const teams: Team[] = [
           { href: "/pipeline", icon: KanbanSquare, label: "Pipeline" },
           { href: "/admin/assignments", icon: UserCheck, label: "Assignments" },
           { href: "/payment-links", icon: Link2, label: "Payment Links" },
+        ]
+      },
+      {
+        label: "CRM",
+        items: [
+          { href: "/contacts", icon: Contact, label: "Contacts" },
+          { href: "/deals", icon: Handshake, label: "Deals" },
+          { href: "/appointments", icon: CalendarCheck, label: "Appointments" },
+          { href: "/tickets", icon: Ticket, label: "Tickets" },
         ]
       },
       {
@@ -176,6 +197,15 @@ export const teams: Team[] = [
           { href: "/pipeline", icon: KanbanSquare, label: "Pipeline" },
           { href: "/admin/assignments", icon: UserCheck, label: "Assignments" },
           { href: "/payment-links", icon: Link2, label: "Payment Links" },
+        ]
+      },
+      {
+        label: "CRM",
+        items: [
+          { href: "/contacts", icon: Contact, label: "Contacts" },
+          { href: "/deals", icon: Handshake, label: "Deals" },
+          { href: "/appointments", icon: CalendarCheck, label: "Appointments" },
+          { href: "/tickets", icon: Ticket, label: "Tickets" },
         ]
       },
       {

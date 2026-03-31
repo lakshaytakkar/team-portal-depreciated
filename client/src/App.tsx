@@ -58,6 +58,12 @@ import MyBookingsPage from "@/pages/bookings/my-bookings";
 import AllBookingsPage from "@/pages/bookings/all-bookings";
 import CalendarPage from "@/pages/bookings/calendar";
 import PublicBookingPage from "@/pages/bookings/public-booking";
+import ContactsPage from "@/pages/contacts";
+import DealsPage from "@/pages/deals";
+import AppointmentsPage from "@/pages/appointments";
+import TicketsPage from "@/pages/tickets";
+import UserManagementPage from "@/pages/admin/users";
+import AuditLogPage from "@/pages/admin/audit";
 import { useStore } from "@/lib/store";
 import { useEffect } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -122,8 +128,16 @@ function PortalRouter() {
         <Route path="/hr/interviews" component={InterviewsPage} />
         <Route path="/hr/templates" component={HrTemplatesPage} />
 
+        {/* CRM Features */}
+        <Route path="/contacts" component={ContactsPage} />
+        <Route path="/deals" component={DealsPage} />
+        <Route path="/appointments" component={AppointmentsPage} />
+        <Route path="/tickets" component={TicketsPage} />
+
         {/* Admin Routes */}
         <Route path="/admin" component={AdminDashboard} />
+        <Route path="/admin/users" component={UserManagementPage} />
+        <Route path="/admin/audit" component={AuditLogPage} />
         <Route path="/admin/leads" component={AdminLeads} />
         <Route path="/admin/team" component={TeamManagement} />
         <Route path="/admin/assignments" component={Assignments} />

@@ -56,7 +56,13 @@ import {
   type AvailabilitySchedule, type InsertAvailabilitySchedule,
   type AvailabilityOverride, type InsertAvailabilityOverride,
   type Booking, type InsertBooking,
-  type BookingReminder, type InsertBookingReminder
+  type BookingReminder, type InsertBookingReminder,
+  type Contact, type InsertContact,
+  type Deal, type InsertDeal,
+  type Appointment, type InsertAppointment,
+  type Ticket, type InsertTicket,
+  type AuditLog, type InsertAuditLog,
+  type Notification, type InsertNotification
 } from "@shared/schema";
 
 function toSnakeCase(obj: Record<string, any>): Record<string, any> {
@@ -396,6 +402,44 @@ export interface IStorage {
   createBooking(booking: InsertBooking): Promise<Booking>;
   updateBooking(id: string, updates: Partial<InsertBooking>): Promise<Booking | undefined>;
   getBookingsForSlotCheck(hostUserId: string, date: string): Promise<Booking[]>;
+
+  // Contacts
+  getContact(id: string): Promise<Contact | undefined>;
+  getContacts(filters?: { category?: string; teamId?: string; search?: string }): Promise<Contact[]>;
+  createContact(contact: InsertContact): Promise<Contact>;
+  updateContact(id: string, updates: Partial<InsertContact>): Promise<Contact | undefined>;
+  deleteContact(id: string): Promise<boolean>;
+
+  // Deals
+  getDeal(id: string): Promise<Deal | undefined>;
+  getDeals(filters?: { stage?: string; assignedTo?: string; teamId?: string }): Promise<Deal[]>;
+  createDeal(deal: InsertDeal): Promise<Deal>;
+  updateDeal(id: string, updates: Partial<InsertDeal>): Promise<Deal | undefined>;
+  deleteDeal(id: string): Promise<boolean>;
+
+  // Appointments
+  getAppointment(id: string): Promise<Appointment | undefined>;
+  getAppointments(filters?: { assignedTo?: string; teamId?: string; status?: string }): Promise<Appointment[]>;
+  createAppointment(appt: InsertAppointment): Promise<Appointment>;
+  updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined>;
+  deleteAppointment(id: string): Promise<boolean>;
+
+  // Tickets
+  getTicket(id: string): Promise<Ticket | undefined>;
+  getTickets(filters?: { status?: string; assignedTo?: string; reportedBy?: string; teamId?: string }): Promise<Ticket[]>;
+  createTicket(ticket: InsertTicket): Promise<Ticket>;
+  updateTicket(id: string, updates: Partial<InsertTicket>): Promise<Ticket | undefined>;
+  deleteTicket(id: string): Promise<boolean>;
+
+  // Audit Logs
+  getAuditLogs(filters?: { entityType?: string; userId?: string; limit?: number }): Promise<AuditLog[]>;
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+
+  // Notifications
+  getNotifications(userId: string): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationRead(id: string): Promise<boolean>;
+  markAllNotificationsRead(userId: string): Promise<boolean>;
 }
 
 export class Storage implements IStorage {
@@ -1945,6 +1989,164 @@ export class Storage implements IStorage {
       .lte('start_time', dayEnd)
       .not('status', 'eq', 'cancelled');
     return toCamelCaseArray<Booking>(data ?? []);
+  }
+
+  // Contacts
+  async getContact(id: string): Promise<Contact | undefined> {
+    const { data } = await supabase.from('contacts').select('*').eq('id', id).single();
+    return data ? toCamelCase<Contact>(data) : undefined;
+  }
+
+  async getContacts(filters?: { category?: string; teamId?: string; search?: string }): Promise<Contact[]> {
+    let query = supabase.from('contacts').select('*').order('created_at', { ascending: false });
+    if (filters?.category) query = query.eq('category', filters.category);
+    if (filters?.teamId) query = query.eq('team_id', filters.teamId);
+    if (filters?.search) query = query.or(`name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,organization.ilike.%${filters.search}%`);
+    const { data } = await query;
+    return toCamelCaseArray<Contact>(data ?? []);
+  }
+
+  async createContact(contact: InsertContact): Promise<Contact> {
+    const { data } = await supabase.from('contacts').insert(toSnakeCase(contact as any)).select().single();
+    return toCamelCase<Contact>(data!);
+  }
+
+  async updateContact(id: string, updates: Partial<InsertContact>): Promise<Contact | undefined> {
+    const { data } = await supabase.from('contacts').update(toSnakeCase(updates as any)).eq('id', id).select().single();
+    return data ? toCamelCase<Contact>(data) : undefined;
+  }
+
+  async deleteContact(id: string): Promise<boolean> {
+    const { error } = await supabase.from('contacts').delete().eq('id', id);
+    return !error;
+  }
+
+  // Deals
+  async getDeal(id: string): Promise<Deal | undefined> {
+    const { data } = await supabase.from('deals').select('*').eq('id', id).single();
+    return data ? toCamelCase<Deal>(data) : undefined;
+  }
+
+  async getDeals(filters?: { stage?: string; assignedTo?: string; teamId?: string }): Promise<Deal[]> {
+    let query = supabase.from('deals').select('*').order('created_at', { ascending: false });
+    if (filters?.stage) query = query.eq('stage', filters.stage);
+    if (filters?.assignedTo) query = query.eq('assigned_to', filters.assignedTo);
+    if (filters?.teamId) query = query.eq('team_id', filters.teamId);
+    const { data } = await query;
+    return toCamelCaseArray<Deal>(data ?? []);
+  }
+
+  async createDeal(deal: InsertDeal): Promise<Deal> {
+    const { data } = await supabase.from('deals').insert(toSnakeCase(deal as any)).select().single();
+    return toCamelCase<Deal>(data!);
+  }
+
+  async updateDeal(id: string, updates: Partial<InsertDeal>): Promise<Deal | undefined> {
+    const { data } = await supabase.from('deals').update(toSnakeCase(updates as any)).eq('id', id).select().single();
+    return data ? toCamelCase<Deal>(data) : undefined;
+  }
+
+  async deleteDeal(id: string): Promise<boolean> {
+    const { error } = await supabase.from('deals').delete().eq('id', id);
+    return !error;
+  }
+
+  // Appointments
+  async getAppointment(id: string): Promise<Appointment | undefined> {
+    const { data } = await supabase.from('appointments').select('*').eq('id', id).single();
+    return data ? toCamelCase<Appointment>(data) : undefined;
+  }
+
+  async getAppointments(filters?: { assignedTo?: string; teamId?: string; status?: string }): Promise<Appointment[]> {
+    let query = supabase.from('appointments').select('*').order('date_time', { ascending: true });
+    if (filters?.assignedTo) query = query.eq('assigned_to', filters.assignedTo);
+    if (filters?.teamId) query = query.eq('team_id', filters.teamId);
+    if (filters?.status) query = query.eq('status', filters.status);
+    const { data } = await query;
+    return toCamelCaseArray<Appointment>(data ?? []);
+  }
+
+  async createAppointment(appt: InsertAppointment): Promise<Appointment> {
+    const { data } = await supabase.from('appointments').insert(toSnakeCase(appt as any)).select().single();
+    return toCamelCase<Appointment>(data!);
+  }
+
+  async updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined> {
+    const { data } = await supabase.from('appointments').update(toSnakeCase(updates as any)).eq('id', id).select().single();
+    return data ? toCamelCase<Appointment>(data) : undefined;
+  }
+
+  async deleteAppointment(id: string): Promise<boolean> {
+    const { error } = await supabase.from('appointments').delete().eq('id', id);
+    return !error;
+  }
+
+  // Tickets
+  async getTicket(id: string): Promise<Ticket | undefined> {
+    const { data } = await supabase.from('tickets').select('*').eq('id', id).single();
+    return data ? toCamelCase<Ticket>(data) : undefined;
+  }
+
+  async getTickets(filters?: { status?: string; assignedTo?: string; reportedBy?: string; teamId?: string }): Promise<Ticket[]> {
+    let query = supabase.from('tickets').select('*').order('created_at', { ascending: false });
+    if (filters?.status) query = query.eq('status', filters.status);
+    if (filters?.assignedTo) query = query.eq('assigned_to', filters.assignedTo);
+    if (filters?.reportedBy) query = query.eq('reported_by', filters.reportedBy);
+    if (filters?.teamId) query = query.eq('team_id', filters.teamId);
+    const { data } = await query;
+    return toCamelCaseArray<Ticket>(data ?? []);
+  }
+
+  async createTicket(ticket: InsertTicket): Promise<Ticket> {
+    const { data } = await supabase.from('tickets').insert(toSnakeCase(ticket as any)).select().single();
+    return toCamelCase<Ticket>(data!);
+  }
+
+  async updateTicket(id: string, updates: Partial<InsertTicket>): Promise<Ticket | undefined> {
+    const { data } = await supabase.from('tickets').update({ ...toSnakeCase(updates as any), updated_at: new Date() }).eq('id', id).select().single();
+    return data ? toCamelCase<Ticket>(data) : undefined;
+  }
+
+  async deleteTicket(id: string): Promise<boolean> {
+    const { error } = await supabase.from('tickets').delete().eq('id', id);
+    return !error;
+  }
+
+  // Audit Logs
+  async getAuditLogs(filters?: { entityType?: string; userId?: string; limit?: number }): Promise<AuditLog[]> {
+    let query = supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
+    if (filters?.entityType) query = query.eq('entity_type', filters.entityType);
+    if (filters?.userId) query = query.eq('user_id', filters.userId);
+    if (filters?.limit) query = query.limit(filters.limit);
+    else query = query.limit(200);
+    const { data } = await query;
+    return toCamelCaseArray<AuditLog>(data ?? []);
+  }
+
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const { data } = await supabase.from('audit_logs').insert(toSnakeCase(log as any)).select().single();
+    return toCamelCase<AuditLog>(data!);
+  }
+
+  // Notifications
+  async getNotifications(userId: string): Promise<Notification[]> {
+    const { data } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
+    return toCamelCaseArray<Notification>(data ?? []);
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const { data } = await supabase.from('notifications').insert(toSnakeCase(notification as any)).select().single();
+    return toCamelCase<Notification>(data!);
+  }
+
+  async markNotificationRead(id: string): Promise<boolean> {
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    return !error;
+  }
+
+  async markAllNotificationsRead(userId: string): Promise<boolean> {
+    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', userId).eq('is_read', false);
+    return !error;
   }
 }
 

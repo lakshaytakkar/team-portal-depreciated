@@ -1762,4 +1762,151 @@ export const insertAiAttachmentSchema = createInsertSchema(aiAttachments).omit({
 export type InsertAiAttachment = z.infer<typeof insertAiAttachmentSchema>;
 export type AiAttachment = typeof aiAttachments.$inferSelect;
 
+// ========== CONTACTS ==========
 
+export const contacts = pgTable("contacts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  whatsapp: text("whatsapp"),
+  organization: text("organization"),
+  designation: text("designation"),
+  category: text("category").notNull().default('client'),
+  city: text("city"),
+  country: text("country").default('India'),
+  priority: text("priority").notNull().default('medium'),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  notes: text("notes"),
+  teamId: text("team_id"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertContactSchema = createInsertSchema(contacts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertContact = z.infer<typeof insertContactSchema>;
+export type Contact = typeof contacts.$inferSelect;
+
+// ========== DEALS ==========
+
+export const deals = pgTable("deals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  contactId: varchar("contact_id").references(() => contacts.id, { onDelete: 'set null' }),
+  leadId: varchar("lead_id").references(() => leads.id, { onDelete: 'set null' }),
+  value: integer("value").notNull().default(0),
+  stage: text("stage").notNull().default('discovery'),
+  expectedCloseDate: timestamp("expected_close_date"),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  teamId: text("team_id"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertDealSchema = createInsertSchema(deals).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertDeal = z.infer<typeof insertDealSchema>;
+export type Deal = typeof deals.$inferSelect;
+
+// ========== APPOINTMENTS ==========
+
+export const appointments = pgTable("appointments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  type: text("type").notNull().default('meeting'),
+  dateTime: timestamp("date_time").notNull(),
+  duration: integer("duration").notNull().default(30),
+  contactId: varchar("contact_id").references(() => contacts.id, { onDelete: 'set null' }),
+  leadId: varchar("lead_id").references(() => leads.id, { onDelete: 'set null' }),
+  dealId: varchar("deal_id").references(() => deals.id, { onDelete: 'set null' }),
+  location: text("location"),
+  notes: text("notes"),
+  status: text("status").notNull().default('scheduled'),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  teamId: text("team_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAppointmentSchema = createInsertSchema(appointments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+export type Appointment = typeof appointments.$inferSelect;
+
+// ========== TICKETS ==========
+
+export const tickets = pgTable("tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketCode: text("ticket_code").notNull().unique(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default('open'),
+  priority: text("priority").notNull().default('medium'),
+  category: text("category").notNull().default('general'),
+  reportedBy: varchar("reported_by").notNull().references(() => users.id),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  resolution: text("resolution"),
+  teamId: text("team_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertTicketSchema = createInsertSchema(tickets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertTicket = z.infer<typeof insertTicketSchema>;
+export type Ticket = typeof tickets.$inferSelect;
+
+// ========== AUDIT LOGS ==========
+
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  action: text("action").notNull(),
+  entityType: text("entity_type").notNull(),
+  entityId: text("entity_id"),
+  userId: varchar("user_id").references(() => users.id),
+  details: jsonb("details").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
+
+// ========== NOTIFICATIONS ==========
+
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  isRead: boolean("is_read").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;

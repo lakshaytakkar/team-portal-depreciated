@@ -10,6 +10,13 @@ A comprehensive team portal and CRM system for Suprans Business Consulting. The 
 - **Public Website**: Company information, services, travel packages, and contact forms
 - **Scheduling System**: In-house booking/scheduling (like Calendly) with booking types, availability, public booking pages, and team analytics
 - **AI Chat Assistant**: GPT-4o powered chat drawer (header Sparkles icon) with database querying tools, streaming responses, conversation history, and CRM record management
+- **Contacts Management**: Contact database with categories, priorities, search/filter, CRUD operations
+- **Deals Pipeline**: Deal tracking with 5-stage pipeline view (Discovery, Proposal, Negotiation, Closed Won, Closed Lost), list view toggle, INR currency
+- **Appointments**: Meeting/call scheduling with type icons, status tracking, contact/user assignment
+- **Tickets System**: Support ticket management with auto-generated codes (TKT-XXXX), status tabs, priority/category badges
+- **User Management** (admin): View all users, edit roles, activity/admin stats (superadmin only)
+- **Audit Logs** (admin): Track all CRUD actions across entities with entity/user filters (superadmin only)
+- **Notifications**: Backend notification system with read/unread tracking
 
 ## User Credentials
 All users have password: **Suprans@123**

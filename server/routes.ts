@@ -19,6 +19,8 @@ import {
   insertFaireStoreSchema, insertFaireSupplierSchema, insertFaireProductSchema, insertFaireOrderSchema, insertFaireShipmentSchema,
   insertLLCClientSchema, insertLLCClientDocumentSchema, insertLLCClientTimelineSchema,
   insertTeamMemberSchema,
+  insertContactSchema, insertDealSchema, insertAppointmentSchema,
+  insertTicketSchema, insertAuditLogSchema, insertNotificationSchema,
   type User
 } from "@shared/schema";
 import { fromError } from "zod-validation-error";
@@ -5029,6 +5031,272 @@ cs@suprans.in`;
         cancellationReason: reason || "Cancelled by customer",
       });
       res.json(result);
+    } catch (error) { next(error); }
+  });
+
+  // ========== CONTACTS ==========
+
+  app.get("/api/contacts", requireAuth, async (req, res, next) => {
+    try {
+      const { category, team_id, search } = req.query;
+      const contacts = await storage.getContacts({
+        category: category as string,
+        teamId: team_id as string,
+        search: search as string,
+      });
+      res.json(contacts);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/contacts/:id", requireAuth, async (req, res, next) => {
+    try {
+      const contact = await storage.getContact(req.params.id);
+      if (!contact) return res.status(404).json({ message: "Contact not found" });
+      res.json(contact);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/contacts", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = insertContactSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
+      const contact = await storage.createContact(parsed.data);
+      await storage.createAuditLog({ action: "create", entityType: "contact", entityId: contact.id, userId: (req as any).user.id, details: { name: contact.name } });
+      res.status(201).json(contact);
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/contacts/:id", requireAuth, async (req, res, next) => {
+    try {
+      const contact = await storage.updateContact(req.params.id, req.body);
+      if (!contact) return res.status(404).json({ message: "Contact not found" });
+      await storage.createAuditLog({ action: "update", entityType: "contact", entityId: contact.id, userId: (req as any).user.id, details: { name: contact.name } });
+      res.json(contact);
+    } catch (error) { next(error); }
+  });
+
+  app.delete("/api/contacts/:id", requireAuth, async (req, res, next) => {
+    try {
+      const ok = await storage.deleteContact(req.params.id);
+      if (!ok) return res.status(404).json({ message: "Contact not found" });
+      await storage.createAuditLog({ action: "delete", entityType: "contact", entityId: req.params.id, userId: (req as any).user.id });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  // ========== DEALS ==========
+
+  app.get("/api/deals", requireAuth, async (req, res, next) => {
+    try {
+      const { stage, assigned_to, team_id } = req.query;
+      const deals = await storage.getDeals({
+        stage: stage as string,
+        assignedTo: assigned_to as string,
+        teamId: team_id as string,
+      });
+      res.json(deals);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/deals/:id", requireAuth, async (req, res, next) => {
+    try {
+      const deal = await storage.getDeal(req.params.id);
+      if (!deal) return res.status(404).json({ message: "Deal not found" });
+      res.json(deal);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/deals", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = insertDealSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
+      const deal = await storage.createDeal(parsed.data);
+      await storage.createAuditLog({ action: "create", entityType: "deal", entityId: deal.id, userId: (req as any).user.id, details: { name: deal.name, value: deal.value } });
+      res.status(201).json(deal);
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/deals/:id", requireAuth, async (req, res, next) => {
+    try {
+      const deal = await storage.updateDeal(req.params.id, req.body);
+      if (!deal) return res.status(404).json({ message: "Deal not found" });
+      await storage.createAuditLog({ action: "update", entityType: "deal", entityId: deal.id, userId: (req as any).user.id, details: { name: deal.name } });
+      res.json(deal);
+    } catch (error) { next(error); }
+  });
+
+  app.delete("/api/deals/:id", requireAuth, async (req, res, next) => {
+    try {
+      const ok = await storage.deleteDeal(req.params.id);
+      if (!ok) return res.status(404).json({ message: "Deal not found" });
+      await storage.createAuditLog({ action: "delete", entityType: "deal", entityId: req.params.id, userId: (req as any).user.id });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  // ========== APPOINTMENTS ==========
+
+  app.get("/api/appointments", requireAuth, async (req, res, next) => {
+    try {
+      const { assigned_to, team_id, status } = req.query;
+      const appointments = await storage.getAppointments({
+        assignedTo: assigned_to as string,
+        teamId: team_id as string,
+        status: status as string,
+      });
+      res.json(appointments);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/appointments/:id", requireAuth, async (req, res, next) => {
+    try {
+      const appt = await storage.getAppointment(req.params.id);
+      if (!appt) return res.status(404).json({ message: "Appointment not found" });
+      res.json(appt);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/appointments", requireAuth, async (req, res, next) => {
+    try {
+      const parsed = insertAppointmentSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
+      const appt = await storage.createAppointment(parsed.data);
+      await storage.createAuditLog({ action: "create", entityType: "appointment", entityId: appt.id, userId: (req as any).user.id, details: { title: appt.title } });
+      res.status(201).json(appt);
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/appointments/:id", requireAuth, async (req, res, next) => {
+    try {
+      const appt = await storage.updateAppointment(req.params.id, req.body);
+      if (!appt) return res.status(404).json({ message: "Appointment not found" });
+      await storage.createAuditLog({ action: "update", entityType: "appointment", entityId: appt.id, userId: (req as any).user.id, details: { title: appt.title } });
+      res.json(appt);
+    } catch (error) { next(error); }
+  });
+
+  app.delete("/api/appointments/:id", requireAuth, async (req, res, next) => {
+    try {
+      const ok = await storage.deleteAppointment(req.params.id);
+      if (!ok) return res.status(404).json({ message: "Appointment not found" });
+      await storage.createAuditLog({ action: "delete", entityType: "appointment", entityId: req.params.id, userId: (req as any).user.id });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  // ========== TICKETS ==========
+
+  app.get("/api/tickets", requireAuth, async (req, res, next) => {
+    try {
+      const { status, assigned_to, reported_by, team_id } = req.query;
+      const tickets = await storage.getTickets({
+        status: status as string,
+        assignedTo: assigned_to as string,
+        reportedBy: reported_by as string,
+        teamId: team_id as string,
+      });
+      res.json(tickets);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/tickets/:id", requireAuth, async (req, res, next) => {
+    try {
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+      res.json(ticket);
+    } catch (error) { next(error); }
+  });
+
+  app.post("/api/tickets", requireAuth, async (req, res, next) => {
+    try {
+      const ticketCount = (await storage.getTickets()).length;
+      const ticketCode = `TKT-${String(ticketCount + 1).padStart(4, '0')}`;
+      const parsed = insertTicketSchema.safeParse({ ...req.body, ticketCode, reportedBy: (req as any).user.id });
+      if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
+      const ticket = await storage.createTicket(parsed.data);
+      await storage.createAuditLog({ action: "create", entityType: "ticket", entityId: ticket.id, userId: (req as any).user.id, details: { title: ticket.title, ticketCode } });
+      res.status(201).json(ticket);
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/tickets/:id", requireAuth, async (req, res, next) => {
+    try {
+      const ticket = await storage.updateTicket(req.params.id, req.body);
+      if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+      await storage.createAuditLog({ action: "update", entityType: "ticket", entityId: ticket.id, userId: (req as any).user.id, details: { title: ticket.title, status: ticket.status } });
+      res.json(ticket);
+    } catch (error) { next(error); }
+  });
+
+  app.delete("/api/tickets/:id", requireAuth, async (req, res, next) => {
+    try {
+      const ok = await storage.deleteTicket(req.params.id);
+      if (!ok) return res.status(404).json({ message: "Ticket not found" });
+      await storage.createAuditLog({ action: "delete", entityType: "ticket", entityId: req.params.id, userId: (req as any).user.id });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  // ========== AUDIT LOGS ==========
+
+  app.get("/api/audit-logs", requireAuth, requireRole('superadmin'), async (req, res, next) => {
+    try {
+      const { entity_type, user_id, limit } = req.query;
+      const logs = await storage.getAuditLogs({
+        entityType: entity_type as string,
+        userId: user_id as string,
+        limit: limit ? parseInt(limit as string) : undefined,
+      });
+      res.json(logs);
+    } catch (error) { next(error); }
+  });
+
+  // ========== ADMIN USER MANAGEMENT ==========
+
+  app.get("/api/admin/users", requireAuth, requireRole('superadmin'), async (req, res, next) => {
+    try {
+      const users = await storage.getAllUsers();
+      const sanitized = users.map(({ password, ...rest }: any) => rest);
+      res.json(sanitized);
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/admin/users/:id", requireAuth, requireRole('superadmin'), async (req, res, next) => {
+    try {
+      const { role, isActive } = req.body;
+      const updates: Record<string, any> = {};
+      if (role !== undefined) updates.role = role;
+      if (isActive !== undefined) updates.isActive = isActive;
+      const user = await storage.updateUser(req.params.id, updates);
+      if (!user) return res.status(404).json({ message: "User not found" });
+      await storage.createAuditLog({ action: "update", entityType: "user", entityId: user.id, userId: (req as any).user.id, details: { role: user.role, targetUser: user.name } });
+      res.json(user);
+    } catch (error) { next(error); }
+  });
+
+  // ========== NOTIFICATIONS ==========
+
+  app.get("/api/notifications", requireAuth, async (req, res, next) => {
+    try {
+      const notifications = await storage.getNotifications((req as any).user.id);
+      res.json(notifications);
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/notifications/:id/read", requireAuth, async (req, res, next) => {
+    try {
+      const notifications = await storage.getNotifications((req as any).user.id);
+      const owns = notifications.some(n => n.id === req.params.id);
+      if (!owns) return res.status(403).json({ message: "Forbidden" });
+      await storage.markNotificationRead(req.params.id);
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+
+  app.patch("/api/notifications/read-all", requireAuth, async (req, res, next) => {
+    try {
+      await storage.markAllNotificationsRead((req as any).user.id);
+      res.json({ success: true });
     } catch (error) { next(error); }
   });
 
