@@ -31,6 +31,9 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
+  optimizeDeps: {
+    include: ["lucide-react", "react-icons/si"],
+  },
   server: {
     fs: {
       strict: true,

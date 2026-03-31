@@ -1,1 +1,11 @@
-{}
+{
+  "channels": [
+    {
+      "id": "e048923a-27ed-4798-b44e-819393171ae3",
+      "createdAt": "2026-03-31T08:21:18.944Z",
+      "teamId": "travel-sales",
+      "name": "Travel Sales",
+      "description": "Team channel for travel-sales"
+    }
+  ]
+}
