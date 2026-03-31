@@ -5048,12 +5048,18 @@ cs@suprans.in`;
     try {
       const { category, team_id, search } = req.query;
       const currentUser = req.user as User;
-      if (team_id && !(await verifyTeamAccess(currentUser.id, team_id as string))) {
-        return res.status(403).json({ message: "Access denied to this team" });
+      let teamId = team_id as string | undefined;
+      if (teamId) {
+        if (!(await verifyTeamAccess(currentUser.id, teamId))) {
+          return res.status(403).json({ message: "Access denied to this team" });
+        }
+      } else if (currentUser.role !== 'superadmin') {
+        const userTeams = await storage.getUserTeams(currentUser.id);
+        if (userTeams.length > 0) teamId = userTeams[0].teamId;
       }
       const contacts = await storage.getContacts({
         category: category as string,
-        teamId: team_id as string,
+        teamId,
         search: search as string,
       });
       res.json(contacts);
@@ -5376,8 +5382,8 @@ cs@suprans.in`;
   app.get("/api/admin/users", requireAuth, requireRole('superadmin'), async (req, res, next) => {
     try {
       const users = await storage.getAllUsers();
-      const sanitized = users.map((user) => {
-        const { password, ...rest } = user as Record<string, unknown>;
+      const sanitized = users.map((user: User) => {
+        const { password: _pw, ...rest } = user;
         return rest;
       });
       res.json(sanitized);
