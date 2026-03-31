@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Bell, 
   Search,
@@ -19,6 +21,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
+import type { Notification as NotificationType } from "@shared/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SearchDialog } from "@/components/modals/SearchDialog";
 import { SignOutDialog } from "@/components/modals/SignOutDialog";
@@ -50,40 +53,30 @@ export function Header() {
   const currentTeam = getTeamById(currentTeamId);
   const effectiveRole = getEffectiveRole();
 
-  const notifications = [
-    {
-      id: 1,
-      title: "Shipment Delayed",
-      message: "SHP-1004 is delayed due to customs check",
-      time: "2 hours ago",
-      icon: Clock,
-      read: false
-    },
-    {
-      id: 2,
-      title: "Shipment Delivered",
-      message: "SHP-1002 has been successfully delivered",
-      time: "5 hours ago",
-      icon: CheckCircle2,
-      read: true
-    },
-    {
-      id: 3,
-      title: "Customs Clearance Complete",
-      message: "SHP-1001 cleared Singapore customs",
-      time: "1 day ago",
-      icon: User,
-      read: true
-    },
-    {
-      id: 4,
-      title: "New Shipment Created",
-      message: "SHP-1006 has been added to the system",
-      time: "2 days ago",
-      icon: Package,
-      read: true
+  const { data: notifications = [] } = useQuery<NotificationType[]>({
+    queryKey: ["/api/notifications"],
+    enabled: !!currentUser,
+    refetchInterval: 30000,
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () => apiRequest("PATCH", "/api/notifications/read-all"),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/notifications"] }); },
+  });
+
+  const markOneReadMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("PATCH", `/api/notifications/${id}/read`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/notifications"] }); },
+  });
+
+  const getNotificationIcon = (type: string | null) => {
+    switch (type) {
+      case "ticket": return Clock;
+      case "deal": return Package;
+      case "appointment": return CheckCircle2;
+      default: return Bell;
     }
-  ];
+  };
 
   const handleLogout = () => {
     setLogoutOpen(false);
@@ -166,7 +159,7 @@ export function Header() {
                 <div className="flex items-center justify-center h-8 w-8 rounded-full border bg-card">
                   <Bell className="h-4 w-4 text-foreground" />
                 </div>
-                {notifications.some(n => !n.read) && (
+                {notifications.some(n => !n.isRead) && (
                   <div className="absolute top-[7px] right-0 h-2 w-2 bg-primary rounded-full" />
                 )}
               </div>
@@ -179,7 +172,7 @@ export function Header() {
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-semibold">Notifications</h3>
                   <div className="bg-primary text-white text-[11px] font-semibold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-                    {notifications.filter(n => !n.read).length}
+                    {notifications.filter(n => !n.isRead).length}
                   </div>
                 </div>
                 <Button variant="ghost" size="icon">
@@ -187,26 +180,44 @@ export function Header() {
                 </Button>
               </div>
               <div className="p-4 space-y-3 max-h-80 overflow-y-auto">
-                {notifications.map((notification) => (
-                  <div key={notification.id} className="flex gap-3 items-start">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted shrink-0">
-                      <notification.icon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <h4 className="text-sm font-semibold truncate">{notification.title}</h4>
-                        {!notification.read && (
-                          <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                        )}
+                {notifications.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No notifications yet.</p>
+                ) : (
+                  notifications.map((notification) => {
+                    const IconComponent = getNotificationIcon(notification.entityType);
+                    return (
+                      <div
+                        key={notification.id}
+                        className={`flex gap-3 items-start cursor-pointer rounded-lg p-2 transition-colors ${!notification.isRead ? 'bg-primary/5' : 'hover:bg-muted'}`}
+                        onClick={() => { if (!notification.isRead) markOneReadMutation.mutate(notification.id); }}
+                        data-testid={`notification-${notification.id}`}
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-muted shrink-0">
+                          <IconComponent className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <h4 className="text-sm font-semibold truncate">{notification.title}</h4>
+                            {!notification.isRead && (
+                              <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[13px] text-muted-foreground leading-relaxed">{notification.message}</p>
+                          <span className="text-[12px] text-muted-foreground/70">
+                            {notification.createdAt ? new Date(notification.createdAt).toLocaleDateString() : ""}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-[13px] text-muted-foreground leading-relaxed">{notification.message}</p>
-                      <span className="text-[12px] text-muted-foreground/70">{notification.time}</span>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })
+                )}
               </div>
               <div className="p-4 border-t flex items-center justify-between gap-2">
-                <button className="text-sm font-semibold text-primary" data-testid="button-mark-all-read">
+                <button
+                  className="text-sm font-semibold text-primary"
+                  data-testid="button-mark-all-read"
+                  onClick={() => markAllReadMutation.mutate()}
+                >
                   Mark as all read
                 </button>
                 <Button size="sm">View All</Button>

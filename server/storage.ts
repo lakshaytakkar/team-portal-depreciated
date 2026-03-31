@@ -432,7 +432,7 @@ export interface IStorage {
   deleteTicket(id: string): Promise<boolean>;
 
   // Audit Logs
-  getAuditLogs(filters?: { entityType?: string; userId?: string; limit?: number }): Promise<AuditLog[]>;
+  getAuditLogs(filters?: { entityType?: string; entityId?: string; userId?: string; limit?: number }): Promise<AuditLog[]>;
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
 
   // Notifications
@@ -2113,9 +2113,10 @@ export class Storage implements IStorage {
   }
 
   // Audit Logs
-  async getAuditLogs(filters?: { entityType?: string; userId?: string; limit?: number }): Promise<AuditLog[]> {
+  async getAuditLogs(filters?: { entityType?: string; entityId?: string; userId?: string; limit?: number }): Promise<AuditLog[]> {
     let query = supabase.from('audit_logs').select('*').order('created_at', { ascending: false });
     if (filters?.entityType) query = query.eq('entity_type', filters.entityType);
+    if (filters?.entityId) query = query.eq('entity_id', filters.entityId);
     if (filters?.userId) query = query.eq('user_id', filters.userId);
     if (filters?.limit) query = query.limit(filters.limit);
     else query = query.limit(200);

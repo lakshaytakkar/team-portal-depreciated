@@ -5064,6 +5064,10 @@ cs@suprans.in`;
     try {
       const contact = await storage.getContact(req.params.id);
       if (!contact) return res.status(404).json({ message: "Contact not found" });
+      const currentUser = req.user as User;
+      if (!(await verifyTeamAccess(currentUser.id, contact.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       res.json(contact);
     } catch (error) { next(error); }
   });
@@ -5077,25 +5081,37 @@ cs@suprans.in`;
       const parsed = insertContactSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
       const contact = await storage.createContact(parsed.data);
-      await storage.createAuditLog({ action: "create", entityType: "contact", entityId: contact.id, userId: (req as any).user.id, details: { name: contact.name } });
+      await storage.createAuditLog({ action: "create", entityType: "contact", entityId: contact.id, userId: currentUser.id, details: { name: contact.name } });
       res.status(201).json(contact);
     } catch (error) { next(error); }
   });
 
   app.patch("/api/contacts/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      const existing = await storage.getContact(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Contact not found" });
+      if (!(await verifyTeamAccess(currentUser.id, existing.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const contact = await storage.updateContact(req.params.id, req.body);
       if (!contact) return res.status(404).json({ message: "Contact not found" });
-      await storage.createAuditLog({ action: "update", entityType: "contact", entityId: contact.id, userId: (req as any).user.id, details: { name: contact.name } });
+      await storage.createAuditLog({ action: "update", entityType: "contact", entityId: contact.id, userId: currentUser.id, details: { name: contact.name } });
       res.json(contact);
     } catch (error) { next(error); }
   });
 
   app.delete("/api/contacts/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      const existing = await storage.getContact(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Contact not found" });
+      if (!(await verifyTeamAccess(currentUser.id, existing.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const ok = await storage.deleteContact(req.params.id);
       if (!ok) return res.status(404).json({ message: "Contact not found" });
-      await storage.createAuditLog({ action: "delete", entityType: "contact", entityId: req.params.id, userId: (req as any).user.id });
+      await storage.createAuditLog({ action: "delete", entityType: "contact", entityId: req.params.id, userId: currentUser.id });
       res.json({ success: true });
     } catch (error) { next(error); }
   });
@@ -5122,6 +5138,10 @@ cs@suprans.in`;
     try {
       const deal = await storage.getDeal(req.params.id);
       if (!deal) return res.status(404).json({ message: "Deal not found" });
+      const currentUser = req.user as User;
+      if (!(await verifyTeamAccess(currentUser.id, deal.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       res.json(deal);
     } catch (error) { next(error); }
   });
@@ -5135,25 +5155,37 @@ cs@suprans.in`;
       const parsed = insertDealSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
       const deal = await storage.createDeal(parsed.data);
-      await storage.createAuditLog({ action: "create", entityType: "deal", entityId: deal.id, userId: (req as any).user.id, details: { name: deal.name, value: deal.value } });
+      await storage.createAuditLog({ action: "create", entityType: "deal", entityId: deal.id, userId: currentUser.id, details: { name: deal.name, value: deal.value } });
       res.status(201).json(deal);
     } catch (error) { next(error); }
   });
 
   app.patch("/api/deals/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      const existing = await storage.getDeal(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Deal not found" });
+      if (!(await verifyTeamAccess(currentUser.id, existing.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const deal = await storage.updateDeal(req.params.id, req.body);
       if (!deal) return res.status(404).json({ message: "Deal not found" });
-      await storage.createAuditLog({ action: "update", entityType: "deal", entityId: deal.id, userId: (req as any).user.id, details: { name: deal.name } });
+      await storage.createAuditLog({ action: "update", entityType: "deal", entityId: deal.id, userId: currentUser.id, details: { name: deal.name } });
       res.json(deal);
     } catch (error) { next(error); }
   });
 
   app.delete("/api/deals/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      const existing = await storage.getDeal(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Deal not found" });
+      if (!(await verifyTeamAccess(currentUser.id, existing.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const ok = await storage.deleteDeal(req.params.id);
       if (!ok) return res.status(404).json({ message: "Deal not found" });
-      await storage.createAuditLog({ action: "delete", entityType: "deal", entityId: req.params.id, userId: (req as any).user.id });
+      await storage.createAuditLog({ action: "delete", entityType: "deal", entityId: req.params.id, userId: currentUser.id });
       res.json({ success: true });
     } catch (error) { next(error); }
   });
@@ -5180,6 +5212,10 @@ cs@suprans.in`;
     try {
       const appt = await storage.getAppointment(req.params.id);
       if (!appt) return res.status(404).json({ message: "Appointment not found" });
+      const currentUser = req.user as User;
+      if (!(await verifyTeamAccess(currentUser.id, appt.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       res.json(appt);
     } catch (error) { next(error); }
   });
@@ -5193,25 +5229,37 @@ cs@suprans.in`;
       const parsed = insertAppointmentSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
       const appt = await storage.createAppointment(parsed.data);
-      await storage.createAuditLog({ action: "create", entityType: "appointment", entityId: appt.id, userId: (req as any).user.id, details: { title: appt.title } });
+      await storage.createAuditLog({ action: "create", entityType: "appointment", entityId: appt.id, userId: currentUser.id, details: { title: appt.title } });
       res.status(201).json(appt);
     } catch (error) { next(error); }
   });
 
   app.patch("/api/appointments/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      const existing = await storage.getAppointment(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Appointment not found" });
+      if (!(await verifyTeamAccess(currentUser.id, existing.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const appt = await storage.updateAppointment(req.params.id, req.body);
       if (!appt) return res.status(404).json({ message: "Appointment not found" });
-      await storage.createAuditLog({ action: "update", entityType: "appointment", entityId: appt.id, userId: (req as any).user.id, details: { title: appt.title } });
+      await storage.createAuditLog({ action: "update", entityType: "appointment", entityId: appt.id, userId: currentUser.id, details: { title: appt.title } });
       res.json(appt);
     } catch (error) { next(error); }
   });
 
   app.delete("/api/appointments/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      const existing = await storage.getAppointment(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Appointment not found" });
+      if (!(await verifyTeamAccess(currentUser.id, existing.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const ok = await storage.deleteAppointment(req.params.id);
       if (!ok) return res.status(404).json({ message: "Appointment not found" });
-      await storage.createAuditLog({ action: "delete", entityType: "appointment", entityId: req.params.id, userId: (req as any).user.id });
+      await storage.createAuditLog({ action: "delete", entityType: "appointment", entityId: req.params.id, userId: currentUser.id });
       res.json({ success: true });
     } catch (error) { next(error); }
   });
@@ -5239,7 +5287,27 @@ cs@suprans.in`;
     try {
       const ticket = await storage.getTicket(req.params.id);
       if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+      const currentUser = req.user as User;
+      if (!(await verifyTeamAccess(currentUser.id, ticket.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       res.json(ticket);
+    } catch (error) { next(error); }
+  });
+
+  app.get("/api/tickets/:id/activity", requireAuth, async (req, res, next) => {
+    try {
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket) return res.status(404).json({ message: "Ticket not found" });
+      const currentUser = req.user as User;
+      if (!(await verifyTeamAccess(currentUser.id, ticket.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      const logs = await storage.getAuditLogs({
+        entityType: "ticket",
+        entityId: req.params.id,
+      });
+      res.json(logs);
     } catch (error) { next(error); }
   });
 
@@ -5254,25 +5322,37 @@ cs@suprans.in`;
       const parsed = insertTicketSchema.safeParse({ ...req.body, ticketCode, reportedBy: currentUser.id });
       if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
       const ticket = await storage.createTicket(parsed.data);
-      await storage.createAuditLog({ action: "create", entityType: "ticket", entityId: ticket.id, userId: (req as any).user.id, details: { title: ticket.title, ticketCode } });
+      await storage.createAuditLog({ action: "create", entityType: "ticket", entityId: ticket.id, userId: currentUser.id, details: { title: ticket.title, ticketCode } });
       res.status(201).json(ticket);
     } catch (error) { next(error); }
   });
 
   app.patch("/api/tickets/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      const existing = await storage.getTicket(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Ticket not found" });
+      if (!(await verifyTeamAccess(currentUser.id, existing.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const ticket = await storage.updateTicket(req.params.id, req.body);
       if (!ticket) return res.status(404).json({ message: "Ticket not found" });
-      await storage.createAuditLog({ action: "update", entityType: "ticket", entityId: ticket.id, userId: (req as any).user.id, details: { title: ticket.title, status: ticket.status } });
+      await storage.createAuditLog({ action: "update", entityType: "ticket", entityId: ticket.id, userId: currentUser.id, details: { title: ticket.title, status: ticket.status } });
       res.json(ticket);
     } catch (error) { next(error); }
   });
 
   app.delete("/api/tickets/:id", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      const existing = await storage.getTicket(req.params.id);
+      if (!existing) return res.status(404).json({ message: "Ticket not found" });
+      if (!(await verifyTeamAccess(currentUser.id, existing.teamId))) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const ok = await storage.deleteTicket(req.params.id);
       if (!ok) return res.status(404).json({ message: "Ticket not found" });
-      await storage.createAuditLog({ action: "delete", entityType: "ticket", entityId: req.params.id, userId: (req as any).user.id });
+      await storage.createAuditLog({ action: "delete", entityType: "ticket", entityId: req.params.id, userId: currentUser.id });
       res.json({ success: true });
     } catch (error) { next(error); }
   });

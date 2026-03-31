@@ -55,8 +55,8 @@ export default function TicketDetailPage() {
   const { data: users = [] } = useQuery<User[]>({ queryKey: ["/api/users"] });
 
   const { data: auditLogs = [] } = useQuery<AuditLog[]>({
-    queryKey: ["/api/admin/audit", ticketId],
-    queryFn: () => fetch(`/api/admin/audit?entity_type=ticket&entity_id=${ticketId}`, { credentials: "include" }).then(r => {
+    queryKey: ["/api/tickets", ticketId, "activity"],
+    queryFn: () => fetch(`/api/tickets/${ticketId}/activity`, { credentials: "include" }).then(r => {
       if (!r.ok) return [];
       return r.json();
     }),
