@@ -1,17 +1,30 @@
-import { createClient } from '@supabase/supabase-js';
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DB_PATH = path.resolve(__dirname, "../data/db.json");
 
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error(
-    "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set."
-  );
+function ensureDir() {
+  const dir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 }
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+export function loadDb(): Record<string, any[]> {
+  ensureDir();
+  if (!fs.existsSync(DB_PATH)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(DB_PATH, "utf-8"));
+  } catch {
+    return {};
+  }
+}
+
+export function saveDb(data: Record<string, any[]>): void {
+  ensureDir();
+  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
+}
+
+export function genId(): string {
+  return crypto.randomUUID();
+}

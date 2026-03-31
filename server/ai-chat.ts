@@ -2,8 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText, tool } from "ai";
 import { z } from "zod";
-import { supabase } from "./db";
-import pg from "pg";
+import { loadDb, saveDb, genId } from "./db";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -31,10 +30,7 @@ const upload = multer({
   },
 });
 
-const pgPool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-
 const aiRouter = Router();
-
 aiRouter.use(requireAuth);
 
 const openai = createOpenAI({
@@ -42,16 +38,45 @@ const openai = createOpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+// ── JSON helpers for AI-specific tables ──────────────────────────────────────
+
+function nowStr() { return new Date().toISOString(); }
+
+function getConversations(): any[] { return loadDb()['ai_conversations'] ?? []; }
+function getMessages(): any[] { return loadDb()['ai_messages'] ?? []; }
+function getAttachments(): any[] { return loadDb()['ai_attachments'] ?? []; }
+
+function saveConversations(rows: any[]) { const db = loadDb(); db['ai_conversations'] = rows; saveDb(db); }
+function saveMessages(rows: any[]) { const db = loadDb(); db['ai_messages'] = rows; saveDb(db); }
+function saveAttachments(rows: any[]) { const db = loadDb(); db['ai_attachments'] = rows; saveDb(db); }
+
+function insertConversation(data: Record<string, any>) {
+  const rows = getConversations();
+  const row = { id: genId(), created_at: nowStr(), updated_at: nowStr(), ...data };
+  rows.push(row);
+  saveConversations(rows);
+  return row;
+}
+function insertMessage(data: Record<string, any>) {
+  const rows = getMessages();
+  const row = { id: genId(), created_at: nowStr(), ...data };
+  rows.push(row);
+  saveMessages(rows);
+  return row;
+}
+function insertAttachment(data: Record<string, any>) {
+  const rows = getAttachments();
+  const row = { id: genId(), created_at: nowStr(), ...data };
+  rows.push(row);
+  saveAttachments(rows);
+  return row;
+}
 
 async function verifyConversationOwnership(conversationId: string, userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from("ai_conversations")
-    .select("id")
-    .eq("id", conversationId)
-    .eq("user_id", userId)
-    .single();
-  return !!data;
+  return getConversations().some(c => c.id === conversationId && c.user_id === userId);
 }
+
+// ── System prompt ─────────────────────────────────────────────────────────────
 
 function getSystemPrompt(userName: string): string {
   return `You are the Suprans AI Assistant — an intelligent co-pilot for Suprans Business Consulting's CRM portal.
@@ -73,8 +98,8 @@ Task priorities: low, medium, high
 Lead temperatures: hot, warm, cold
 
 Guidelines:
-- Use queryTable, run_sql_query, or analyticsQuery tools to fetch real data. All accept structured parameters (table, columns, filters, orderBy, limit, aggregates, groupBy). Never write raw SQL.
-- Use snake_case column names (e.g., assigned_to, team_id, created_at).
+- Use queryTable or analyticsQuery tools to fetch real data. All accept structured parameters (table, columns, filters, orderBy, limit, aggregates, groupBy).
+- Use camelCase field names when filtering (e.g., assignedTo, teamId, createdAt).
 - Format numbers and currency in Indian Rupee (₹) format when relevant.
 - Keep responses concise but informative.
 - When showing tabular data, use markdown tables.
@@ -93,28 +118,28 @@ function isAllowedTable(t: string): t is AllowedTable {
 
 const ROLE_TABLE_COLUMNS: Record<string, Record<string, string[]>> = {
   superadmin: {
-    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assigned_to", "team_id", "source", "address", "rating", "tags", "temperature", "next_follow_up", "won_amount", "won_date", "lost_reason", "created_at"],
-    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "team_id", "lead_id", "tags", "created_at"],
-    activities: ["id", "lead_id", "user_id", "type", "notes", "duration", "outcome", "from_stage", "to_stage", "created_at"],
-    users: ["id", "name", "email", "role", "phone", "avatar", "office_id", "created_at"],
-    team_members: ["id", "user_id", "team_id", "role", "created_at"],
-    employees: ["id", "name", "role", "phone", "whatsapp", "avatar", "is_active", "employment_status", "joining_date"],
-    events: ["id", "name", "type", "city", "venue", "date", "capacity", "status", "ticket_price"],
-    event_attendees: ["id", "event_id", "name", "phone", "email", "company", "checked_in", "ticket_status"],
-    services: ["id", "name", "slug", "category", "short_description", "description", "pricing", "is_active"],
+    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assignedTo", "teamId", "source", "address", "rating", "tags", "temperature", "nextFollowUp", "wonAmount", "wonDate", "lostReason", "createdAt"],
+    tasks: ["id", "title", "description", "status", "priority", "dueDate", "assignedTo", "teamId", "leadId", "tags", "createdAt"],
+    activities: ["id", "leadId", "userId", "type", "notes", "duration", "outcome", "fromStage", "toStage", "createdAt"],
+    users: ["id", "name", "email", "role", "phone", "avatar", "officeId", "createdAt"],
+    team_members: ["id", "userId", "teamId", "role", "createdAt"],
+    employees: ["id", "name", "role", "phone", "whatsapp", "avatar", "isActive", "employmentStatus", "joiningDate"],
+    events: ["id", "name", "type", "city", "venue", "date", "capacity", "status", "ticketPrice"],
+    event_attendees: ["id", "eventId", "name", "phone", "email", "company", "checkedIn", "ticketStatus"],
+    services: ["id", "name", "slug", "category", "shortDescription", "description", "pricing", "isActive"],
   },
   manager: {
-    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assigned_to", "team_id", "source", "address", "rating", "tags", "temperature", "next_follow_up", "won_amount", "won_date", "lost_reason", "created_at"],
-    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "team_id", "lead_id", "tags", "created_at"],
-    activities: ["id", "lead_id", "user_id", "type", "notes", "duration", "outcome", "from_stage", "to_stage", "created_at"],
-    team_members: ["id", "user_id", "team_id", "role", "created_at"],
-    events: ["id", "name", "type", "city", "venue", "date", "capacity", "status", "ticket_price"],
-    event_attendees: ["id", "event_id", "name", "phone", "email", "company", "checked_in", "ticket_status"],
+    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assignedTo", "teamId", "source", "address", "rating", "tags", "temperature", "nextFollowUp", "wonAmount", "wonDate", "lostReason", "createdAt"],
+    tasks: ["id", "title", "description", "status", "priority", "dueDate", "assignedTo", "teamId", "leadId", "tags", "createdAt"],
+    activities: ["id", "leadId", "userId", "type", "notes", "duration", "outcome", "fromStage", "toStage", "createdAt"],
+    team_members: ["id", "userId", "teamId", "role", "createdAt"],
+    events: ["id", "name", "type", "city", "venue", "date", "capacity", "status", "ticketPrice"],
+    event_attendees: ["id", "eventId", "name", "phone", "email", "company", "checkedIn", "ticketStatus"],
   },
   sales_executive: {
-    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assigned_to", "source", "temperature", "next_follow_up", "created_at"],
-    tasks: ["id", "title", "description", "status", "priority", "due_date", "assigned_to", "lead_id", "created_at"],
-    activities: ["id", "lead_id", "user_id", "type", "notes", "duration", "outcome", "created_at"],
+    leads: ["id", "name", "company", "phone", "email", "service", "value", "stage", "assignedTo", "source", "temperature", "nextFollowUp", "createdAt"],
+    tasks: ["id", "title", "description", "status", "priority", "dueDate", "assignedTo", "leadId", "createdAt"],
+    activities: ["id", "leadId", "userId", "type", "notes", "duration", "outcome", "createdAt"],
   },
 };
 
@@ -122,20 +147,164 @@ function getColumnsForRole(role: string): Record<string, string[]> {
   return ROLE_TABLE_COLUMNS[role] || ROLE_TABLE_COLUMNS.sales_executive;
 }
 
-const SAFE_IDENTIFIER = /^[a-z_][a-z0-9_]*$/;
+// ── JSON query engine (replaces pgPool) ──────────────────────────────────────
 
-function validateColumn(col: string, allowedCols: string[]): string | null {
-  const lower = col.toLowerCase().trim();
-  if (!SAFE_IDENTIFIER.test(lower)) return null;
-  if (!allowedCols.includes(lower)) return null;
-  return lower;
+type FilterOp = {
+  column: string;
+  operator: "=" | "!=" | ">" | "<" | ">=" | "<=" | "LIKE" | "ILIKE" | "IS NULL" | "IS NOT NULL" | "IN";
+  value?: string | number | boolean | null | (string | number)[];
+};
+
+type AggregateFn = { fn: "COUNT" | "SUM" | "AVG" | "MIN" | "MAX"; column?: string };
+
+function applyFilter(row: Record<string, any>, filter: FilterOp): boolean {
+  const val = row[filter.column];
+  const fv = filter.value;
+  switch (filter.operator) {
+    case "IS NULL": return val == null;
+    case "IS NOT NULL": return val != null;
+    case "IN": return Array.isArray(fv) && fv.includes(val);
+    case "=": return val == fv;
+    case "!=": return val != fv;
+    case ">": return val > (fv as any);
+    case "<": return val < (fv as any);
+    case ">=": return val >= (fv as any);
+    case "<=": return val <= (fv as any);
+    case "LIKE":
+    case "ILIKE": {
+      if (val == null || fv == null) return false;
+      const pattern = String(fv).replace(/%/g, ".*").replace(/_/g, ".");
+      return new RegExp(`^${pattern}$`, filter.operator === "ILIKE" ? "i" : "").test(String(val));
+    }
+    default: return true;
+  }
 }
 
-function validateTable(table: string, roleColumns: Record<string, string[]>): string | null {
-  const lower = table.toLowerCase().trim();
-  if (!SAFE_IDENTIFIER.test(lower)) return null;
-  if (!roleColumns[lower]) return null;
-  return lower;
+function execJsonQuery(
+  roleColumns: Record<string, string[]>,
+  table: string,
+  columns: string[] | undefined,
+  filters: FilterOp[] | undefined,
+  orderByColumn: string | undefined,
+  orderDirection: string | undefined,
+  limit: number | undefined,
+  aggregates: AggregateFn[] | undefined,
+  groupByColumns: string[] | undefined,
+  rowFilters?: Record<string, { column: string; value: string }>,
+): { results?: Record<string, unknown>[]; error?: string } {
+  const allowedCols = roleColumns[table];
+  if (!allowedCols) return { error: `Table '${table}' is not accessible. Allowed: ${Object.keys(roleColumns).join(", ")}` };
+
+  const db = loadDb();
+  let rows: Record<string, any>[] = db[table] ?? [];
+
+  // Apply row-level filters (user scoping)
+  const rowFilter = rowFilters?.[table];
+  if (rowFilter) {
+    rows = rows.filter(r => r[rowFilter.column] === rowFilter.value);
+  }
+
+  // Apply user filters
+  if (filters && filters.length > 0) {
+    for (const f of filters) {
+      if (!allowedCols.includes(f.column)) return { error: `Column '${f.column}' not accessible on '${table}'.` };
+      rows = rows.filter(r => applyFilter(r, f));
+    }
+  }
+
+  // Aggregates
+  if (aggregates && aggregates.length > 0) {
+    if (groupByColumns && groupByColumns.length > 0) {
+      const groups = new Map<string, Record<string, any>[]>();
+      for (const row of rows) {
+        const key = groupByColumns.map(gc => row[gc]).join("|||");
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(row);
+      }
+      const results: Record<string, unknown>[] = [];
+      for (const [, groupRows] of groups) {
+        const result: Record<string, unknown> = {};
+        for (const gc of groupByColumns) result[gc] = groupRows[0][gc];
+        for (const agg of aggregates) {
+          const col = agg.column && agg.column !== "*" ? agg.column : null;
+          const vals = col ? groupRows.map(r => r[col]).filter(v => v != null) : groupRows;
+          if (agg.fn === "COUNT") result[`${agg.fn}(${col ?? "*"})`] = groupRows.length;
+          else if (agg.fn === "SUM") result[`${agg.fn}(${col})`] = vals.reduce((a: number, b: number) => a + Number(b), 0);
+          else if (agg.fn === "AVG") result[`${agg.fn}(${col})`] = vals.length ? vals.reduce((a: number, b: number) => a + Number(b), 0) / vals.length : null;
+          else if (agg.fn === "MIN") result[`${agg.fn}(${col})`] = vals.length ? Math.min(...vals.map(Number)) : null;
+          else if (agg.fn === "MAX") result[`${agg.fn}(${col})`] = vals.length ? Math.max(...vals.map(Number)) : null;
+        }
+        results.push(result);
+      }
+      return { results: results.slice(0, Math.min(limit ?? 100, 100)) };
+    }
+    // No groupBy
+    const result: Record<string, unknown> = {};
+    for (const agg of aggregates) {
+      const col = agg.column && agg.column !== "*" ? agg.column : null;
+      const vals = col ? rows.map(r => r[col]).filter(v => v != null) : rows;
+      if (agg.fn === "COUNT") result[`${agg.fn}(${col ?? "*"})`] = rows.length;
+      else if (agg.fn === "SUM") result[`${agg.fn}(${col})`] = vals.reduce((a: number, b: number) => a + Number(b), 0);
+      else if (agg.fn === "AVG") result[`${agg.fn}(${col})`] = vals.length ? vals.reduce((a: number, b: number) => a + Number(b), 0) / vals.length : null;
+      else if (agg.fn === "MIN") result[`${agg.fn}(${col})`] = vals.length ? Math.min(...vals.map(Number)) : null;
+      else if (agg.fn === "MAX") result[`${agg.fn}(${col})`] = vals.length ? Math.max(...vals.map(Number)) : null;
+    }
+    return { results: [result] };
+  }
+
+  // Order
+  if (orderByColumn) {
+    if (!allowedCols.includes(orderByColumn)) return { error: `Order column '${orderByColumn}' not accessible.` };
+    const dir = orderDirection === "ASC" ? 1 : -1;
+    rows = [...rows].sort((a, b) => {
+      if (a[orderByColumn] < b[orderByColumn]) return -dir;
+      if (a[orderByColumn] > b[orderByColumn]) return dir;
+      return 0;
+    });
+  }
+
+  // Select columns
+  const safeLimit = Math.min(Math.max(1, limit ?? 100), 100);
+  const selectCols = columns && columns.length > 0
+    ? columns.filter(c => allowedCols.includes(c))
+    : allowedCols;
+
+  const results = rows.slice(0, safeLimit).map(row => {
+    const out: Record<string, unknown> = {};
+    for (const c of selectCols) out[c] = row[c];
+    return out;
+  });
+  return { results };
+}
+
+function getOwnershipColumn(table: string): string | null {
+  if (table === "leads") return "assignedTo";
+  if (table === "tasks") return "assignedTo";
+  if (table === "activities") return "userId";
+  return null;
+}
+
+function verifyRecordOwnership(table: string, id: string, userId: string, userRole: string): { allowed: boolean; error?: string } {
+  if (userRole === "superadmin") return { allowed: true };
+  const ownerCol = getOwnershipColumn(table);
+  if (!ownerCol) return { allowed: false, error: "No ownership column for this table." };
+  const db = loadDb();
+  const rows: any[] = db[table] ?? [];
+  const record = rows.find(r => r.id === id);
+  if (!record) return { allowed: false, error: "Record not found." };
+  if (String(record[ownerCol]) !== userId) {
+    return { allowed: false, error: "You do not have permission to modify this record (not assigned to you)." };
+  }
+  return { allowed: true };
+}
+
+function getRowFilters(userRole: string, userId: string): Record<string, { column: string; value: string }> {
+  if (userRole === "superadmin" || userRole === "manager") return {};
+  return {
+    leads: { column: "assignedTo", value: userId },
+    tasks: { column: "assignedTo", value: userId },
+    activities: { column: "userId", value: userId },
+  };
 }
 
 const filterOperatorSchema = z.object({
@@ -149,142 +318,6 @@ const aggregateFnSchema = z.object({
   column: z.string().optional().describe("Column to aggregate. Use '*' only with COUNT."),
 });
 
-type FilterOp = z.infer<typeof filterOperatorSchema>;
-type AggregateFn = z.infer<typeof aggregateFnSchema>;
-
-function buildStrictQuery(
-  roleColumns: Record<string, string[]>,
-  table: string,
-  columns: string[] | undefined,
-  filters: FilterOp[] | undefined,
-  orderByColumn: string | undefined,
-  orderDirection: string | undefined,
-  limit: number | undefined,
-  aggregates: AggregateFn[] | undefined,
-  groupByColumns: string[] | undefined,
-  rowFilters?: Record<string, { column: string; value: string }>,
-): { sql: string; params: (string | number | boolean | null)[]; error?: string } {
-  const safeTable = validateTable(table, roleColumns);
-  if (!safeTable) {
-    return { sql: "", params: [], error: `Table '${table}' is not accessible. Allowed: ${Object.keys(roleColumns).join(", ")}` };
-  }
-  const allowedCols = roleColumns[safeTable];
-  const params: (string | number | boolean | null)[] = [];
-  let paramIdx = 1;
-
-  let selectParts: string[] = [];
-
-  if (aggregates && aggregates.length > 0) {
-    for (const agg of aggregates) {
-      if (agg.column && agg.column !== "*") {
-        const safeCol = validateColumn(agg.column, allowedCols);
-        if (!safeCol) return { sql: "", params: [], error: `Column '${agg.column}' not allowed for aggregation on '${safeTable}'.` };
-        selectParts.push(`${agg.fn}(${safeCol})`);
-      } else {
-        if (agg.fn !== "COUNT") return { sql: "", params: [], error: "Only COUNT can use '*'." };
-        selectParts.push("COUNT(*)");
-      }
-    }
-    if (groupByColumns && groupByColumns.length > 0) {
-      for (const gc of groupByColumns) {
-        const safeGc = validateColumn(gc, allowedCols);
-        if (!safeGc) return { sql: "", params: [], error: `Column '${gc}' not allowed for GROUP BY on '${safeTable}'.` };
-        if (!selectParts.includes(safeGc)) selectParts.unshift(safeGc);
-      }
-    }
-  } else if (!columns || columns.length === 0) {
-    selectParts = allowedCols.map(c => c);
-  } else {
-    for (const col of columns) {
-      const safeCol = validateColumn(col, allowedCols);
-      if (!safeCol) return { sql: "", params: [], error: `Column '${col}' not accessible on '${safeTable}'.` };
-      selectParts.push(safeCol);
-    }
-  }
-
-  let query = `SELECT ${selectParts.join(", ")} FROM ${safeTable}`;
-
-  if (filters && filters.length > 0) {
-    const whereParts: string[] = [];
-    for (const f of filters) {
-      const safeCol = validateColumn(f.column, allowedCols);
-      if (!safeCol) return { sql: "", params: [], error: `Filter column '${f.column}' not accessible on '${safeTable}'.` };
-
-      if (f.operator === "IS NULL") {
-        whereParts.push(`${safeCol} IS NULL`);
-      } else if (f.operator === "IS NOT NULL") {
-        whereParts.push(`${safeCol} IS NOT NULL`);
-      } else if (f.operator === "IN") {
-        if (!Array.isArray(f.value)) return { sql: "", params: [], error: "IN operator requires an array value." };
-        const placeholders = f.value.map((v) => { params.push(v); return `$${paramIdx++}`; });
-        whereParts.push(`${safeCol} IN (${placeholders.join(", ")})`);
-      } else {
-        params.push(f.value as string | number | boolean | null);
-        whereParts.push(`${safeCol} ${f.operator} $${paramIdx++}`);
-      }
-    }
-    query += ` WHERE ${whereParts.join(" AND ")}`;
-  }
-
-  const rowFilter = rowFilters?.[safeTable];
-  if (rowFilter) {
-    params.push(rowFilter.value);
-    const rowCondition = `${rowFilter.column} = $${paramIdx++}`;
-    if (filters && filters.length > 0) {
-      query += ` AND ${rowCondition}`;
-    } else {
-      query += ` WHERE ${rowCondition}`;
-    }
-  }
-
-  if (groupByColumns && groupByColumns.length > 0) {
-    const safeGroups: string[] = [];
-    for (const gc of groupByColumns) {
-      const safeGc = validateColumn(gc, allowedCols);
-      if (!safeGc) return { sql: "", params: [], error: `GROUP BY column '${gc}' not allowed.` };
-      safeGroups.push(safeGc);
-    }
-    query += ` GROUP BY ${safeGroups.join(", ")}`;
-  }
-
-  if (orderByColumn) {
-    const safeOrder = validateColumn(orderByColumn, allowedCols);
-    if (!safeOrder) return { sql: "", params: [], error: `Order column '${orderByColumn}' not accessible.` };
-    const dir = orderDirection === "ASC" ? "ASC" : "DESC";
-    query += ` ORDER BY ${safeOrder} ${dir}`;
-  }
-
-  const safeLimit = Math.min(Math.max(1, limit || 100), 100);
-  query += ` LIMIT ${safeLimit}`;
-
-  return { sql: query, params };
-}
-
-async function execParameterizedQuery(sql: string, params: (string | number | boolean | null)[]): Promise<Record<string, unknown>[]> {
-  const client = await pgPool.connect();
-  try {
-    await client.query("BEGIN READ ONLY");
-    const result = await client.query(sql, params);
-    await client.query("COMMIT");
-    return result.rows;
-  } catch (e) {
-    await client.query("ROLLBACK").catch(() => {});
-    throw e;
-  } finally {
-    client.release();
-  }
-}
-
-function getRowFilters(userRole: string, userId: string): Record<string, { column: string; value: string }> {
-  if (userRole === "superadmin") return {};
-  if (userRole === "manager") return {};
-  return {
-    leads: { column: "assigned_to", value: userId },
-    tasks: { column: "assigned_to", value: userId },
-    activities: { column: "user_id", value: userId },
-  };
-}
-
 function getReadTools(userRole: string, userId: string) {
   const roleColumns = getColumnsForRole(userRole);
   const allowedTableNames = Object.keys(roleColumns);
@@ -297,63 +330,31 @@ function getReadTools(userRole: string, userId: string) {
         tableName: z.string().optional().describe("Specific table name, or omit for all accessible tables"),
       }),
       execute: async ({ tableName }) => {
-        try {
-          if (tableName) {
-            const safe = validateTable(tableName, roleColumns);
-            if (!safe) return { error: `Table '${tableName}' is not accessible.` };
-            return { schema: { [safe]: roleColumns[safe] } };
-          }
-          return { schema: roleColumns };
-        } catch (e: unknown) {
-          return { error: e instanceof Error ? e.message : String(e) };
+        if (tableName) {
+          const cols = roleColumns[tableName.toLowerCase()];
+          if (!cols) return { error: `Table '${tableName}' not accessible. Available: ${allowedTableNames.join(", ")}` };
+          return { table: tableName, columns: cols };
         }
+        return { tables: Object.entries(roleColumns).map(([t, cols]) => ({ table: t, columns: cols })) };
       },
     }),
 
     queryTable: tool({
-      description: `Query CRM data with structured parameters. All table names, column names, operators, and aggregate functions are validated server-side. Tables: ${allowedTableNames.join(", ")}.`,
+      description: "Query a table from the CRM database. Use camelCase field names.",
       parameters: z.object({
-        table: z.string().describe("Table to query"),
-        columns: z.array(z.string()).optional().describe("Columns to select. Omit for all allowed columns."),
-        filters: z.array(filterOperatorSchema).optional().describe("WHERE conditions as structured filter objects"),
-        orderByColumn: z.string().optional().describe("Column name to sort by"),
-        orderDirection: z.enum(["ASC", "DESC"]).optional().describe("Sort direction"),
-        limit: z.number().optional().describe("Max rows (default 100, max 100)"),
-        aggregates: z.array(aggregateFnSchema).optional().describe("Aggregate functions to apply"),
-        groupByColumns: z.array(z.string()).optional().describe("Columns to group by"),
+        table: z.string().describe(`Table to query. Available: ${allowedTableNames.join(", ")}`),
+        columns: z.array(z.string()).optional().describe("Columns to return (all if omitted)"),
+        filters: z.array(filterOperatorSchema).optional().describe("Filter conditions"),
+        orderBy: z.string().optional().describe("Column to sort by"),
+        orderDirection: z.enum(["ASC", "DESC"]).optional().default("DESC"),
+        limit: z.number().int().min(1).max(100).optional().default(50),
       }),
-      execute: async ({ table, columns, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns }) => {
+      execute: async ({ table, columns, filters, orderBy, orderDirection, limit }) => {
         try {
-          const { sql, params, error: buildError } = buildStrictQuery(
-            roleColumns, table, columns, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns, rowFilters
-          );
-          if (buildError) return { error: buildError };
-          const rows = await execParameterizedQuery(sql, params);
-          return { results: rows.slice(0, 100), rowCount: rows.length };
-        } catch (e: unknown) {
-          return { error: e instanceof Error ? e.message : String(e) };
-        }
-      },
-    }),
-
-    run_sql_query: tool({
-      description: `Query CRM data (alias for queryTable). Specify structured parameters for table, columns, filters, ordering, and limit. Tables: ${allowedTableNames.join(", ")}.`,
-      parameters: z.object({
-        table: z.string().describe("Table to query"),
-        columns: z.array(z.string()).optional().describe("Columns to select"),
-        filters: z.array(filterOperatorSchema).optional().describe("WHERE conditions"),
-        orderByColumn: z.string().optional().describe("Column to sort by"),
-        orderDirection: z.enum(["ASC", "DESC"]).optional().describe("Sort direction"),
-        limit: z.number().optional().describe("Max rows (default 100, max 100)"),
-      }),
-      execute: async ({ table, columns, filters, orderByColumn, orderDirection, limit }) => {
-        try {
-          const { sql, params, error: buildError } = buildStrictQuery(
-            roleColumns, table, columns, filters, orderByColumn, orderDirection, limit, undefined, undefined, rowFilters
-          );
-          if (buildError) return { error: buildError };
-          const rows = await execParameterizedQuery(sql, params);
-          return { results: rows.slice(0, 100), rowCount: rows.length };
+          const tbl = table.toLowerCase().trim();
+          const result = execJsonQuery(roleColumns, tbl, columns, filters as FilterOp[], orderBy, orderDirection, limit, undefined, undefined, rowFilters);
+          if (result.error) return { error: result.error };
+          return { results: result.results, rowCount: result.results!.length };
         } catch (e: unknown) {
           return { error: e instanceof Error ? e.message : String(e) };
         }
@@ -361,50 +362,26 @@ function getReadTools(userRole: string, userId: string) {
     }),
 
     analyticsQuery: tool({
-      description: `Run analytics/aggregation queries on CRM data. Use aggregate functions (COUNT, SUM, AVG, MIN, MAX) with optional groupBy. Tables: ${allowedTableNames.join(", ")}.`,
+      description: "Run aggregation queries on CRM data (COUNT, SUM, AVG, MIN, MAX with optional GROUP BY). Use camelCase field names.",
       parameters: z.object({
-        table: z.string().describe("Table to query"),
-        aggregates: z.array(aggregateFnSchema).describe("Aggregate functions to apply"),
-        groupByColumns: z.array(z.string()).optional().describe("Columns to group by"),
-        filters: z.array(filterOperatorSchema).optional().describe("WHERE conditions"),
-        orderByColumn: z.string().optional().describe("Column to sort by"),
-        orderDirection: z.enum(["ASC", "DESC"]).optional().describe("Sort direction"),
-        limit: z.number().optional().describe("Max rows (default 100, max 100)"),
+        table: z.string().describe(`Table to aggregate. Available: ${allowedTableNames.join(", ")}`),
+        aggregates: z.array(aggregateFnSchema).describe("Aggregation functions to apply"),
+        groupBy: z.array(z.string()).optional().describe("Columns to group by"),
+        filters: z.array(filterOperatorSchema).optional().describe("Filter conditions"),
+        limit: z.number().int().min(1).max(100).optional().default(50),
       }),
-      execute: async ({ table, aggregates, groupByColumns, filters, orderByColumn, orderDirection, limit }) => {
+      execute: async ({ table, aggregates, groupBy, filters, limit }) => {
         try {
-          const { sql, params, error: buildError } = buildStrictQuery(
-            roleColumns, table, undefined, filters, orderByColumn, orderDirection, limit, aggregates, groupByColumns, rowFilters
-          );
-          if (buildError) return { error: buildError };
-          const rows = await execParameterizedQuery(sql, params);
-          return { results: rows, rowCount: rows.length };
+          const tbl = table.toLowerCase().trim();
+          const result = execJsonQuery(roleColumns, tbl, undefined, filters as FilterOp[], undefined, undefined, limit, aggregates as AggregateFn[], groupBy, rowFilters);
+          if (result.error) return { error: result.error };
+          return { results: result.results, rowCount: result.results!.length };
         } catch (e: unknown) {
           return { error: e instanceof Error ? e.message : String(e) };
         }
       },
     }),
   };
-}
-
-function getOwnershipColumn(table: string): string | null {
-  if (table === "leads") return "assigned_to";
-  if (table === "tasks") return "assigned_to";
-  if (table === "activities") return "user_id";
-  return null;
-}
-
-async function verifyRecordOwnership(table: string, id: string, userId: string, userRole: string): Promise<{ allowed: boolean; error?: string }> {
-  if (userRole === "superadmin") return { allowed: true };
-  const ownerCol = getOwnershipColumn(table);
-  if (!ownerCol) return { allowed: false, error: "No ownership column for this table." };
-  const { data, error } = await supabase.from(table).select(ownerCol).eq("id", id).single();
-  if (error || !data) return { allowed: false, error: "Record not found." };
-  const ownerValue = (data as Record<string, unknown>)[ownerCol];
-  if (String(ownerValue) !== userId) {
-    return { allowed: false, error: "You do not have permission to modify this record (not assigned to you)." };
-  }
-  return { allowed: true };
 }
 
 function getMutationTools(userId: string, userRole: string) {
@@ -450,9 +427,13 @@ function getMutationTools(userId: string, userRole: string) {
             return { error: `Token was issued for ${pending.action} on ${pending.table}, not create on ${table}.` };
           }
           pendingMutations.delete(confirmationToken);
-          const { data: result, error } = await supabase.from(table).insert(data).select().single();
-          if (error) return { error: error.message };
-          return { success: true, record: result };
+          const db = loadDb();
+          const rows: any[] = db[table] ?? [];
+          const record = { id: genId(), createdAt: nowStr(), updatedAt: nowStr(), ...data };
+          rows.push(record);
+          db[table] = rows;
+          saveDb(db);
+          return { success: true, record };
         } catch (e: unknown) {
           return { error: e instanceof Error ? e.message : String(e) };
         }
@@ -477,12 +458,17 @@ function getMutationTools(userId: string, userRole: string) {
           if (pending.action !== "update" || pending.table !== table) {
             return { error: `Token was issued for ${pending.action} on ${pending.table}, not update on ${table}.` };
           }
-          const ownership = await verifyRecordOwnership(table, id, userId, userRole);
+          const ownership = verifyRecordOwnership(table, id, userId, userRole);
           if (!ownership.allowed) return { error: ownership.error || "Access denied." };
           pendingMutations.delete(confirmationToken);
-          const { data: result, error } = await supabase.from(table).update(data).eq("id", id).select().single();
-          if (error) return { error: error.message };
-          return { success: true, record: result };
+          const db = loadDb();
+          const rows: any[] = db[table] ?? [];
+          const idx = rows.findIndex(r => r.id === id);
+          if (idx === -1) return { error: "Record not found." };
+          rows[idx] = { ...rows[idx], ...data, updatedAt: nowStr() };
+          db[table] = rows;
+          saveDb(db);
+          return { success: true, record: rows[idx] };
         } catch (e: unknown) {
           return { error: e instanceof Error ? e.message : String(e) };
         }
@@ -506,11 +492,14 @@ function getMutationTools(userId: string, userRole: string) {
           if (pending.action !== "delete" || pending.table !== table) {
             return { error: `Token was issued for ${pending.action} on ${pending.table}, not delete on ${table}.` };
           }
-          const ownership = await verifyRecordOwnership(table, id, userId, userRole);
+          const ownership = verifyRecordOwnership(table, id, userId, userRole);
           if (!ownership.allowed) return { error: ownership.error || "Access denied." };
           pendingMutations.delete(confirmationToken);
-          const { error } = await supabase.from(table).delete().eq("id", id);
-          if (error) return { error: error.message };
+          const db = loadDb();
+          const rows: any[] = db[table] ?? [];
+          const next = rows.filter(r => r.id !== id);
+          db[table] = next;
+          saveDb(db);
           return { success: true, message: `Record ${id} deleted from ${table}` };
         } catch (e: unknown) {
           return { error: e instanceof Error ? e.message : String(e) };
@@ -520,17 +509,15 @@ function getMutationTools(userId: string, userRole: string) {
   };
 }
 
+// ── Routes ────────────────────────────────────────────────────────────────────
+
 aiRouter.get("/conversations", async (req: Request, res: Response) => {
   try {
     const user = req.user as User;
-    const { data, error } = await supabase
-      .from("ai_conversations")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false });
-
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data || []);
+    const convs = getConversations()
+      .filter(c => c.user_id === user.id)
+      .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1));
+    res.json(convs);
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
@@ -540,14 +527,8 @@ aiRouter.post("/conversations", async (req: Request, res: Response) => {
   try {
     const user = req.user as User;
     const { title } = req.body;
-    const { data, error } = await supabase
-      .from("ai_conversations")
-      .insert({ user_id: user.id, title: title || "New Chat" })
-      .select()
-      .single();
-
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+    const conv = insertConversation({ user_id: user.id, title: title || "New Chat" });
+    res.json(conv);
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
@@ -556,49 +537,25 @@ aiRouter.post("/conversations", async (req: Request, res: Response) => {
 aiRouter.get("/conversations/search", async (req: Request, res: Response) => {
   try {
     const user = req.user as User;
-    const q = (req.query.q as string || "").trim();
+    const q = ((req.query.q as string) || "").trim().toLowerCase();
     if (!q) return res.json([]);
 
-    const { data: convs } = await supabase
-      .from("ai_conversations")
-      .select("id, title, updated_at")
-      .eq("user_id", user.id)
-      .ilike("title", `%${q}%`)
-      .order("updated_at", { ascending: false })
-      .limit(20);
+    const allConvs = getConversations().filter(c => c.user_id === user.id);
+    const userConvIds = new Set(allConvs.map(c => c.id));
 
-    const { data: userConvs } = await supabase
-      .from("ai_conversations")
-      .select("id")
-      .eq("user_id", user.id);
-    const userConvIds = (userConvs || []).map((c: { id: string }) => c.id);
+    // Match conversations by title
+    const matchedConvIds = new Set(allConvs.filter(c => c.title?.toLowerCase().includes(q)).map(c => c.id));
 
-    const { data: msgHits } = userConvIds.length > 0
-      ? await supabase
-          .from("ai_messages")
-          .select("conversation_id, content")
-          .in("conversation_id", userConvIds)
-          .ilike("content", `%${q}%`)
-          .limit(50)
-      : { data: null };
+    // Match conversations by message content
+    const msgHits = getMessages().filter(m => userConvIds.has(m.conversation_id) && m.content?.toLowerCase().includes(q));
+    for (const m of msgHits) matchedConvIds.add(m.conversation_id);
 
-    const convIds = new Set((convs || []).map((c: { id: string }) => c.id));
-    if (msgHits) {
-      for (const m of msgHits) {
-        if (!convIds.has(m.conversation_id)) {
-          convIds.add(m.conversation_id);
-        }
-      }
-    }
+    const results = allConvs
+      .filter(c => matchedConvIds.has(c.id))
+      .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
+      .slice(0, 20);
 
-    const { data: results } = await supabase
-      .from("ai_conversations")
-      .select("*")
-      .eq("user_id", user.id)
-      .in("id", Array.from(convIds))
-      .order("updated_at", { ascending: false });
-
-    res.json(results || []);
+    res.json(results);
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
@@ -608,19 +565,13 @@ aiRouter.get("/conversations/:id/messages", async (req: Request, res: Response) 
   try {
     const user = req.user as User;
     const { id } = req.params;
-
     if (!(await verifyConversationOwnership(id, user.id))) {
       return res.status(404).json({ error: "Conversation not found" });
     }
-
-    const { data, error } = await supabase
-      .from("ai_messages")
-      .select("*")
-      .eq("conversation_id", id)
-      .order("created_at", { ascending: true });
-
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data || []);
+    const msgs = getMessages()
+      .filter(m => m.conversation_id === id)
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+    res.json(msgs);
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
@@ -631,21 +582,15 @@ aiRouter.patch("/conversations/:id", async (req: Request, res: Response) => {
     const user = req.user as User;
     const { id } = req.params;
     const { title } = req.body;
-
     if (!(await verifyConversationOwnership(id, user.id))) {
       return res.status(404).json({ error: "Conversation not found" });
     }
-
-    const { data, error } = await supabase
-      .from("ai_conversations")
-      .update({ title })
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .select()
-      .single();
-
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+    const convs = getConversations();
+    const idx = convs.findIndex(c => c.id === id && c.user_id === user.id);
+    if (idx === -1) return res.status(404).json({ error: "Conversation not found" });
+    convs[idx] = { ...convs[idx], title, updated_at: nowStr() };
+    saveConversations(convs);
+    res.json(convs[idx]);
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
@@ -655,14 +600,12 @@ aiRouter.delete("/conversations/:id", async (req: Request, res: Response) => {
   try {
     const user = req.user as User;
     const { id } = req.params;
-
     if (!(await verifyConversationOwnership(id, user.id))) {
       return res.status(404).json({ error: "Conversation not found" });
     }
-
-    await supabase.from("ai_messages").delete().eq("conversation_id", id);
-    const { error } = await supabase.from("ai_conversations").delete().eq("id", id).eq("user_id", user.id);
-    if (error) return res.status(500).json({ error: error.message });
+    saveMessages(getMessages().filter(m => m.conversation_id !== id));
+    saveAttachments(getAttachments().filter(a => a.conversation_id !== id));
+    saveConversations(getConversations().filter(c => !(c.id === id && c.user_id === user.id)));
     res.json({ success: true });
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
@@ -674,14 +617,11 @@ aiRouter.post("/upload", upload.single("file"), async (req: Request, res: Respon
     const user = req.user as User;
     const file = req.file;
     const { conversationId } = req.body;
-
     if (!file) return res.status(400).json({ error: "No file uploaded" });
     if (!conversationId) return res.status(400).json({ error: "conversationId is required" });
-
     if (!(await verifyConversationOwnership(conversationId, user.id))) {
       return res.status(404).json({ error: "Conversation not found" });
     }
-
     const storedFilename = file.filename;
     let fileContent: string | null = null;
     const textTypes = [".csv", ".txt", ".json"];
@@ -694,14 +634,7 @@ aiRouter.post("/upload", upload.single("file"), async (req: Request, res: Respon
         console.error("Failed to read uploaded file content:", readErr);
       }
     }
-
-    res.json({
-      storedFilename,
-      fileName: file.originalname,
-      fileType: file.mimetype,
-      fileSize: file.size,
-      fileContent,
-    });
+    res.json({ storedFilename, fileName: file.originalname, fileType: file.mimetype, fileSize: file.size, fileContent });
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
   }
@@ -711,34 +644,20 @@ aiRouter.get("/attachments/:filename", async (req: Request, res: Response) => {
   try {
     const user = req.user as User;
     const { filename } = req.params;
-
     const safeName = path.basename(filename).replace(/[^a-z0-9._-]/gi, "");
     const filePath = path.resolve(uploadsDir, safeName);
-
     if (!filePath.startsWith(path.resolve(uploadsDir))) {
       return res.status(400).json({ error: "Invalid filename" });
     }
-
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found" });
     }
-
-    const { data: attachment } = await supabase
-      .from("ai_attachments")
-      .select("*, ai_messages!inner(conversation_id)")
-      .eq("file_url", `/api/ai/attachments/${safeName}`)
-      .single();
-
-    if (!attachment) {
+    const fileUrl = `/api/ai/attachments/${safeName}`;
+    const attachment = getAttachments().find(a => a.file_url === fileUrl);
+    if (!attachment) return res.status(404).json({ error: "File not found" });
+    if (!(await verifyConversationOwnership(attachment.conversation_id, user.id))) {
       return res.status(404).json({ error: "File not found" });
     }
-
-    const attachmentWithMsg = attachment as { ai_messages?: { conversation_id: string } };
-    const convId = attachmentWithMsg.ai_messages?.conversation_id;
-    if (!convId || !(await verifyConversationOwnership(convId, user.id))) {
-      return res.status(404).json({ error: "File not found" });
-    }
-
     res.sendFile(filePath);
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : String(e) });
@@ -749,24 +668,19 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
   try {
     const user = req.user as User;
     const { conversationId, message, attachment } = req.body;
-
     if (!conversationId || !message) {
       return res.status(400).json({ error: "conversationId and message are required" });
     }
-
     if (!(await verifyConversationOwnership(conversationId, user.id))) {
       return res.status(404).json({ error: "Conversation not found" });
     }
 
-    const { data: userMsg } = await supabase.from("ai_messages").insert({
-      conversation_id: conversationId,
-      role: "user",
-      content: message,
-    }).select("id").single();
+    const userMsg = insertMessage({ conversation_id: conversationId, role: "user", content: message });
 
     if (attachment && userMsg) {
-      await supabase.from("ai_attachments").insert({
+      insertAttachment({
         message_id: userMsg.id,
+        conversation_id: conversationId,
         file_name: attachment.fileName,
         file_type: attachment.fileType,
         file_url: `/api/ai/attachments/${attachment.storedFilename}`,
@@ -774,13 +688,11 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
       });
     }
 
-    const { data: history } = await supabase
-      .from("ai_messages")
-      .select("*")
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true });
+    const history = getMessages()
+      .filter(m => m.conversation_id === conversationId)
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
 
-    const chatMessages = (history || []).map((m: { role: string; content: string }) => ({
+    const chatMessages = history.map((m: { role: string; content: string }) => ({
       role: m.role as "user" | "assistant",
       content: m.content,
     }));
@@ -807,58 +719,38 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
 
     const stream = result.toDataStream();
     const reader = stream.getReader();
-
     let parseBuffer = "";
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = typeof value === "string" ? value : new TextDecoder().decode(value);
         res.write(chunk);
-
         parseBuffer += chunk;
         const lines = parseBuffer.split("\n");
         parseBuffer = lines.pop() || "";
         for (const line of lines) {
           if (!line.trim()) continue;
           if (line.startsWith("0:")) {
-            try {
-              const text = JSON.parse(line.slice(2));
-              fullContent += text;
-            } catch (e) {
-              console.warn("Stream text chunk parse error:", e);
-            }
+            try { fullContent += JSON.parse(line.slice(2)); } catch {}
           }
           if (line.startsWith("9:")) {
-            try {
-              const toolCall = JSON.parse(line.slice(2));
-              toolCallsData.push(toolCall);
-            } catch (e) {
-              console.warn("Stream tool call parse error:", e);
-            }
+            try { toolCallsData.push(JSON.parse(line.slice(2))); } catch {}
           }
           if (line.startsWith("g:")) {
-            try {
-              const reasoning = JSON.parse(line.slice(2));
-              reasoningText += reasoning;
-            } catch (e) {
-              console.warn("Stream reasoning parse error:", e);
-            }
+            try { reasoningText += JSON.parse(line.slice(2)); } catch {}
           }
         }
       }
-      if (parseBuffer.trim()) {
-        if (parseBuffer.startsWith("0:")) {
-          try { fullContent += JSON.parse(parseBuffer.slice(2)); } catch {}
-        }
+      if (parseBuffer.trim() && parseBuffer.startsWith("0:")) {
+        try { fullContent += JSON.parse(parseBuffer.slice(2)); } catch {}
       }
     } finally {
       reader.releaseLock();
     }
 
     if (fullContent) {
-      await supabase.from("ai_messages").insert({
+      insertMessage({
         conversation_id: conversationId,
         role: "assistant",
         content: fullContent,
@@ -866,25 +758,17 @@ aiRouter.post("/chat", async (req: Request, res: Response) => {
         reasoning: reasoningText || null,
       });
 
-      const { data: msgCount } = await supabase
-        .from("ai_messages")
-        .select("id", { count: "exact" })
-        .eq("conversation_id", conversationId)
-        .eq("role", "user");
-
-      if (msgCount && msgCount.length <= 1) {
-        const titleSnippet = message.slice(0, 50) + (message.length > 50 ? "..." : "");
-        await supabase
-          .from("ai_conversations")
-          .update({ title: titleSnippet, updated_at: new Date().toISOString() })
-          .eq("id", conversationId)
-          .eq("user_id", user.id);
-      } else {
-        await supabase
-          .from("ai_conversations")
-          .update({ updated_at: new Date().toISOString() })
-          .eq("id", conversationId)
-          .eq("user_id", user.id);
+      const userMsgCount = getMessages().filter(m => m.conversation_id === conversationId && m.role === "user").length;
+      const convs = getConversations();
+      const cidx = convs.findIndex(c => c.id === conversationId);
+      if (cidx !== -1) {
+        if (userMsgCount <= 1) {
+          const titleSnippet = message.slice(0, 50) + (message.length > 50 ? "..." : "");
+          convs[cidx] = { ...convs[cidx], title: titleSnippet, updated_at: nowStr() };
+        } else {
+          convs[cidx] = { ...convs[cidx], updated_at: nowStr() };
+        }
+        saveConversations(convs);
       }
     }
 

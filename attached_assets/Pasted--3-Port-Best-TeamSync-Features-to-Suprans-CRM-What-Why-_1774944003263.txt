@@ -1,0 +1,38 @@
+#3 - Port Best TeamSync Features to Suprans CRM
+What & Why
+The TeamSync project has several well-built modules that would significantly enhance the Suprans CRM portal. After cloning TeamSync for reference, port the most valuable features — specifically the CRM enhancements (Contacts, Deals/Appointments), Universal Tickets system, and enhanced Chat/Notifications — adapting them to our Suprans design system and data model.
+
+Done looks like
+Contacts Management page — A dedicated contacts directory for storing client/partner/vendor contacts with categories, tags, phone/WhatsApp/email, organization, city, and priority. Searchable and filterable. Accessible from sidebar navigation.
+Deals/Appointments page — Track ongoing deals beyond just leads — with deal stages, values, expected close dates, and associated contacts. An appointments/meetings scheduler to log upcoming client meetings.
+Tickets System — An internal support ticket system where team members can create, assign, and resolve tickets (e.g., client issues, IT requests). Includes ticket detail view with status workflow (open → in-progress → resolved → closed), priority levels, and assignment.
+Enhanced Notifications — Real-time notification feed with mark-all-read, categorized by type (lead assigned, task due, ticket created), linked to relevant records.
+User Management page — For SuperAdmin role: view all users, edit roles, assign to teams, toggle active/inactive status. Route at /admin/users.
+Audit Log page — For SuperAdmin: track key actions (lead created, stage changed, user login) with timestamps and actor info. Route at /admin/audit.
+Out of scope
+Finance module (ledger, cashbook, transactions)
+Social Media Management module
+OMS (Order Management) module
+ATS (Applicant Tracking) — we already have HR recruitment pages
+HRMS payroll/org-chart enhancements
+Faire-specific features (already implemented)
+Tasks
+Clone TeamSync for reference — Clone github.com/lakshaytakkar/teamsync into teamsync-ref/ folder. This is purely a reference codebase — no code is used directly, only adapted.
+
+Contacts Management — Add a contacts table (name, organization, category, phone, whatsapp, email, city, country, priority, tags, teamId). Create API routes for CRUD. Build a Contacts page with table view, search/filter, add/edit contact dialogs. Add to sidebar navigation under a new "CRM" group.
+
+Deals & Appointments — Add deals table (name, contactId, leadId, value, stage, expectedCloseDate, assignedTo, teamId) and appointments table (title, type, dateTime, duration, contactId, leadId, dealId, location, notes, assignedTo, teamId). Build Deals pipeline and Appointments calendar views.
+
+Tickets System — Add tickets table (ticketCode, title, description, status, priority, category, reportedBy, assignedTo, resolution, teamId). Build Tickets list page with status tabs and a Ticket Detail page with activity timeline. Add to sidebar navigation.
+
+User Management page — Build /admin/users page for SuperAdmin showing all system users in a table with role editing, team assignment, and active/inactive toggle. Wire to the existing users API.
+
+Audit Log page — Add audit_logs table (action, entityType, entityId, userId, details, timestamp). Log key actions server-side (lead stage changes, user logins, record creates/deletes). Build /admin/audit page with filterable log table.
+
+Relevant files
+shared/schema.ts
+server/routes.ts
+server/storage.ts
+client/src/lib/teams-config.ts
+client/src/App.tsx
+client/src/components/layout/Sidebar.tsx

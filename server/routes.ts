@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { requireAuth, requireRole } from "./auth";
 import bcrypt from "bcryptjs";
 import QRCode from "qrcode";
-import { supabase } from "./db";
+import { loadDb, saveDb } from "./db";
 import { 
   insertUserSchema, insertLeadSchema, insertActivitySchema, 
   insertTaskSchema, insertServiceSchema, insertTemplateSchema,
@@ -204,15 +204,16 @@ export async function registerRoutes(
       if (!role || !['manager', 'executive'].includes(role)) {
         return res.status(400).json({ message: "Valid role (manager/executive) is required" });
       }
-      const { data, error } = await supabase.from('team_members').update({ role }).eq('id', id).select().single();
-      if (error || !data) {
+      const db = loadDb();
+      const members: any[] = db['team_members'] ?? [];
+      const idx = members.findIndex((m: any) => m.id === id);
+      if (idx === -1) {
         return res.status(404).json({ message: "Team member not found" });
       }
-      const camelData: Record<string, any> = {};
-      for (const [key, value] of Object.entries(data)) {
-        camelData[key.replace(/_([a-z])/g, (_, l) => l.toUpperCase())] = value;
-      }
-      res.json(camelData);
+      members[idx] = { ...members[idx], role, updatedAt: new Date().toISOString() };
+      db['team_members'] = members;
+      saveDb(db);
+      res.json(members[idx]);
     } catch (error) {
       next(error);
     }
