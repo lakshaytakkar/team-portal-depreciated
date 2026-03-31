@@ -5034,11 +5034,23 @@ cs@suprans.in`;
     } catch (error) { next(error); }
   });
 
+  async function verifyTeamAccess(userId: string, teamId: string | undefined): Promise<boolean> {
+    if (!teamId) return true;
+    const user = await storage.getUser(userId);
+    if (user?.role === 'superadmin') return true;
+    const userTeams = await storage.getUserTeams(userId);
+    return userTeams.some(t => t.teamId === teamId);
+  }
+
   // ========== CONTACTS ==========
 
   app.get("/api/contacts", requireAuth, async (req, res, next) => {
     try {
       const { category, team_id, search } = req.query;
+      const currentUser = req.user as User;
+      if (team_id && !(await verifyTeamAccess(currentUser.id, team_id as string))) {
+        return res.status(403).json({ message: "Access denied to this team" });
+      }
       const contacts = await storage.getContacts({
         category: category as string,
         teamId: team_id as string,
@@ -5058,6 +5070,10 @@ cs@suprans.in`;
 
   app.post("/api/contacts", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      if (req.body.teamId && !(await verifyTeamAccess(currentUser.id, req.body.teamId))) {
+        return res.status(403).json({ message: "Access denied to this team" });
+      }
       const parsed = insertContactSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
       const contact = await storage.createContact(parsed.data);
@@ -5089,6 +5105,10 @@ cs@suprans.in`;
   app.get("/api/deals", requireAuth, async (req, res, next) => {
     try {
       const { stage, assigned_to, team_id } = req.query;
+      const currentUser = req.user as User;
+      if (team_id && !(await verifyTeamAccess(currentUser.id, team_id as string))) {
+        return res.status(403).json({ message: "Access denied to this team" });
+      }
       const deals = await storage.getDeals({
         stage: stage as string,
         assignedTo: assigned_to as string,
@@ -5108,6 +5128,10 @@ cs@suprans.in`;
 
   app.post("/api/deals", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      if (req.body.teamId && !(await verifyTeamAccess(currentUser.id, req.body.teamId))) {
+        return res.status(403).json({ message: "Access denied to this team" });
+      }
       const parsed = insertDealSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
       const deal = await storage.createDeal(parsed.data);
@@ -5139,6 +5163,10 @@ cs@suprans.in`;
   app.get("/api/appointments", requireAuth, async (req, res, next) => {
     try {
       const { assigned_to, team_id, status } = req.query;
+      const currentUser = req.user as User;
+      if (team_id && !(await verifyTeamAccess(currentUser.id, team_id as string))) {
+        return res.status(403).json({ message: "Access denied to this team" });
+      }
       const appointments = await storage.getAppointments({
         assignedTo: assigned_to as string,
         teamId: team_id as string,
@@ -5158,6 +5186,10 @@ cs@suprans.in`;
 
   app.post("/api/appointments", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      if (req.body.teamId && !(await verifyTeamAccess(currentUser.id, req.body.teamId))) {
+        return res.status(403).json({ message: "Access denied to this team" });
+      }
       const parsed = insertAppointmentSchema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
       const appt = await storage.createAppointment(parsed.data);
@@ -5189,6 +5221,10 @@ cs@suprans.in`;
   app.get("/api/tickets", requireAuth, async (req, res, next) => {
     try {
       const { status, assigned_to, reported_by, team_id } = req.query;
+      const currentUser = req.user as User;
+      if (team_id && !(await verifyTeamAccess(currentUser.id, team_id as string))) {
+        return res.status(403).json({ message: "Access denied to this team" });
+      }
       const tickets = await storage.getTickets({
         status: status as string,
         assignedTo: assigned_to as string,
@@ -5209,9 +5245,13 @@ cs@suprans.in`;
 
   app.post("/api/tickets", requireAuth, async (req, res, next) => {
     try {
+      const currentUser = req.user as User;
+      if (req.body.teamId && !(await verifyTeamAccess(currentUser.id, req.body.teamId))) {
+        return res.status(403).json({ message: "Access denied to this team" });
+      }
       const ticketCount = (await storage.getTickets()).length;
       const ticketCode = `TKT-${String(ticketCount + 1).padStart(4, '0')}`;
-      const parsed = insertTicketSchema.safeParse({ ...req.body, ticketCode, reportedBy: (req as any).user.id });
+      const parsed = insertTicketSchema.safeParse({ ...req.body, ticketCode, reportedBy: currentUser.id });
       if (!parsed.success) return res.status(400).json({ message: fromError(parsed.error).message });
       const ticket = await storage.createTicket(parsed.data);
       await storage.createAuditLog({ action: "create", entityType: "ticket", entityId: ticket.id, userId: (req as any).user.id, details: { title: ticket.title, ticketCode } });

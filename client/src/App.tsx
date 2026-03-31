@@ -62,6 +62,7 @@ import ContactsPage from "@/pages/contacts";
 import DealsPage from "@/pages/deals";
 import AppointmentsPage from "@/pages/appointments";
 import TicketsPage from "@/pages/tickets";
+import TicketDetailPage from "@/pages/ticket-detail";
 import UserManagementPage from "@/pages/admin/users";
 import AuditLogPage from "@/pages/admin/audit";
 import { useStore } from "@/lib/store";
@@ -133,6 +134,7 @@ function PortalRouter() {
         <Route path="/deals" component={DealsPage} />
         <Route path="/appointments" component={AppointmentsPage} />
         <Route path="/tickets" component={TicketsPage} />
+        <Route path="/tickets/:id" component={TicketDetailPage} />
 
         {/* Admin Routes */}
         <Route path="/admin" component={AdminDashboard} />

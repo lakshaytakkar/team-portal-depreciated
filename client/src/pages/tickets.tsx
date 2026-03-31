@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useStore } from "@/lib/store";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -133,6 +134,7 @@ const priorityBadge = (p: string) => {
 };
 
 export default function TicketsPage() {
+  const [, navigate] = useLocation();
   const { currentTeamId } = useStore();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -215,7 +217,7 @@ export default function TicketsPage() {
           tickets.map(ticket => {
             const assignee = users.find(u => u.id === ticket.assignedTo);
             return (
-              <Card key={ticket.id} className="hover:shadow-md transition-shadow cursor-pointer" data-testid={`card-ticket-${ticket.id}`} onClick={() => { setEditingTicket(ticket); setDialogOpen(true); }}>
+              <Card key={ticket.id} className="hover:shadow-md transition-shadow cursor-pointer" data-testid={`card-ticket-${ticket.id}`} onClick={() => navigate(`/tickets/${ticket.id}`)}>
                 <CardContent className="p-4 flex items-center gap-4">
                   {statusIcon(ticket.status)}
                   <div className="flex-1 min-w-0">

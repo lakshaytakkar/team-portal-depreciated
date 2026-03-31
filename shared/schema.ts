@@ -26,11 +26,12 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").notNull().default('sales_executive'), // 'sales_executive' | 'superadmin'
+  role: text("role").notNull().default('sales_executive'),
   phone: text("phone"),
   avatar: text("avatar"),
   officeId: varchar("office_id").references(() => offices.id),
   salary: integer("salary"),
+  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
