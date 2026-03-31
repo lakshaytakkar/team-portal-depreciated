@@ -18,7 +18,21 @@ import type { Contact } from "@shared/schema";
 const CATEGORIES = ["client", "vendor", "partner", "prospect", "other"];
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 
-function ContactForm({ contact, onSave, onCancel }: { contact?: Contact; onSave: (data: any) => void; onCancel: () => void }) {
+interface ContactFormData {
+  name: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+  organization: string;
+  designation: string;
+  category: string;
+  city: string;
+  country: string;
+  priority: string;
+  notes: string;
+}
+
+function ContactForm({ contact, onSave, onCancel }: { contact?: Contact; onSave: (data: ContactFormData) => void; onCancel: () => void }) {
   const [form, setForm] = useState({
     name: contact?.name || "",
     email: contact?.email || "",
@@ -125,7 +139,7 @@ export default function ContactsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/contacts", { ...data, teamId: currentTeamId }),
+    mutationFn: (data: ContactFormData) => apiRequest("POST", "/api/contacts", { ...data, teamId: currentTeamId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
       setDialogOpen(false);
@@ -134,7 +148,7 @@ export default function ContactsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/contacts/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<ContactFormData> }) => apiRequest("PATCH", `/api/contacts/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
       setDialogOpen(false);
@@ -151,7 +165,7 @@ export default function ContactsPage() {
     },
   });
 
-  const priorityColor = (p: string) => {
+  const priorityColor = (p: string): "destructive" | "default" | "secondary" | "outline" => {
     switch (p) {
       case "urgent": return "destructive";
       case "high": return "default";
@@ -160,11 +174,10 @@ export default function ContactsPage() {
     }
   };
 
-  const categoryColor = (c: string) => {
+  const categoryColor = (c: string): "default" | "secondary" | "outline" => {
     switch (c) {
       case "client": return "default";
       case "vendor": return "secondary";
-      case "partner": return "outline";
       default: return "outline";
     }
   };
@@ -261,8 +274,8 @@ export default function ContactsPage() {
                     <TableCell>
                       {contact.organization && <div className="flex items-center gap-1 text-sm"><Building2 className="h-3 w-3" />{contact.organization}</div>}
                     </TableCell>
-                    <TableCell><Badge variant={categoryColor(contact.category) as any}>{contact.category}</Badge></TableCell>
-                    <TableCell><Badge variant={priorityColor(contact.priority) as any}>{contact.priority}</Badge></TableCell>
+                    <TableCell><Badge variant={categoryColor(contact.category)}>{contact.category}</Badge></TableCell>
+                    <TableCell><Badge variant={priorityColor(contact.priority)}>{contact.priority}</Badge></TableCell>
                     <TableCell>
                       {(contact.city || contact.country) && (
                         <div className="flex items-center gap-1 text-sm"><MapPin className="h-3 w-3" />{[contact.city, contact.country].filter(Boolean).join(", ")}</div>

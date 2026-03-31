@@ -23,11 +23,21 @@ const STAGES = [
   { id: "closed_lost", label: "Closed Lost", color: "bg-red-500" },
 ];
 
+interface DealFormData {
+  name: string;
+  contactId: string | null;
+  value: number;
+  stage: string;
+  expectedCloseDate: string | null;
+  assignedTo: string | null;
+  notes: string;
+}
+
 function DealForm({ deal, contacts, users, onSave, onCancel }: {
   deal?: Deal;
   contacts: Contact[];
   users: User[];
-  onSave: (data: any) => void;
+  onSave: (data: DealFormData) => void;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
@@ -117,12 +127,12 @@ export default function DealsPage() {
   const { data: users = [] } = useQuery<User[]>({ queryKey: ["/api/users"] });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/deals", { ...data, teamId: currentTeamId }),
+    mutationFn: (data: DealFormData) => apiRequest("POST", "/api/deals", { ...data, teamId: currentTeamId }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/deals"] }); setDialogOpen(false); toast({ title: "Deal created" }); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/deals/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<DealFormData> }) => apiRequest("PATCH", `/api/deals/${id}`, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/deals"] }); setDialogOpen(false); setEditingDeal(undefined); toast({ title: "Deal updated" }); },
   });
 

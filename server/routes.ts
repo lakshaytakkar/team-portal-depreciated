@@ -5256,7 +5256,10 @@ cs@suprans.in`;
   app.get("/api/admin/users", requireAuth, requireRole('superadmin'), async (req, res, next) => {
     try {
       const users = await storage.getAllUsers();
-      const sanitized = users.map(({ password, ...rest }: any) => rest);
+      const sanitized = users.map((user) => {
+        const { password, ...rest } = user as Record<string, unknown>;
+        return rest;
+      });
       res.json(sanitized);
     } catch (error) { next(error); }
   });

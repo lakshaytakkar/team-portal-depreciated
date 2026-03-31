@@ -18,11 +18,23 @@ import type { Appointment, Contact, User } from "@shared/schema";
 const TYPES = ["meeting", "call", "video_call", "site_visit", "follow_up"];
 const STATUSES = ["scheduled", "completed", "cancelled", "rescheduled"];
 
+interface AppointmentFormData {
+  title: string;
+  type: string;
+  dateTime: string | null;
+  duration: number;
+  contactId: string | null;
+  location: string;
+  notes: string;
+  status: string;
+  assignedTo: string | null;
+}
+
 function AppointmentForm({ appointment, contacts, users, onSave, onCancel }: {
   appointment?: Appointment;
   contacts: Contact[];
   users: User[];
-  onSave: (data: any) => void;
+  onSave: (data: AppointmentFormData) => void;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
@@ -160,12 +172,12 @@ export default function AppointmentsPage() {
   const { data: users = [] } = useQuery<User[]>({ queryKey: ["/api/users"] });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/appointments", { ...data, teamId: currentTeamId }),
+    mutationFn: (data: AppointmentFormData) => apiRequest("POST", "/api/appointments", { ...data, teamId: currentTeamId }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/appointments"] }); setDialogOpen(false); toast({ title: "Appointment created" }); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/appointments/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<AppointmentFormData> }) => apiRequest("PATCH", `/api/appointments/${id}`, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/appointments"] }); setDialogOpen(false); setEditingAppt(undefined); toast({ title: "Appointment updated" }); },
   });
 
@@ -231,7 +243,7 @@ export default function AppointmentsPage() {
                       <Badge variant={statusBadge(appt.status)}>{appt.status}</Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{getDateLabel(appt.dateTime as any)}</span>
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{getDateLabel(String(appt.dateTime))}</span>
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{format(dt, "h:mm a")} ({appt.duration} min)</span>
                       {appt.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{appt.location}</span>}
                     </div>

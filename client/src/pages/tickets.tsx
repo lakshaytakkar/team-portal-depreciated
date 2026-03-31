@@ -20,10 +20,20 @@ const STATUSES = ["open", "in_progress", "resolved", "closed"];
 const PRIORITIES = ["low", "medium", "high", "urgent"];
 const CATEGORIES = ["general", "billing", "technical", "complaint", "feature_request", "refund"];
 
+interface TicketFormData {
+  title: string;
+  description: string;
+  priority: string;
+  category: string;
+  assignedTo: string | null;
+  status: string;
+  resolution: string;
+}
+
 function TicketForm({ ticket, users, onSave, onCancel }: {
   ticket?: TicketType;
   users: User[];
-  onSave: (data: any) => void;
+  onSave: (data: TicketFormData) => void;
   onCancel: () => void;
 }) {
   const [form, setForm] = useState({
@@ -143,12 +153,12 @@ export default function TicketsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("POST", "/api/tickets", { ...data, teamId: currentTeamId }),
+    mutationFn: (data: TicketFormData) => apiRequest("POST", "/api/tickets", { ...data, teamId: currentTeamId }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/tickets"] }); setDialogOpen(false); toast({ title: "Ticket created" }); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/tickets/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<TicketFormData> }) => apiRequest("PATCH", `/api/tickets/${id}`, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/tickets"] }); setDialogOpen(false); setEditingTicket(undefined); toast({ title: "Ticket updated" }); },
   });
 

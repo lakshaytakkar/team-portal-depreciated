@@ -22,13 +22,14 @@ export default function UserManagementPage() {
   const [search, setSearch] = useState("");
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const [editRole, setEditRole] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
 
   const { data: users = [], isLoading } = useQuery<UserType[]>({
     queryKey: ["/api/admin/users"],
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/admin/users/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: { role?: string; isActive?: boolean } }) => apiRequest("PATCH", `/api/admin/users/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       setEditingUser(null);
@@ -149,7 +150,7 @@ export default function UserManagementPage() {
                     {user.createdAt ? format(new Date(user.createdAt), "MMM d, yyyy") : "-"}
                   </TableCell>
                   <TableCell>
-                    <Button variant="outline" size="sm" data-testid={`button-edit-user-${user.id}`} onClick={() => { setEditingUser(user); setEditRole(user.role || "sales_executive"); }}>
+                    <Button variant="outline" size="sm" data-testid={`button-edit-user-${user.id}`} onClick={() => { setEditingUser(user); setEditRole(user.role || "sales_executive"); setEditIsActive(user.isActive !== false); }}>
                       Edit
                     </Button>
                   </TableCell>
@@ -173,10 +174,20 @@ export default function UserManagementPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={editIsActive ? "active" : "inactive"} onValueChange={v => setEditIsActive(v === "active")}>
+                <SelectTrigger data-testid="select-user-status"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingUser(null)} data-testid="button-cancel">Cancel</Button>
-            <Button onClick={() => editingUser && updateMutation.mutate({ id: editingUser.id, data: { role: editRole } })} data-testid="button-save-user">
+            <Button onClick={() => editingUser && updateMutation.mutate({ id: editingUser.id, data: { role: editRole, isActive: editIsActive } })} data-testid="button-save-user">
               Save Changes
             </Button>
           </DialogFooter>
